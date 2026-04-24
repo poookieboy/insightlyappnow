@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useStore } from "@/lib/store";
-import { getPaper, type PaperQuestion } from "@/lib/papers";
+import { getPaper, gradeShortAnswer, type PaperQuestion } from "@/lib/papers";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -23,7 +23,8 @@ export const Route = createFileRoute("/tests/$paperId")({
 interface AnswerState {
   selected?: number; // mcq
   text?: string; // short
-  selfMarked?: boolean; // short — was it correct?
+  graded?: boolean; // true once auto-graded
+  correct?: boolean;
 }
 
 function PaperRunner() {
@@ -44,7 +45,6 @@ function PaperRunner() {
   );
   const submittedRef = useRef(false);
 
-  // Timer
   useEffect(() => {
     if (!paper || submitted) return;
     const t = setInterval(() => {
@@ -87,14 +87,29 @@ function PaperRunner() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  // Results screen
+  const submitPaper = () => {
+    // Auto-grade everything before showing results
+    setAnswers((prev) => {
+      const next = { ...prev };
+      paper.questions.forEach((qq) => {
+        const a = next[qq.id] || {};
+        if (qq.kind === "mcq") {
+          next[qq.id] = { ...a, graded: true, correct: a.selected === qq.correctIndex };
+        } else {
+          const correct = !!a.text && gradeShortAnswer(qq, a.text);
+          next[qq.id] = { ...a, graded: true, correct };
+        }
+      });
+      return next;
+    });
+    setSubmitted(true);
+  };
+
   if (submitted) {
     let scored = 0;
     paper.questions.forEach((qq) => {
       const a = answers[qq.id];
-      if (!a) return;
-      if (qq.kind === "mcq" && a.selected === qq.correctIndex) scored += qq.marks;
-      if (qq.kind === "short" && a.selfMarked) scored += qq.marks;
+      if (a?.correct) scored += qq.marks;
     });
     const pct = Math.round((scored / totalMarks) * 100);
 
@@ -117,10 +132,7 @@ function PaperRunner() {
         <div className="space-y-3">
           {paper.questions.map((qq, i) => {
             const a = answers[qq.id] || {};
-            const correct =
-              qq.kind === "mcq"
-                ? a.selected === qq.correctIndex
-                : !!a.selfMarked;
+            const correct = !!a.correct;
             return (
               <Card key={qq.id} className="p-4">
                 <div className="mb-2 flex items-start gap-2">
@@ -135,7 +147,8 @@ function PaperRunner() {
                 </div>
                 {qq.kind === "mcq" && qq.options && (
                   <p className="text-xs text-muted-foreground">
-                    Correct answer: <span className="font-semibold">{qq.options[qq.correctIndex!]}</span>
+                    Your answer: <span className="font-semibold">{a.selected != null ? qq.options[a.selected] : "—"}</span>
+                    {" · "}Correct: <span className="font-semibold">{qq.options[qq.correctIndex!]}</span>
                   </p>
                 )}
                 {qq.kind === "short" && (
@@ -180,7 +193,6 @@ function PaperRunner() {
     );
   }
 
-  // Active paper
   const answeredCount = paper.questions.filter((qq) => {
     const a = answers[qq.id];
     if (!a) return false;
@@ -206,7 +218,7 @@ function PaperRunner() {
 
       <h1 className="text-base font-bold leading-tight">{paper.title}</h1>
       <p className="mb-3 text-xs text-muted-foreground">
-        {paper.subject} · {paper.questions.length} Qs · {totalMarks} marks
+        {paper.subject} · {paper.questions.length} Qs · {totalMarks} marks · {paper.difficulty}
       </p>
 
       <div className="mb-3 flex items-center gap-2">
@@ -251,10 +263,10 @@ function PaperRunner() {
               placeholder="Type your answer…"
               value={ans.text || ""}
               onChange={(e) => setAns({ text: e.target.value })}
-              rows={5}
+              rows={4}
             />
             <p className="mt-1 text-[10px] text-muted-foreground">
-              Self-marked at the end against the model answer.
+              Auto-graded against the model answer when you submit.
             </p>
           </div>
         )}
@@ -286,7 +298,7 @@ function PaperRunner() {
         ) : (
           <Button
             className="flex-1 bg-gradient-primary text-primary-foreground"
-            onClick={() => setShortReview(paper, answers, setAnswers, setSubmitted)}
+            onClick={submitPaper}
           >
             Submit paper
           </Button>
@@ -297,11 +309,7 @@ function PaperRunner() {
 }
 
 function QuestionDots({
-  total,
-  current,
-  onJump,
-  questions,
-  answers,
+  total, current, onJump, questions, answers,
 }: {
   total: number;
   current: number;
@@ -335,30 +343,4 @@ function QuestionDots({
       })}
     </div>
   );
-}
-
-// Self-marking pass for short answers before showing results.
-function setShortReview(
-  paper: NonNullable<ReturnType<typeof getPaper>>,
-  answers: Record<string, AnswerState>,
-  setAnswers: (fn: (a: Record<string, AnswerState>) => Record<string, AnswerState>) => void,
-  setSubmitted: (b: boolean) => void,
-) {
-  const shorts = paper.questions.filter((q) => q.kind === "short" && answers[q.id]?.text?.trim());
-  if (shorts.length === 0) {
-    setSubmitted(true);
-    return;
-  }
-  // Quick prompt-based self mark
-  shorts.forEach((q) => {
-    const userAns = answers[q.id]?.text || "";
-    const ok = confirm(
-      `Self-mark question:\n\n${q.prompt}\n\nYour answer:\n${userAns}\n\nModel answer:\n${q.modelAnswer}\n\nDid you get it right?`,
-    );
-    setAnswers((a) => ({
-      ...a,
-      [q.id]: { ...a[q.id], selfMarked: ok },
-    }));
-  });
-  setSubmitted(true);
 }

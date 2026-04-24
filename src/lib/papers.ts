@@ -1,8 +1,10 @@
-// Mock test paper bank — multi-question papers per subject.
+// Mock test paper bank — multi-question papers per subject, per grade band.
+// Each paper has a difficulty tag + topic tag so the UI can group by difficulty.
 
 import type { Curriculum, Grade } from "./store";
 
 export type QuestionKind = "mcq" | "short";
+export type Difficulty = "easy" | "medium" | "hard";
 
 export interface PaperQuestion {
   id: string;
@@ -10,7 +12,8 @@ export interface PaperQuestion {
   prompt: string;
   options?: string[]; // for MCQ
   correctIndex?: number; // for MCQ
-  modelAnswer?: string; // for short
+  modelAnswer?: string; // for short — used to grade typed answers
+  acceptable?: string[]; // alternate accepted short answers (lowercased compare)
   marks: number;
 }
 
@@ -18,220 +21,304 @@ export interface Paper {
   id: string;
   subject: string;
   emoji: string;
-  title: string; // e.g. "Paper 1 — Algebra Foundations"
+  title: string;
+  topic: string;
+  difficulty: Difficulty;
   durationMinutes: number;
   questions: PaperQuestion[];
 }
 
 type Band = "primary" | "lower" | "upper" | "senior";
 
+// Helper to keep the literal arrays compact.
+const mcq = (
+  id: string,
+  prompt: string,
+  options: string[],
+  correctIndex: number,
+  marks = 1,
+): PaperQuestion => ({ id, kind: "mcq", prompt, options, correctIndex, marks });
+
+const short = (
+  id: string,
+  prompt: string,
+  modelAnswer: string,
+  acceptable: string[] = [],
+  marks = 2,
+): PaperQuestion => ({ id, kind: "short", prompt, modelAnswer, acceptable, marks });
+
+// ============================================================
+// PRIMARY (Grades 1–5)
+// ============================================================
+const PRIMARY: Paper[] = [
+  {
+    id: "math-numbers-easy", subject: "Mathematics", emoji: "🧮",
+    title: "Numbers — Easy", topic: "Numbers", difficulty: "easy", durationMinutes: 15,
+    questions: [
+      mcq("q1", "5 + 3 = ?", ["6", "7", "8", "9"], 2),
+      mcq("q2", "10 − 4 = ?", ["4", "5", "6", "7"], 2),
+      mcq("q3", "Which is the smallest?", ["12", "21", "9", "15"], 2),
+      mcq("q4", "Even number?", ["3", "5", "8", "11"], 2),
+      mcq("q5", "Half of 10?", ["3", "4", "5", "6"], 2),
+      short("q6", "Write 27 in words.", "twenty-seven", ["twenty seven"]),
+      short("q7", "What is 14 + 14?", "28"),
+    ],
+  },
+  {
+    id: "math-numbers-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Numbers — Medium", topic: "Numbers", difficulty: "medium", durationMinutes: 20,
+    questions: [
+      mcq("q1", "45 + 27 = ?", ["62", "70", "72", "82"], 2),
+      mcq("q2", "100 − 36 = ?", ["54", "62", "64", "74"], 2),
+      mcq("q3", "9 × 7 = ?", ["56", "63", "64", "72"], 1),
+      mcq("q4", "72 ÷ 8 = ?", ["7", "8", "9", "10"], 2),
+      short("q5", "Half of 86 is?", "43"),
+      short("q6", "Round 87 to the nearest 10.", "90"),
+      short("q7", "Sum of 25, 30 and 45?", "100"),
+    ],
+  },
+  {
+    id: "math-shapes-easy", subject: "Mathematics", emoji: "🧮",
+    title: "Shapes — Easy", topic: "Geometry", difficulty: "easy", durationMinutes: 15,
+    questions: [
+      mcq("q1", "Sides of a triangle?", ["2", "3", "4", "5"], 1),
+      mcq("q2", "Sides of a hexagon?", ["5", "6", "7", "8"], 1),
+      mcq("q3", "A square has __ equal sides.", ["2", "3", "4", "5"], 2),
+      short("q4", "Name a 3D shape with no flat faces.", "sphere", ["a sphere"]),
+      short("q5", "How many corners does a cube have?", "8"),
+    ],
+  },
+  {
+    id: "eng-grammar-easy", subject: "English", emoji: "📖",
+    title: "Grammar — Easy", topic: "Grammar", difficulty: "easy", durationMinutes: 15,
+    questions: [
+      mcq("q1", "Plural of 'child'?", ["childs", "children", "childes", "child"], 1),
+      mcq("q2", "Plural of 'mouse'?", ["mouses", "mice", "mouse", "mises"], 1),
+      mcq("q3", "Choose the noun:", ["run", "happy", "table", "quickly"], 2),
+      mcq("q4", "Choose the verb:", ["blue", "sing", "tall", "soft"], 1),
+      short("q5", "Opposite of 'big'.", "small", ["little", "tiny"]),
+      short("q6", "Opposite of 'happy'.", "sad", ["unhappy"]),
+    ],
+  },
+  {
+    id: "sci-living-easy", subject: "Science", emoji: "🔬",
+    title: "Living Things — Easy", topic: "Living Things", difficulty: "easy", durationMinutes: 15,
+    questions: [
+      mcq("q1", "Plants need this to make food.", ["Milk", "Sunlight", "Sugar", "Salt"], 1),
+      mcq("q2", "Sense organ for seeing?", ["Ears", "Nose", "Eyes", "Skin"], 2),
+      short("q3", "How many legs does a spider have?", "8"),
+      short("q4", "Which gas do we breathe in?", "oxygen"),
+    ],
+  },
+  {
+    id: "ss-community-easy", subject: "Social Studies", emoji: "🌍",
+    title: "My Community — Easy", topic: "Community", difficulty: "easy", durationMinutes: 10,
+    questions: [
+      mcq("q1", "Which is a means of water transport?", ["Bus", "Boat", "Bicycle", "Train"], 1),
+      mcq("q2", "Where do we learn?", ["Hospital", "School", "Market", "Park"], 1),
+      short("q3", "Name one continent.", "Africa", ["asia", "europe", "north america", "south america", "antarctica", "australia"]),
+    ],
+  },
+];
+
+// ============================================================
+// LOWER (Grades 6–8)
+// ============================================================
+const LOWER: Paper[] = [
+  {
+    id: "math-algebra-easy", subject: "Mathematics", emoji: "🧮",
+    title: "Algebra — Easy", topic: "Algebra", difficulty: "easy", durationMinutes: 20,
+    questions: [
+      mcq("q1", "Solve: x + 5 = 12", ["5", "6", "7", "8"], 2),
+      mcq("q2", "Solve: 2x = 14", ["5", "6", "7", "8"], 2),
+      mcq("q3", "Simplify: 3a + 2a", ["5", "5a", "6a", "a²"], 1),
+      short("q4", "Solve: x − 4 = 9", "13"),
+      short("q5", "Simplify: 4y − y", "3y"),
+    ],
+  },
+  {
+    id: "math-algebra-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Algebra — Medium", topic: "Algebra", difficulty: "medium", durationMinutes: 30,
+    questions: [
+      mcq("q1", "Solve: 2x + 3 = 11", ["3", "4", "5", "6"], 1),
+      mcq("q2", "Expand: 3(x + 2)", ["3x+2", "3x+6", "x+6", "3x+5"], 1),
+      mcq("q3", "25% of 80?", ["15", "20", "25", "30"], 1),
+      short("q4", "Solve: 5(x − 1) = 20", "5"),
+      short("q5", "If y = 2x + 1 and x = 4, find y.", "9"),
+      short("q6", "Factorise: 6a + 9", "3(2a + 3)", ["3(2a+3)"]),
+    ],
+  },
+  {
+    id: "math-geometry-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Geometry & Stats — Medium", topic: "Geometry", difficulty: "medium", durationMinutes: 25,
+    questions: [
+      mcq("q1", "Sum of interior angles of a triangle?", ["90°", "180°", "270°", "360°"], 1),
+      mcq("q2", "Mean of 3, 5, 7, 9, 11?", ["6", "7", "8", "9"], 1),
+      mcq("q3", "Area of a 6×4 rectangle?", ["10", "20", "24", "30"], 2),
+      short("q4", "Mode of: 2, 4, 4, 5, 6, 6, 6, 8.", "6"),
+      short("q5", "Perimeter of a square with side 9 cm.", "36 cm", ["36"]),
+    ],
+  },
+  {
+    id: "sci-general-easy", subject: "Science", emoji: "🔬",
+    title: "General Science — Easy", topic: "General", difficulty: "easy", durationMinutes: 20,
+    questions: [
+      mcq("q1", "Plants take in which gas for photosynthesis?", ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], 2),
+      mcq("q2", "Boiling point of pure water at sea level?", ["50°C", "75°C", "100°C", "150°C"], 2),
+      mcq("q3", "Unit of force?", ["Joule", "Newton", "Watt", "Pascal"], 1),
+      short("q4", "Name the three states of matter.", "solid, liquid, gas", ["solid liquid gas"]),
+      short("q5", "Which organ pumps blood?", "heart", ["the heart"]),
+    ],
+  },
+  {
+    id: "eng-grammar-medium", subject: "English", emoji: "📖",
+    title: "Grammar — Medium", topic: "Grammar", difficulty: "medium", durationMinutes: 20,
+    questions: [
+      mcq("q1", "Identify the adjective: 'The blue car raced past.'", ["car", "blue", "raced", "past"], 1),
+      mcq("q2", "Past tense of 'go'?", ["goed", "gone", "went", "going"], 2),
+      short("q3", "Define a 'simile' with one example.", "a comparison using like or as, e.g. as brave as a lion", ["like or as"]),
+      short("q4", "Plural of 'analysis'.", "analyses"),
+    ],
+  },
+];
+
+// ============================================================
+// UPPER (Grades 9–10)
+// ============================================================
+const UPPER: Paper[] = [
+  {
+    id: "math-algebra-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Algebra — Medium", topic: "Algebra", difficulty: "medium", durationMinutes: 30,
+    questions: [
+      mcq("q1", "Factorise: x² − 16", ["(x−4)²", "(x−4)(x+4)", "(x−2)(x+8)", "x(x−16)"], 1),
+      mcq("q2", "Solve: x² = 49", ["7", "±7", "±49", "14"], 1),
+      mcq("q3", "Gradient through (2,3) and (5,12)?", ["2", "3", "4", "5"], 1),
+      short("q4", "Solve: x + y = 7 and x − y = 1.", "x = 4, y = 3", ["x=4, y=3", "x=4 y=3"]),
+      short("q5", "Expand: (x + 3)(x − 5).", "x² − 2x − 15", ["x^2-2x-15"]),
+    ],
+  },
+  {
+    id: "math-algebra-hard", subject: "Mathematics", emoji: "🧮",
+    title: "Algebra — Hard", topic: "Algebra", difficulty: "hard", durationMinutes: 40,
+    questions: [
+      mcq("q1", "Roots of x² − 5x + 6 = 0?", ["1, 6", "2, 3", "−2, −3", "1, −6"], 1),
+      mcq("q2", "If 3ˣ = 81, x = ?", ["2", "3", "4", "5"], 2),
+      short("q3", "Solve x² − 6x + 9 = 0.", "x = 3", ["3"]),
+      short("q4", "Make r the subject of A = πr².", "r = √(A/π)", ["sqrt(A/pi)"]),
+    ],
+  },
+  {
+    id: "math-trig-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Trigonometry — Medium", topic: "Trigonometry", difficulty: "medium", durationMinutes: 30,
+    questions: [
+      mcq("q1", "sin 30° = ?", ["0", "0.5", "√2/2", "1"], 1),
+      mcq("q2", "Hypotenuse for sides 3 and 4?", ["5", "6", "7", "12"], 0),
+      short("q3", "Circumference of a circle with r = 7 cm. (π ≈ 3.14)", "43.96 cm", ["43.96"]),
+      short("q4", "tan 45° = ?", "1"),
+    ],
+  },
+  {
+    id: "bio-cells-medium", subject: "Biology", emoji: "🌱",
+    title: "Cells & Systems — Medium", topic: "Cells", difficulty: "medium", durationMinutes: 30,
+    questions: [
+      mcq("q1", "Which organelle makes proteins?", ["Nucleus", "Ribosome", "Mitochondrion", "Vacuole"], 1),
+      mcq("q2", "Largest artery in the body?", ["Vena cava", "Aorta", "Pulmonary", "Carotid"], 1),
+      mcq("q3", "Powerhouse of the cell?", ["Nucleus", "Mitochondria", "Ribosome", "Golgi"], 1),
+      short("q4", "Function of red blood cells?", "transport oxygen", ["carry oxygen"]),
+      short("q5", "Define osmosis.", "movement of water across a partially permeable membrane from low to high solute concentration", ["water across membrane"]),
+    ],
+  },
+  {
+    id: "chem-bonding-medium", subject: "Chemistry", emoji: "⚗️",
+    title: "Atoms & Bonding — Medium", topic: "Bonding", difficulty: "medium", durationMinutes: 30,
+    questions: [
+      mcq("q1", "Charge of an electron?", ["+1", "0", "−1", "+2"], 2),
+      mcq("q2", "NaCl is held together by:", ["Covalent", "Ionic", "Metallic", "Hydrogen"], 1),
+      short("q3", "Balance: Mg + O₂ → MgO", "2Mg + O₂ → 2MgO", ["2mg + o2 -> 2mgo"]),
+      short("q4", "Symbol for sodium?", "Na"),
+    ],
+  },
+  {
+    id: "phy-forces-medium", subject: "Physics", emoji: "⚙️",
+    title: "Forces & Motion — Medium", topic: "Mechanics", difficulty: "medium", durationMinutes: 30,
+    questions: [
+      mcq("q1", "Unit of power?", ["Joule", "Newton", "Watt", "Pascal"], 2),
+      mcq("q2", "Force on 5 kg with a = 2 m/s²?", ["2.5 N", "7 N", "10 N", "25 N"], 2),
+      mcq("q3", "Acceleration due to gravity (Earth)?", ["1.6", "9.8", "12", "20"], 1),
+      short("q4", "State Newton's Second Law.", "force equals mass times acceleration", ["f=ma", "f = ma"]),
+      short("q5", "Unit of resistance?", "ohm", ["ohms", "Ω"]),
+    ],
+  },
+];
+
+// ============================================================
+// SENIOR (Grades 11–12)
+// ============================================================
+const SENIOR: Paper[] = [
+  {
+    id: "math-calc-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Calculus — Medium", topic: "Calculus", difficulty: "medium", durationMinutes: 45,
+    questions: [
+      mcq("q1", "d/dx (x³) = ?", ["x²", "3x²", "3x", "x⁴/4"], 1),
+      mcq("q2", "∫ 2x dx = ?", ["x²", "x² + C", "2x² + C", "x"], 1),
+      short("q3", "Differentiate y = (2x + 1)³.", "6(2x + 1)²", ["6(2x+1)^2"]),
+      short("q4", "∫₀² (3x² + 1) dx = ?", "10"),
+    ],
+  },
+  {
+    id: "math-calc-hard", subject: "Mathematics", emoji: "🧮",
+    title: "Calculus — Hard", topic: "Calculus", difficulty: "hard", durationMinutes: 60,
+    questions: [
+      mcq("q1", "d/dx (sin x) = ?", ["cos x", "−cos x", "−sin x", "tan x"], 0),
+      mcq("q2", "∫ eˣ dx = ?", ["eˣ", "eˣ + C", "x·eˣ", "ln x"], 1),
+      short("q3", "Stationary point of y = x² − 6x + 5.", "(3, −4)", ["3,-4", "x=3"]),
+      short("q4", "∫₁² (1/x) dx = ?", "ln 2", ["ln(2)"]),
+    ],
+  },
+  {
+    id: "math-algtrig-medium", subject: "Mathematics", emoji: "🧮",
+    title: "Algebra & Trig — Medium", topic: "Algebra", difficulty: "medium", durationMinutes: 45,
+    questions: [
+      mcq("q1", "log₁₀(1000) = ?", ["1", "2", "3", "10"], 2),
+      mcq("q2", "cos(0°) = ?", ["0", "0.5", "1", "−1"], 2),
+      short("q3", "Solve 2ˣ = 32.", "5"),
+      short("q4", "ln(e³) = ?", "3"),
+    ],
+  },
+  {
+    id: "phy-mechanics-medium", subject: "Physics", emoji: "⚙️",
+    title: "Mechanics & Energy — Medium", topic: "Mechanics", difficulty: "medium", durationMinutes: 45,
+    questions: [
+      mcq("q1", "KE of a 2 kg object at 4 m/s?", ["4 J", "8 J", "16 J", "32 J"], 2),
+      mcq("q2", "g on Earth ≈ ?", ["1.6", "9.8", "12", "20"], 1),
+      short("q3", "Define momentum and its formula.", "mass × velocity, p = mv", ["p=mv"]),
+      short("q4", "Power for 600 J done in 30 s?", "20 W", ["20"]),
+    ],
+  },
+  {
+    id: "chem-react-medium", subject: "Chemistry", emoji: "⚗️",
+    title: "Reactions & Bonding — Medium", topic: "Reactions", difficulty: "medium", durationMinutes: 45,
+    questions: [
+      mcq("q1", "pH of a neutral solution?", ["0", "7", "10", "14"], 1),
+      mcq("q2", "Which is an alkali?", ["HCl", "NaOH", "CO₂", "CH₄"], 1),
+      short("q3", "Define an exothermic reaction.", "releases heat to the surroundings", ["releases heat"]),
+      short("q4", "Conjugate base of HCl?", "Cl⁻", ["cl-"]),
+    ],
+  },
+  {
+    id: "bio-genetics-medium", subject: "Biology", emoji: "🌱",
+    title: "Genetics & Cells — Medium", topic: "Genetics", difficulty: "medium", durationMinutes: 45,
+    questions: [
+      mcq("q1", "DNA bases pair as:", ["A-T, C-G", "A-G, C-T", "A-C, T-G", "A-A, T-T"], 0),
+      mcq("q2", "Mitosis produces:", ["2 haploid", "2 identical diploid", "4 haploid gametes", "4 diploid"], 1),
+      short("q3", "Role of mRNA?", "carries genetic code from DNA to ribosomes for translation", ["dna to ribosome"]),
+      short("q4", "Define an allele.", "an alternative form of a gene", ["form of a gene"]),
+    ],
+  },
+];
+
 const PAPERS_BY_BAND: Record<Band, Paper[]> = {
-  primary: [
-    {
-      id: "math-p1",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 1 — Number & Operations",
-      durationMinutes: 20,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "What is 14 + 9?", options: ["21", "22", "23", "24"], correctIndex: 2, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Which is even?", options: ["7", "11", "12", "15"], correctIndex: 2, marks: 1 },
-        { id: "q3", kind: "mcq", prompt: "30 ÷ 5 = ?", options: ["5", "6", "7", "8"], correctIndex: 1, marks: 1 },
-        { id: "q4", kind: "short", prompt: "Write 234 in words.", modelAnswer: "Two hundred and thirty-four", marks: 2 },
-        { id: "q5", kind: "short", prompt: "A bag has 12 sweets. You give 5 away. How many remain?", modelAnswer: "7 sweets", marks: 2 },
-      ],
-    },
-    {
-      id: "eng-p1",
-      subject: "English",
-      emoji: "📖",
-      title: "Paper 1 — Grammar Basics",
-      durationMinutes: 15,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Plural of 'child'?", options: ["childs", "children", "childes", "childer"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Choose the noun:", options: ["run", "happy", "table", "quickly"], correctIndex: 2, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Write a sentence using the word 'because'.", modelAnswer: "Any correct sentence, e.g. 'I was tired because I ran a lot.'", marks: 2 },
-      ],
-    },
-  ],
-  lower: [
-    {
-      id: "math-p1",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 1 — Algebra & Arithmetic",
-      durationMinutes: 30,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Solve: 2x + 3 = 11", options: ["x = 3", "x = 4", "x = 5", "x = 6"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Simplify: 3(x + 2)", options: ["3x + 2", "3x + 6", "x + 6", "3x + 5"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "mcq", prompt: "What is 25% of 80?", options: ["15", "20", "25", "30"], correctIndex: 1, marks: 1 },
-        { id: "q4", kind: "short", prompt: "Find the area of a triangle with base 10 cm and height 6 cm. Show working.", modelAnswer: "Area = ½ × 10 × 6 = 30 cm²", marks: 3 },
-        { id: "q5", kind: "short", prompt: "A car travels 120 km in 2 hours. Find its average speed.", modelAnswer: "Speed = 120 ÷ 2 = 60 km/h", marks: 3 },
-      ],
-    },
-    {
-      id: "math-p2",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 2 — Geometry & Statistics",
-      durationMinutes: 30,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Sum of interior angles of a triangle?", options: ["90°", "180°", "270°", "360°"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Mean of 3, 5, 7, 9, 11?", options: ["6", "7", "8", "9"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "List the modes of: 2, 4, 4, 5, 6, 6, 6, 8.", modelAnswer: "Mode = 6 (it appears most often).", marks: 2 },
-      ],
-    },
-    {
-      id: "sci-p1",
-      subject: "Science",
-      emoji: "🔬",
-      title: "Paper 1 — General Science",
-      durationMinutes: 30,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Which gas do plants take in for photosynthesis?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], correctIndex: 2, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Boiling point of pure water?", options: ["50°C", "75°C", "100°C", "150°C"], correctIndex: 2, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Explain photosynthesis in one sentence.", modelAnswer: "Plants use sunlight, water, and CO₂ to make glucose and release oxygen.", marks: 3 },
-      ],
-    },
-    {
-      id: "eng-p1",
-      subject: "English",
-      emoji: "📖",
-      title: "Paper 1 — Comprehension & Grammar",
-      durationMinutes: 30,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Identify the adjective: 'The blue car raced past.'", options: ["car", "blue", "raced", "past"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "short", prompt: "Define 'simile' and give an example.", modelAnswer: "A comparison using 'like' or 'as'. E.g. 'as brave as a lion'.", marks: 3 },
-      ],
-    },
-  ],
-  upper: [
-    {
-      id: "math-p1",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 1 — Algebra & Functions",
-      durationMinutes: 45,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Factorise: x² − 16", options: ["(x−4)²", "(x−4)(x+4)", "(x−2)(x+8)", "x(x−16)"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Solve: x² = 49", options: ["x = 7", "x = ±7", "x = ±49", "x = 14"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "mcq", prompt: "Gradient through (2,3) and (5,12)?", options: ["2", "3", "4", "5"], correctIndex: 1, marks: 1 },
-        { id: "q4", kind: "short", prompt: "Solve the simultaneous equations: x + y = 7, x − y = 1.", modelAnswer: "Adding: 2x = 8 → x = 4. Then y = 3.", marks: 4 },
-        { id: "q5", kind: "short", prompt: "Expand and simplify: (x + 3)(x − 5).", modelAnswer: "x² − 5x + 3x − 15 = x² − 2x − 15", marks: 3 },
-      ],
-    },
-    {
-      id: "math-p2",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 2 — Geometry & Trigonometry",
-      durationMinutes: 45,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "sin 30° = ?", options: ["0", "0.5", "√2/2", "1"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Pythagoras: hypotenuse for sides 3 and 4?", options: ["5", "6", "7", "12"], correctIndex: 0, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Calculate the circumference of a circle with radius 7 cm. Use π ≈ 3.14.", modelAnswer: "C = 2πr = 2 × 3.14 × 7 ≈ 43.96 cm", marks: 3 },
-      ],
-    },
-    {
-      id: "bio-p1",
-      subject: "Biology",
-      emoji: "🌱",
-      title: "Paper 1 — Cells & Systems",
-      durationMinutes: 45,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Which organelle makes proteins?", options: ["Nucleus", "Ribosome", "Mitochondrion", "Vacuole"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Largest artery in the body?", options: ["Vena cava", "Aorta", "Pulmonary", "Carotid"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Describe the function of the small intestine.", modelAnswer: "Absorbs digested nutrients into the bloodstream via villi.", marks: 3 },
-      ],
-    },
-    {
-      id: "chem-p1",
-      subject: "Chemistry",
-      emoji: "⚗️",
-      title: "Paper 1 — Atoms & Bonding",
-      durationMinutes: 45,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Charge of an electron?", options: ["+1", "0", "−1", "+2"], correctIndex: 2, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "NaCl is held together by:", options: ["Covalent bond", "Ionic bond", "Metallic bond", "Hydrogen bond"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Balance: Mg + O₂ → MgO", modelAnswer: "2Mg + O₂ → 2MgO", marks: 2 },
-      ],
-    },
-    {
-      id: "phy-p1",
-      subject: "Physics",
-      emoji: "⚙️",
-      title: "Paper 1 — Forces & Motion",
-      durationMinutes: 45,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "Unit of power?", options: ["Joule", "Newton", "Watt", "Pascal"], correctIndex: 2, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "F = ma. Force on 5 kg with a = 2 m/s²?", options: ["2.5 N", "7 N", "10 N", "25 N"], correctIndex: 2, marks: 1 },
-        { id: "q3", kind: "short", prompt: "State Newton's Second Law in words.", modelAnswer: "The acceleration of an object is proportional to the resultant force and inversely proportional to its mass.", marks: 3 },
-      ],
-    },
-  ],
-  senior: [
-    {
-      id: "math-p1",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 1 — Calculus",
-      durationMinutes: 60,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "d/dx (x³) = ?", options: ["x²", "3x²", "3x", "x⁴/4"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "∫ 2x dx = ?", options: ["x²", "x² + C", "2x² + C", "x"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Differentiate y = (2x + 1)³ using the chain rule.", modelAnswer: "dy/dx = 3(2x + 1)² × 2 = 6(2x + 1)²", marks: 4 },
-        { id: "q4", kind: "short", prompt: "Evaluate ∫₀² (3x² + 1) dx.", modelAnswer: "[x³ + x]₀² = (8 + 2) − 0 = 10", marks: 4 },
-      ],
-    },
-    {
-      id: "math-p2",
-      subject: "Mathematics",
-      emoji: "🧮",
-      title: "Paper 2 — Algebra & Trigonometry",
-      durationMinutes: 60,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "log₁₀(1000) = ?", options: ["1", "2", "3", "10"], correctIndex: 2, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "cos(0°) = ?", options: ["0", "0.5", "1", "−1"], correctIndex: 2, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Solve for x: 2ˣ = 32", modelAnswer: "x = 5 (since 2⁵ = 32).", marks: 3 },
-      ],
-    },
-    {
-      id: "phy-p1",
-      subject: "Physics",
-      emoji: "⚙️",
-      title: "Paper 1 — Mechanics & Energy",
-      durationMinutes: 60,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "KE of a 2 kg object at 4 m/s?", options: ["4 J", "8 J", "16 J", "32 J"], correctIndex: 2, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Acceleration due to gravity (Earth)?", options: ["1.6 m/s²", "9.8 m/s²", "12 m/s²", "20 m/s²"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Define momentum and state its formula.", modelAnswer: "Momentum = mass × velocity (p = mv); a vector quantity.", marks: 3 },
-      ],
-    },
-    {
-      id: "chem-p1",
-      subject: "Chemistry",
-      emoji: "⚗️",
-      title: "Paper 1 — Reactions & Bonding",
-      durationMinutes: 60,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "pH of a neutral solution?", options: ["0", "7", "10", "14"], correctIndex: 1, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Which is an alkali?", options: ["HCl", "NaOH", "CO₂", "CH₄"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Define an exothermic reaction with one example.", modelAnswer: "Releases heat to surroundings (ΔH < 0). Example: combustion of methane.", marks: 3 },
-      ],
-    },
-    {
-      id: "bio-p1",
-      subject: "Biology",
-      emoji: "🌱",
-      title: "Paper 1 — Genetics & Cells",
-      durationMinutes: 60,
-      questions: [
-        { id: "q1", kind: "mcq", prompt: "DNA bases pair as:", options: ["A-T, C-G", "A-G, C-T", "A-C, T-G", "A-A, T-T"], correctIndex: 0, marks: 1 },
-        { id: "q2", kind: "mcq", prompt: "Mitosis produces:", options: ["2 haploid cells", "2 identical diploid cells", "4 haploid gametes", "4 diploid cells"], correctIndex: 1, marks: 1 },
-        { id: "q3", kind: "short", prompt: "Describe the role of mRNA in protein synthesis.", modelAnswer: "Carries the genetic code from DNA in the nucleus to ribosomes for translation.", marks: 3 },
-      ],
-    },
-  ],
+  primary: PRIMARY, lower: LOWER, upper: UPPER, senior: SENIOR,
 };
 
 const GRADE_BAND: Record<Grade, Band> = {
@@ -242,15 +329,32 @@ const GRADE_BAND: Record<Grade, Band> = {
   "Grade 11": "senior", "Grade 12": "senior",
 };
 
+export const CURRICULA: Curriculum[] = ["CBC", "IGCSE", "Cambridge", "British", "American", "IB"];
+export const GRADES: Grade[] = [
+  "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+  "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+];
+
 export function getPapers(curriculum: Curriculum, grade: Grade): Paper[] {
   const band = GRADE_BAND[grade] || "lower";
   return PAPERS_BY_BAND[band].map((p) => ({
     ...p,
     id: `${curriculum}-${grade}-${p.id}`,
-    title: `${p.title}`,
   }));
 }
 
 export function getPaper(curriculum: Curriculum, grade: Grade, paperId: string): Paper | undefined {
   return getPapers(curriculum, grade).find((p) => p.id === paperId);
+}
+
+// Loose grader for typed short answers (case + whitespace insensitive,
+// strips punctuation, also tries acceptable list).
+export function gradeShortAnswer(q: PaperQuestion, userAnswer: string): boolean {
+  if (q.kind !== "short") return false;
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9αβπΩμ°\-+./²³√]+/gi, " ").replace(/\s+/g, " ").trim();
+  const u = norm(userAnswer);
+  if (!u) return false;
+  const targets = [q.modelAnswer || "", ...(q.acceptable || [])].map(norm);
+  return targets.some((t) => t && (t === u || (t.length > 3 && u.includes(t)) || (u.length > 3 && t.includes(u))));
 }
