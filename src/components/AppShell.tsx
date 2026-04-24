@@ -1,10 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, LayoutGrid, BookOpen, Settings as Cog } from "lucide-react";
+import { Home, LayoutGrid, Sparkles, BookOpen, Settings as Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { to: "/tutor", label: "Tutor", icon: Sparkles },
   { to: "/workspace", label: "Workspace", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Cog },
 ] as const;
