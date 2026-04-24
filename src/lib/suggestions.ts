@@ -2,10 +2,11 @@ import type { Profile, Task, RevisionDone } from "./store";
 import { getQuestions } from "./revision";
 
 export function smartSuggestion(
-  profile: Profile,
+  profile: Profile | null,
   tasks: Task[],
   revisionDone: RevisionDone[],
 ): string {
+  if (!profile) return "Let's get started 🚀";
   const lastActive = profile?.lastActive ? new Date(profile.lastActive).getTime() : Date.now();
   const daysSince = (Date.now() - lastActive) / (1000 * 60 * 60 * 24);
 
