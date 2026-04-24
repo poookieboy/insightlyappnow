@@ -277,20 +277,44 @@ function Crumbs({ onBack, children }: { onBack: () => void; children: React.Reac
 }
 
 function QuestionCard({
-  q, done, open, onToggle, onDone,
+  q, done, onDone,
 }: { q: Question; done: boolean; open: boolean; onToggle: () => void; onDone: () => void }) {
   const [picked, setPicked] = useState<number | null>(null);
+  const [typed, setTyped] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [reveal, setReveal] = useState(false);
   const isMcq = q.options && q.options.length > 0;
 
+  const normalizeAns = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9αβπΩμ°\-+./²³√]+/gi, " ").replace(/\s+/g, " ").trim();
+  const correctTyped = useMemo(() => {
+    if (isMcq) return false;
+    const u = normalizeAns(typed);
+    if (!u) return false;
+    const t = normalizeAns(q.answer);
+    return t === u || (t.length > 3 && u.includes(t)) || (u.length > 3 && t.includes(u));
+  }, [typed, q.answer, isMcq]);
+
+  const handleCheck = () => {
+    setChecked(true);
+    if ((isMcq && picked === q.correctIndex) || (!isMcq && correctTyped)) {
+      if (!done) onDone();
+    }
+  };
+
+  const reset = () => { setChecked(false); setPicked(null); setTyped(""); setReveal(false); };
+
+  const isRight = isMcq ? picked === q.correctIndex : correctTyped;
+
   return (
-    <Card className={cn("p-4 animate-fade-in", done && "opacity-70")}>
+    <Card className={cn("p-4 animate-fade-in", done && "opacity-80")}>
       <p className="text-sm font-medium">{q.question}</p>
 
-      {isMcq && (
+      {isMcq ? (
         <div className="mt-3 space-y-2">
           {q.options!.map((opt, i) => {
             const isCorrect = i === q.correctIndex;
-            const showResult = picked !== null;
+            const showResult = checked;
             return (
               <button
                 key={i}
@@ -298,9 +322,10 @@ function QuestionCard({
                 onClick={() => setPicked(i)}
                 className={cn(
                   "w-full rounded-lg border px-3 py-2 text-left text-sm transition-all",
-                  !showResult && "hover:border-primary",
-                  showResult && isCorrect && "border-green-500 bg-green-500/10",
-                  showResult && !isCorrect && picked === i && "border-red-500 bg-red-500/10",
+                  !showResult && picked === i && "border-primary bg-primary/10",
+                  !showResult && picked !== i && "hover:border-primary",
+                  showResult && isCorrect && "border-primary bg-primary/15 font-medium",
+                  showResult && !isCorrect && picked === i && "border-destructive bg-destructive/10",
                 )}
               >
                 {opt}
@@ -308,29 +333,58 @@ function QuestionCard({
             );
           })}
         </div>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <Input
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="Type your answer…"
+            disabled={checked && isRight}
+          />
+          {checked && (
+            <div className={cn(
+              "flex items-start gap-2 rounded-lg p-2 text-xs",
+              isRight ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive",
+            )}>
+              {isRight
+                ? <><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> <span>Correct! Nice work.</span></>
+                : <><XCircle className="mt-0.5 h-4 w-4 shrink-0" /> <span>Not quite. {reveal ? <>Model: <strong>{q.answer}</strong></> : "Try again or reveal the answer."}</span></>}
+            </div>
+          )}
+        </div>
       )}
 
-      {open && !isMcq && (
-        <p className="mt-2 rounded-lg bg-muted p-2 text-sm">
-          <span className="font-semibold">Answer:</span> {q.answer}
-        </p>
-      )}
-
-      <div className="mt-3 flex gap-2">
-        {!isMcq && (
-          <Button size="sm" variant="outline" className="flex-1" onClick={onToggle}>
-            {open ? "Hide answer" : "Show answer"}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {!checked ? (
+          <Button
+            size="sm"
+            className="flex-1 bg-gradient-primary text-primary-foreground"
+            disabled={isMcq ? picked === null : !typed.trim()}
+            onClick={handleCheck}
+          >
+            Check answer
           </Button>
+        ) : isRight ? (
+          <Button size="sm" variant="outline" className="flex-1" onClick={reset}>
+            <RotateCcw className="mr-1 h-4 w-4" /> Try again
+          </Button>
+        ) : (
+          <>
+            <Button size="sm" variant="outline" className="flex-1" onClick={reset}>
+              Retry
+            </Button>
+            {!isMcq && !reveal && (
+              <Button size="sm" variant="ghost" className="flex-1" onClick={() => setReveal(true)}>
+                Reveal answer
+              </Button>
+            )}
+            {isMcq && (
+              <Button size="sm" variant="ghost" className="flex-1" onClick={() => onDone()} disabled={done}>
+                Mark done anyway
+              </Button>
+            )}
+          </>
         )}
-        <Button
-          size="sm"
-          className="flex-1 bg-gradient-primary text-primary-foreground"
-          disabled={done}
-          onClick={onDone}
-        >
-          <CheckCircle2 className="mr-1 h-4 w-4" />
-          {done ? "Done" : "Mark done"}
-        </Button>
       </div>
     </Card>
   );
