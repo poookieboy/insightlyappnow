@@ -1,7 +1,8 @@
-// Local storage-backed store for StudentSync.
-// Simple, beginner-friendly, no backend required.
+// Shared in-memory store backed by localStorage.
+// Single source of truth — all components subscribe to one state.
+// No per-listener JSON re-parsing, no event-bus ping-pong.
 
-import { useEffect, useState, useCallback } from "react";
+import { useSyncExternalStore, useCallback } from "react";
 
 export type Curriculum = "CBC" | "IGCSE" | "Cambridge" | "British" | "American" | "IB";
 export type Grade =
@@ -10,7 +11,7 @@ export type Grade =
 
 export interface Profile {
   name: string;
-  dob: string; // ISO date
+  dob: string;
   curriculum: Curriculum;
   grade: Grade;
   createdAt: string;
@@ -20,7 +21,7 @@ export interface Profile {
 export interface Task {
   id: string;
   title: string;
-  deadline: string; // ISO datetime
+  deadline: string;
   completed: boolean;
   completedAt?: string;
   onTime?: boolean;
@@ -29,7 +30,7 @@ export interface Task {
 export interface TimetableEntry {
   id: string;
   day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
-  time: string; // "HH:MM"
+  time: string;
   subject: string;
 }
 
@@ -48,10 +49,8 @@ export interface RevisionDone {
 }
 
 export interface BadgeState {
-  unlocked: string[]; // badge ids
+  unlocked: string[];
 }
-
-const KEY = "studentsync:v1";
 
 interface AppState {
   profile: Profile | null;
@@ -60,7 +59,10 @@ interface AppState {
   notes: Note[];
   revisionDone: RevisionDone[];
   badges: BadgeState;
+  hydrated: boolean;
 }
+
+const KEY = "studentsync:v1";
 
 const defaultState: AppState = {
   profile: null,
@@ -69,51 +71,87 @@ const defaultState: AppState = {
   notes: [],
   revisionDone: [],
   badges: { unlocked: [] },
+  hydrated: false,
 };
 
-function read(): AppState {
-  if (typeof window === "undefined") return defaultState;
+// Module-level singleton state
+let memoryState: AppState = defaultState;
+const listeners = new Set<() => void>();
+let initialized = false;
+
+function emit() {
+  listeners.forEach((l) => l());
+}
+
+function loadFromStorage(): AppState {
+  if (typeof window === "undefined") return { ...defaultState, hydrated: true };
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return defaultState;
-    return { ...defaultState, ...JSON.parse(raw) };
+    if (!raw) return { ...defaultState, hydrated: true };
+    return { ...defaultState, ...JSON.parse(raw), hydrated: true };
   } catch {
-    return defaultState;
+    return { ...defaultState, hydrated: true };
   }
 }
 
-function write(state: AppState) {
+function persist(state: AppState) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event("studentsync:update"));
+  // Strip hydrated flag from persisted payload
+  const { hydrated: _h, ...rest } = state;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(rest));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
+function ensureInit() {
+  if (initialized || typeof window === "undefined") return;
+  initialized = true;
+  memoryState = loadFromStorage();
+  // Cross-tab sync (only refresh on actual storage event from other tabs)
+  window.addEventListener("storage", (e) => {
+    if (e.key !== KEY) return;
+    memoryState = loadFromStorage();
+    emit();
+  });
+}
+
+function subscribe(listener: () => void) {
+  ensureInit();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot() {
+  ensureInit();
+  return memoryState;
+}
+
+function getServerSnapshot() {
+  return defaultState;
 }
 
 export function useStore() {
-  const [state, setState] = useState<AppState>(defaultState);
-
-  useEffect(() => {
-    setState(read());
-    const onUpdate = () => setState(read());
-    window.addEventListener("studentsync:update", onUpdate);
-    window.addEventListener("storage", onUpdate);
-    return () => {
-      window.removeEventListener("studentsync:update", onUpdate);
-      window.removeEventListener("storage", onUpdate);
-    };
-  }, []);
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const update = useCallback((updater: (s: AppState) => AppState) => {
-    const next = updater(read());
-    write(next);
-    setState(next);
+    const next = updater(memoryState);
+    if (next === memoryState) return;
+    memoryState = next;
+    persist(memoryState);
+    emit();
   }, []);
 
   return { state, update };
 }
 
 export function resetAll() {
-  localStorage.removeItem(KEY);
-  window.dispatchEvent(new Event("studentsync:update"));
+  if (typeof window !== "undefined") localStorage.removeItem(KEY);
+  memoryState = { ...defaultState, hydrated: true };
+  emit();
 }
 
 export function calcAge(dob: string): number {
