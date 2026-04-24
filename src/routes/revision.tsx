@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, RotateCcw, ChevronLeft, FileText, ChevronRight, Sparkles, Trophy } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
@@ -345,7 +345,7 @@ function SubjectTest({ subject, onExit }: { subject: SubjectPack; onExit: () => 
   const [submitted, setSubmitted] = useState(false);
 
   // Timer
-  useMemo(() => {
+  useEffect(() => {
     const t = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) { clearInterval(t); setSubmitted(true); return 0; }
@@ -353,7 +353,6 @@ function SubjectTest({ subject, onExit }: { subject: SubjectPack; onExit: () => 
       });
     }, 1000);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
