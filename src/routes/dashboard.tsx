@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpen, ListTodo, CalendarDays, StickyNote, Lock } from "lucide-react";
+import { BookOpen, ListTodo, CalendarDays, StickyNote, Lock, Sparkles, FileText } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -27,7 +27,9 @@ function Dashboard() {
     .sort((a, b) => a.time.localeCompare(b.time))[0];
 
   const cards = [
-    { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "Practice questions", Icon: BookOpen },
+    { to: "/tutor" as const, icon: "🤖", title: "AI Tutor", subtitle: "Ask anything", Icon: Sparkles },
+    { to: "/tests" as const, icon: "📄", title: "Test Papers", subtitle: "Mock exams", Icon: FileText },
+    { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By subject", Icon: BookOpen },
     { to: "/tasks" as const, icon: "📝", title: "Tasks", subtitle: `${pending} pending`, Icon: ListTodo },
     { to: "/timetable" as const, icon: "📅", title: "Timetable", subtitle: nextClass ? `Next: ${nextClass.subject}` : "No classes today", Icon: CalendarDays },
     { to: "/notes" as const, icon: "🗒", title: "Notes", subtitle: `${noteCount} saved`, Icon: StickyNote },
