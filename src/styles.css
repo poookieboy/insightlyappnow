@@ -155,3 +155,48 @@
     opacity: 1;
   }
 }
+
+/* Word-like document editor */
+.ds-doc {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #111;
+}
+.ds-doc:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+.ds-doc h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0.75em 0 0.4em;
+}
+.ds-doc h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.7em 0 0.35em;
+}
+.ds-doc h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+}
+.ds-doc p {
+  margin: 0 0 0.6em;
+}
+.ds-doc ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0 0 0.6em;
+}
+.ds-doc ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0 0 0.6em;
+}
+.ds-doc a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
