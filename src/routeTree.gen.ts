@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
+import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as TimetableRouteImport } from './routes/timetable'
+import { Route as TestsRouteImport } from './routes/tests'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
@@ -18,15 +20,26 @@ import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 
 const WorkspaceRoute = WorkspaceRouteImport.update({
   id: '/workspace',
   path: '/workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TutorRoute = TutorRouteImport.update({
+  id: '/tutor',
+  path: '/tutor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TimetableRoute = TimetableRouteImport.update({
   id: '/timetable',
   path: '/timetable',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestsRoute = TestsRouteImport.update({
+  id: '/tests',
+  path: '/tests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TasksRoute = TasksRouteImport.update({
@@ -64,6 +77,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TestsPaperIdRoute = TestsPaperIdRouteImport.update({
+  id: '/$paperId',
+  path: '/$paperId',
+  getParentRoute: () => TestsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,8 +91,11 @@ export interface FileRoutesByFullPath {
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
+  '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
+  '/tests/$paperId': typeof TestsPaperIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +105,11 @@ export interface FileRoutesByTo {
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
+  '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
+  '/tests/$paperId': typeof TestsPaperIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,8 +120,11 @@ export interface FileRoutesById {
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
+  '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
+  '/tests/$paperId': typeof TestsPaperIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,8 +136,11 @@ export interface FileRouteTypes {
     | '/revision'
     | '/settings'
     | '/tasks'
+    | '/tests'
     | '/timetable'
+    | '/tutor'
     | '/workspace'
+    | '/tests/$paperId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,8 +150,11 @@ export interface FileRouteTypes {
     | '/revision'
     | '/settings'
     | '/tasks'
+    | '/tests'
     | '/timetable'
+    | '/tutor'
     | '/workspace'
+    | '/tests/$paperId'
   id:
     | '__root__'
     | '/'
@@ -131,8 +164,11 @@ export interface FileRouteTypes {
     | '/revision'
     | '/settings'
     | '/tasks'
+    | '/tests'
     | '/timetable'
+    | '/tutor'
     | '/workspace'
+    | '/tests/$paperId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -143,7 +179,9 @@ export interface RootRouteChildren {
   RevisionRoute: typeof RevisionRoute
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
+  TestsRoute: typeof TestsRouteWithChildren
   TimetableRoute: typeof TimetableRoute
+  TutorRoute: typeof TutorRoute
   WorkspaceRoute: typeof WorkspaceRoute
 }
 
@@ -156,11 +194,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tutor': {
+      id: '/tutor'
+      path: '/tutor'
+      fullPath: '/tutor'
+      preLoaderRoute: typeof TutorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/timetable': {
       id: '/timetable'
       path: '/timetable'
       fullPath: '/timetable'
       preLoaderRoute: typeof TimetableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tests': {
+      id: '/tests'
+      path: '/tests'
+      fullPath: '/tests'
+      preLoaderRoute: typeof TestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tasks': {
@@ -212,8 +264,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tests/$paperId': {
+      id: '/tests/$paperId'
+      path: '/$paperId'
+      fullPath: '/tests/$paperId'
+      preLoaderRoute: typeof TestsPaperIdRouteImport
+      parentRoute: typeof TestsRoute
+    }
   }
 }
+
+interface TestsRouteChildren {
+  TestsPaperIdRoute: typeof TestsPaperIdRoute
+}
+
+const TestsRouteChildren: TestsRouteChildren = {
+  TestsPaperIdRoute: TestsPaperIdRoute,
+}
+
+const TestsRouteWithChildren = TestsRoute._addFileChildren(TestsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -223,9 +292,20 @@ const rootRouteChildren: RootRouteChildren = {
   RevisionRoute: RevisionRoute,
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,
+  TestsRoute: TestsRouteWithChildren,
   TimetableRoute: TimetableRoute,
+  TutorRoute: TutorRoute,
   WorkspaceRoute: WorkspaceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
