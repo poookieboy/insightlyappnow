@@ -277,3 +277,39 @@ function MessageBubble({ msg }: { msg: Msg }) {
     </div>
   );
 }
+
+function Mermaid({ chart }: { chart: string }) {
+  const id = useId().replace(/:/g, "");
+  const ref = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { svg } = await mermaid.render(`m-${id}`, chart);
+        if (!cancelled && ref.current) {
+          ref.current.innerHTML = svg;
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Diagram error");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [chart, id]);
+
+  if (error) {
+    return (
+      <pre className="overflow-x-auto rounded-lg bg-muted p-2 text-xs">
+        {chart}
+      </pre>
+    );
+  }
+  return (
+    <div
+      ref={ref}
+      className="my-2 overflow-x-auto rounded-lg border bg-card p-2 [&_svg]:mx-auto [&_svg]:max-w-full"
+    />
+  );
+}
