@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, RotateCcw, ChevronLeft, FileText, ChevronRight, Sparkles, Trophy } from "lucide-react";
+import { CheckCircle2, RotateCcw, ChevronLeft, FileText, ChevronRight, Sparkles, Trophy, XCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
