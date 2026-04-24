@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Send, Sparkles, Trash2, User, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import mermaid from "mermaid";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { Card } from "@/components/ui/card";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" });
 
 export const Route = createFileRoute("/tutor")({
   component: () => (
@@ -248,7 +251,19 @@ function MessageBubble({ msg }: { msg: Msg }) {
           <p className="whitespace-pre-wrap">{msg.content}</p>
         ) : (
           <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ className, children, ...props }) {
+                  const lang = /language-(\w+)/.exec(className || "")?.[1];
+                  const text = String(children).replace(/\n$/, "");
+                  if (lang === "mermaid") {
+                    return <Mermaid chart={text} />;
+                  }
+                  return <code className={className} {...props}>{children}</code>;
+                },
+              }}
+            >
               {msg.content || "…"}
             </ReactMarkdown>
           </div>
