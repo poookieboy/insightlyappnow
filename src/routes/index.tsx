@@ -31,8 +31,8 @@ function Onboarding() {
   const [grade, setGrade] = useState<Grade | "">("");
 
   useEffect(() => {
-    if (state.profile) navigate({ to: "/home" });
-  }, [state.profile, navigate]);
+    if (state.hydrated && state.profile) navigate({ to: "/home" });
+  }, [state.hydrated, state.profile, navigate]);
 
   const age = dob ? calcAge(dob.toISOString()) : null;
 
