@@ -6,7 +6,7 @@ export function smartSuggestion(
   tasks: Task[],
   revisionDone: RevisionDone[],
 ): string {
-  const lastActive = new Date(profile.lastActive).getTime();
+  const lastActive = profile?.lastActive ? new Date(profile.lastActive).getTime() : Date.now();
   const daysSince = (Date.now() - lastActive) / (1000 * 60 * 60 * 24);
 
   if (daysSince > 2) return "You haven't studied in 2 days 👀 — let's get back on it!";
