@@ -171,13 +171,13 @@ function Tutor() {
 
   return (
     <AppShell>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Sparkles className="h-6 w-6 text-primary" /> AI Tutor
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Ask anything — I'll guide you step by step.
+          <p className="text-xs text-muted-foreground">
+            {MODES.find((m) => m.id === mode)?.hint}
           </p>
         </div>
         {messages.length > 0 && (
@@ -186,6 +186,25 @@ function Tutor() {
           </Button>
         )}
       </div>
+
+      <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="mb-3">
+        <TabsList className="grid w-full grid-cols-5 h-9">
+          {MODES.map((m) => (
+            <TabsTrigger key={m.id} value={m.id} className="text-[11px] px-1">
+              {m.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {lastFailed && (
+        <Card className="mb-3 flex items-center gap-2 border-destructive/30 bg-destructive/5 p-3">
+          <p className="flex-1 text-xs">Last message failed: <span className="font-medium">{lastFailed}</span></p>
+          <Button size="sm" variant="outline" onClick={() => send(lastFailed)}>
+            <RefreshCw className="mr-1 h-3 w-3" /> Retry
+          </Button>
+        </Card>
+      )}
 
       <div className="space-y-3 pb-4">
         {messages.length === 0 && (
