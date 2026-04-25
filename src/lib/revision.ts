@@ -160,6 +160,35 @@ const PRIMARY: SubjectPack[] = [
       },
     ],
   },
+  {
+    subject: "CRE", emoji: "✝️",
+    topics: [{ name: "Bible Stories", subtopics: [{ name: "Creation", questions: [
+      { id: "cre1", question: "How many days did God take to create the world?", answer: "6" },
+      { id: "cre2", question: "Who were the first humans?", answer: "Adam and Eve" },
+      { id: "cre3", question: "On which day did God rest?", answer: "The seventh day" },
+    ]}]}],
+  },
+  {
+    subject: "Home Science", emoji: "🏠",
+    topics: [{ name: "Healthy Living", subtopics: [{ name: "Food & Nutrition", questions: [
+      { id: "hs1", question: "Name a body-building food.", answer: "Meat, beans, eggs, fish" },
+      { id: "hs2", question: "Why do we wash hands before eating?", answer: "To remove germs and stay healthy" },
+    ]}]}],
+  },
+  {
+    subject: "Agriculture", emoji: "🌾",
+    topics: [{ name: "Crops", subtopics: [{ name: "Growing Plants", questions: [
+      { id: "ag1", question: "What do seeds need to germinate?", answer: "Water, warmth, oxygen" },
+      { id: "ag2", question: "Name a cereal crop.", answer: "Maize, wheat, rice, sorghum" },
+    ]}]}],
+  },
+  {
+    subject: "Pre-Technical Studies", emoji: "🛠️",
+    topics: [{ name: "Tools & Materials", subtopics: [{ name: "Basic Tools", questions: [
+      { id: "pt1", question: "What tool is used to drive nails?", answer: "Hammer" },
+      { id: "pt2", question: "Which tool measures length?", answer: "Ruler or tape measure" },
+    ]}]}],
+  },
 ];
 
 const LOWER: SubjectPack[] = [
