@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ChangeEvent } from "react";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, FileText } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
