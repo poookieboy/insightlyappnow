@@ -374,6 +374,35 @@ const LOWER: SubjectPack[] = [
       },
     ],
   },
+  {
+    subject: "CRE", emoji: "✝️",
+    topics: [{ name: "New Testament", subtopics: [{ name: "Life of Jesus", questions: [
+      { id: "cre1", question: "Where was Jesus born?", answer: "Bethlehem" },
+      { id: "cre2", question: "Name two disciples of Jesus.", answer: "Peter, John, James, Andrew (any two)" },
+      { id: "cre3", question: "What is the greatest commandment?", answer: "Love God and love your neighbour as yourself" },
+    ]}]}],
+  },
+  {
+    subject: "Home Science", emoji: "🏠",
+    topics: [{ name: "Nutrition & Hygiene", subtopics: [{ name: "Balanced Diet", questions: [
+      { id: "hs1", question: "Name the three main food groups.", answer: "Carbohydrates, proteins, vitamins/minerals (and fats)" },
+      { id: "hs2", question: "Why is fibre important?", answer: "Aids digestion and prevents constipation" },
+    ]}]}],
+  },
+  {
+    subject: "Agriculture", emoji: "🌾",
+    topics: [{ name: "Crop Production", subtopics: [{ name: "Soil & Crops", questions: [
+      { id: "ag1", question: "Name three types of soil.", answer: "Sandy, clay, loam" },
+      { id: "ag2", question: "Which soil is best for farming?", answer: "Loam" },
+    ]}]}],
+  },
+  {
+    subject: "Pre-Technical Studies", emoji: "🛠️",
+    topics: [{ name: "Materials & Production", subtopics: [{ name: "Workshop Safety", questions: [
+      { id: "pt1", question: "Name one workshop safety rule.", answer: "Wear protective equipment / keep workspace tidy" },
+      { id: "pt2", question: "What is a renewable energy source?", answer: "Solar, wind, hydro (any)" },
+    ]}]}],
+  },
 ];
 
 const UPPER: SubjectPack[] = [
