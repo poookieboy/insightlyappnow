@@ -21,6 +21,7 @@ import { Route as HomeRouteImport } from './routes/home'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
+import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 
 const WorkspaceRoute = WorkspaceRouteImport.update({
   id: '/workspace',
@@ -82,12 +83,17 @@ const TestsPaperIdRoute = TestsPaperIdRouteImport.update({
   path: '/$paperId',
   getParentRoute: () => TestsRoute,
 } as any)
+const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
+  id: '/$noteId',
+  path: '/$noteId',
+  getParentRoute: () => NotesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/home': typeof HomeRoute
-  '/notes': typeof NotesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -95,13 +101,14 @@ export interface FileRoutesByFullPath {
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
+  '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/home': typeof HomeRoute
-  '/notes': typeof NotesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
+  '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRoute
 }
 export interface FileRoutesById {
@@ -116,7 +124,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/home': typeof HomeRoute
-  '/notes': typeof NotesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
+  '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/tutor'
     | '/workspace'
+    | '/notes/$noteId'
     | '/tests/$paperId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/tutor'
     | '/workspace'
+    | '/notes/$noteId'
     | '/tests/$paperId'
   id:
     | '__root__'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/tutor'
     | '/workspace'
+    | '/notes/$noteId'
     | '/tests/$paperId'
   fileRoutesById: FileRoutesById
 }
@@ -175,7 +187,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   HomeRoute: typeof HomeRoute
-  NotesRoute: typeof NotesRoute
+  NotesRoute: typeof NotesRouteWithChildren
   RevisionRoute: typeof RevisionRoute
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
@@ -271,8 +283,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TestsPaperIdRouteImport
       parentRoute: typeof TestsRoute
     }
+    '/notes/$noteId': {
+      id: '/notes/$noteId'
+      path: '/$noteId'
+      fullPath: '/notes/$noteId'
+      preLoaderRoute: typeof NotesNoteIdRouteImport
+      parentRoute: typeof NotesRoute
+    }
   }
 }
+
+interface NotesRouteChildren {
+  NotesNoteIdRoute: typeof NotesNoteIdRoute
+}
+
+const NotesRouteChildren: NotesRouteChildren = {
+  NotesNoteIdRoute: NotesNoteIdRoute,
+}
+
+const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
 
 interface TestsRouteChildren {
   TestsPaperIdRoute: typeof TestsPaperIdRoute
@@ -288,7 +317,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   HomeRoute: HomeRoute,
-  NotesRoute: NotesRoute,
+  NotesRoute: NotesRouteWithChildren,
   RevisionRoute: RevisionRoute,
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,

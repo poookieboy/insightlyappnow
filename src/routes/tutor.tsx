@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { Send, Sparkles, Trash2, User, Bot } from "lucide-react";
+import { Send, Sparkles, Trash2, User, Bot, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
@@ -8,11 +8,21 @@ import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" });
+
+type Mode = "ask" | "explain" | "quiz" | "diagram" | "project";
+const MODES: { id: Mode; label: string; hint: string }[] = [
+  { id: "ask", label: "Ask", hint: "Ask anything — like ChatGPT." },
+  { id: "explain", label: "Step-by-step", hint: "Get a clear, numbered walkthrough." },
+  { id: "quiz", label: "Quiz me", hint: "I'll quiz you on a topic." },
+  { id: "diagram", label: "Diagram", hint: "Get a chart or diagram with explanation." },
+  { id: "project", label: "Project", hint: "Help with a school project." },
+];
 
 export const Route = createFileRoute("/tutor")({
   component: () => (
@@ -43,6 +53,8 @@ function Tutor() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<Mode>("ask");
+  const [lastFailed, setLastFailed] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,6 +65,7 @@ function Tutor() {
     const text = (textArg ?? input).trim();
     if (!text || loading) return;
     setInput("");
+    setLastFailed(null);
     const userMsg: Msg = { role: "user", content: text };
     const next = [...messages, userMsg];
     setMessages(next);
@@ -73,14 +86,14 @@ function Tutor() {
     };
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ANON_KEY}`,
-        },
+        headers,
         body: JSON.stringify({
           messages: next,
+          mode,
           profile: {
             name: profile.name,
             grade: profile.grade,
@@ -97,6 +110,8 @@ function Tutor() {
         } else {
           toast.error("Tutor is unavailable right now.");
         }
+        setLastFailed(text);
+        setMessages((prev) => prev.slice(0, -1));
         setLoading(false);
         return;
       }
@@ -133,9 +148,15 @@ function Tutor() {
           }
         }
       }
+      if (!assistantSoFar) {
+        toast.error("Tutor returned no response. Try again.");
+        setLastFailed(text);
+      }
     } catch (e) {
       console.error(e);
-      toast.error("Connection error. Try again.");
+      toast.error("Connection error. Check your network and try again.");
+      setLastFailed(text);
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);
     }
@@ -150,13 +171,13 @@ function Tutor() {
 
   return (
     <AppShell>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Sparkles className="h-6 w-6 text-primary" /> AI Tutor
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Ask anything — I'll guide you step by step.
+          <p className="text-xs text-muted-foreground">
+            {MODES.find((m) => m.id === mode)?.hint}
           </p>
         </div>
         {messages.length > 0 && (
@@ -165,6 +186,25 @@ function Tutor() {
           </Button>
         )}
       </div>
+
+      <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="mb-3">
+        <TabsList className="grid w-full grid-cols-5 h-9">
+          {MODES.map((m) => (
+            <TabsTrigger key={m.id} value={m.id} className="text-[11px] px-1">
+              {m.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {lastFailed && (
+        <Card className="mb-3 flex items-center gap-2 border-destructive/30 bg-destructive/5 p-3">
+          <p className="flex-1 text-xs">Last message failed: <span className="font-medium">{lastFailed}</span></p>
+          <Button size="sm" variant="outline" onClick={() => send(lastFailed)}>
+            <RefreshCw className="mr-1 h-3 w-3" /> Retry
+          </Button>
+        </Card>
+      )}
 
       <div className="space-y-3 pb-4">
         {messages.length === 0 && (

@@ -32,10 +32,8 @@ function PaperRunner() {
   const navigate = useNavigate();
   const { state } = useStore();
   const profile = state.profile!;
-  const paper = useMemo(
-    () => getPaper(profile.curriculum, profile.grade, paperId),
-    [profile, paperId],
-  );
+  // Lookup is now band-based so it works regardless of profile curriculum/grade.
+  const paper = useMemo(() => getPaper(profile.curriculum, profile.grade, paperId), [profile, paperId]);
 
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
@@ -88,20 +86,19 @@ function PaperRunner() {
   };
 
   const submitPaper = () => {
-    // Auto-grade everything before showing results
-    setAnswers((prev) => {
-      const next = { ...prev };
-      paper.questions.forEach((qq) => {
-        const a = next[qq.id] || {};
-        if (qq.kind === "mcq") {
-          next[qq.id] = { ...a, graded: true, correct: a.selected === qq.correctIndex };
-        } else {
-          const correct = !!a.text && gradeShortAnswer(qq, a.text);
-          next[qq.id] = { ...a, graded: true, correct };
-        }
-      });
-      return next;
+    // Grade synchronously so the results screen reads from the same object.
+    const graded: Record<string, AnswerState> = { ...answers };
+    paper.questions.forEach((qq) => {
+      const a = graded[qq.id] || {};
+      if (qq.kind === "mcq") {
+        graded[qq.id] = { ...a, graded: true, correct: a.selected === qq.correctIndex };
+      } else {
+        const correct = !!a.text && gradeShortAnswer(qq, a.text);
+        graded[qq.id] = { ...a, graded: true, correct };
+      }
     });
+    setAnswers(graded);
+    submittedRef.current = true;
     setSubmitted(true);
   };
 

@@ -50,6 +50,21 @@ function Workspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.hydrated]);
 
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveDraft = () => {
+    if (typeof window === "undefined" || !editorRef.current) return;
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    const html = editorRef.current.innerHTML;
+    draftTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          "studentsync:draft",
+          JSON.stringify({ title, html }),
+        );
+      } catch { /* ignore quota */ }
+    }, 400);
+  };
+
   const exec = (cmd: string, value?: string) => {
     document.execCommand(cmd, false, value);
     editorRef.current?.focus();
@@ -60,14 +75,6 @@ function Workspace() {
   const updateCount = () => {
     const text = editorRef.current?.innerText.trim() ?? "";
     setWordCount(text ? text.split(/\s+/).length : 0);
-  };
-
-  const saveDraft = () => {
-    if (typeof window === "undefined" || !editorRef.current) return;
-    localStorage.setItem(
-      "studentsync:draft",
-      JSON.stringify({ title, html: editorRef.current.innerHTML }),
-    );
   };
 
   useEffect(() => {

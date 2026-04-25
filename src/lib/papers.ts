@@ -335,16 +335,26 @@ export const GRADES: Grade[] = [
   "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
 ];
 
-export function getPapers(curriculum: Curriculum, grade: Grade): Paper[] {
-  const band = GRADE_BAND[grade] || "lower";
-  return PAPERS_BY_BAND[band].map((p) => ({
-    ...p,
-    id: `${curriculum}-${grade}-${p.id}`,
-  }));
+// Stable paper IDs: prefixed by band so they never collide with another band's
+// paper of the same base id, but they DON'T depend on curriculum/grade — that
+// way navigating to /tests/:paperId always works even if the user changes the
+// selector without saving the profile default.
+function withBandId(band: Band, papers: Paper[]): Paper[] {
+  return papers.map((p) => ({ ...p, id: `${band}-${p.id}` }));
 }
 
-export function getPaper(curriculum: Curriculum, grade: Grade, paperId: string): Paper | undefined {
-  return getPapers(curriculum, grade).find((p) => p.id === paperId);
+export function getPapers(_curriculum: Curriculum, grade: Grade): Paper[] {
+  const band = GRADE_BAND[grade] || "lower";
+  return withBandId(band, PAPERS_BY_BAND[band]);
+}
+
+export function getPaper(_curriculum: Curriculum, _grade: Grade, paperId: string): Paper | undefined {
+  // Look across ALL bands so a deep link works regardless of profile state.
+  for (const band of Object.keys(PAPERS_BY_BAND) as Band[]) {
+    const found = withBandId(band, PAPERS_BY_BAND[band]).find((p) => p.id === paperId);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 // Loose grader for typed short answers (case + whitespace insensitive,

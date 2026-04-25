@@ -160,6 +160,35 @@ const PRIMARY: SubjectPack[] = [
       },
     ],
   },
+  {
+    subject: "CRE", emoji: "✝️",
+    topics: [{ name: "Bible Stories", subtopics: [{ name: "Creation", questions: [
+      { id: "cre1", question: "How many days did God take to create the world?", answer: "6" },
+      { id: "cre2", question: "Who were the first humans?", answer: "Adam and Eve" },
+      { id: "cre3", question: "On which day did God rest?", answer: "The seventh day" },
+    ]}]}],
+  },
+  {
+    subject: "Home Science", emoji: "🏠",
+    topics: [{ name: "Healthy Living", subtopics: [{ name: "Food & Nutrition", questions: [
+      { id: "hs1", question: "Name a body-building food.", answer: "Meat, beans, eggs, fish" },
+      { id: "hs2", question: "Why do we wash hands before eating?", answer: "To remove germs and stay healthy" },
+    ]}]}],
+  },
+  {
+    subject: "Agriculture", emoji: "🌾",
+    topics: [{ name: "Crops", subtopics: [{ name: "Growing Plants", questions: [
+      { id: "ag1", question: "What do seeds need to germinate?", answer: "Water, warmth, oxygen" },
+      { id: "ag2", question: "Name a cereal crop.", answer: "Maize, wheat, rice, sorghum" },
+    ]}]}],
+  },
+  {
+    subject: "Pre-Technical Studies", emoji: "🛠️",
+    topics: [{ name: "Tools & Materials", subtopics: [{ name: "Basic Tools", questions: [
+      { id: "pt1", question: "What tool is used to drive nails?", answer: "Hammer" },
+      { id: "pt2", question: "Which tool measures length?", answer: "Ruler or tape measure" },
+    ]}]}],
+  },
 ];
 
 const LOWER: SubjectPack[] = [
@@ -344,6 +373,35 @@ const LOWER: SubjectPack[] = [
         ],
       },
     ],
+  },
+  {
+    subject: "CRE", emoji: "✝️",
+    topics: [{ name: "New Testament", subtopics: [{ name: "Life of Jesus", questions: [
+      { id: "cre1", question: "Where was Jesus born?", answer: "Bethlehem" },
+      { id: "cre2", question: "Name two disciples of Jesus.", answer: "Peter, John, James, Andrew (any two)" },
+      { id: "cre3", question: "What is the greatest commandment?", answer: "Love God and love your neighbour as yourself" },
+    ]}]}],
+  },
+  {
+    subject: "Home Science", emoji: "🏠",
+    topics: [{ name: "Nutrition & Hygiene", subtopics: [{ name: "Balanced Diet", questions: [
+      { id: "hs1", question: "Name the three main food groups.", answer: "Carbohydrates, proteins, vitamins/minerals (and fats)" },
+      { id: "hs2", question: "Why is fibre important?", answer: "Aids digestion and prevents constipation" },
+    ]}]}],
+  },
+  {
+    subject: "Agriculture", emoji: "🌾",
+    topics: [{ name: "Crop Production", subtopics: [{ name: "Soil & Crops", questions: [
+      { id: "ag1", question: "Name three types of soil.", answer: "Sandy, clay, loam" },
+      { id: "ag2", question: "Which soil is best for farming?", answer: "Loam" },
+    ]}]}],
+  },
+  {
+    subject: "Pre-Technical Studies", emoji: "🛠️",
+    topics: [{ name: "Materials & Production", subtopics: [{ name: "Workshop Safety", questions: [
+      { id: "pt1", question: "Name one workshop safety rule.", answer: "Wear protective equipment / keep workspace tidy" },
+      { id: "pt2", question: "What is a renewable energy source?", answer: "Solar, wind, hydro (any)" },
+    ]}]}],
   },
 ];
 
