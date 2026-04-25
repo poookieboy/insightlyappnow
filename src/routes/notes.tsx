@@ -123,11 +123,24 @@ function Section({ title, items, onRemove }: { title: string; items: Note[]; onR
         {items.map((n) => (
           <Card key={n.id} className="p-3 animate-fade-in">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{n.title}</p>
-                {n.content && <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground line-clamp-3">{n.content}</p>}
+              <Link
+                to="/notes/$noteId"
+                params={{ noteId: n.id }}
+                className="min-w-0 flex-1 cursor-pointer"
+              >
+                <p className="flex items-center gap-1 font-semibold">
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  {n.title}
+                </p>
+                {n.content && (
+                  <p
+                    className="mt-1 line-clamp-3 text-sm text-muted-foreground"
+                    // Strip HTML for preview
+                    dangerouslySetInnerHTML={{ __html: stripHtml(n.content) }}
+                  />
+                )}
                 {n.imageDataUrl && <img src={n.imageDataUrl} alt={n.title} className="mt-2 max-h-48 rounded-lg object-contain" />}
-              </div>
+              </Link>
               <Button size="icon" variant="ghost" onClick={() => onRemove(n.id)}>
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </Button>
@@ -137,4 +150,11 @@ function Section({ title, items, onRemove }: { title: string; items: Note[]; onR
       </div>
     </div>
   );
+}
+
+function stripHtml(html: string): string {
+  if (typeof document === "undefined") return html.replace(/<[^>]+>/g, "");
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").slice(0, 240);
 }
