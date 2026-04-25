@@ -65,6 +65,7 @@ function Tutor() {
     const text = (textArg ?? input).trim();
     if (!text || loading) return;
     setInput("");
+    setLastFailed(null);
     const userMsg: Msg = { role: "user", content: text };
     const next = [...messages, userMsg];
     setMessages(next);
@@ -85,14 +86,14 @@ function Tutor() {
     };
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ANON_KEY}`,
-        },
+        headers,
         body: JSON.stringify({
           messages: next,
+          mode,
           profile: {
             name: profile.name,
             grade: profile.grade,
