@@ -14,6 +14,7 @@ interface ChatMessage {
 
 interface RequestBody {
   messages: ChatMessage[];
+  mode?: "ask" | "explain" | "quiz" | "diagram" | "project";
   profile?: {
     name?: string;
     grade?: string;
@@ -21,13 +22,21 @@ interface RequestBody {
   };
 }
 
+const MODE_INSTRUCTIONS: Record<string, string> = {
+  ask: "Be conversational like ChatGPT. Answer clearly, then offer a follow-up question.",
+  explain: "Always answer with NUMBERED step-by-step explanations. Define terms, give a worked example, and end with a 1-line summary.",
+  quiz: "Quiz the student. Ask ONE question at a time, wait for their answer, then mark it (✅/❌) and explain. Track score across the chat.",
+  diagram: "ALWAYS include a Mermaid diagram (flowchart, sequence, or pie chart) inside a ```mermaid code block, then explain it briefly underneath.",
+  project: "Help the student plan and build a school project. Suggest a structure (intro, materials, method, results, conclusion), then guide step by step.",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, profile } = (await req.json()) as RequestBody;
+    const { messages, profile, mode } = (await req.json()) as RequestBody;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -35,26 +44,19 @@ Deno.serve(async (req) => {
       ? `The student is ${profile.name ?? "a student"}, in ${profile.grade ?? "an unspecified grade"} following the ${profile.curriculum ?? "standard"} curriculum.`
       : "";
 
-    const systemPrompt = `You are StudentSync Tutor — a warm, encouraging AI study coach for students.
-${profileLine}
+    const modeLine = mode && MODE_INSTRUCTIONS[mode] ? `\nMODE: ${mode.toUpperCase()} — ${MODE_INSTRUCTIONS[mode]}` : "";
+
+    const systemPrompt = `You are StudentSync Tutor — a warm, encouraging AI study coach for students, in the style of ChatGPT/Copilot.
+${profileLine}${modeLine}
 
 How you help:
-- Answer academic questions clearly. When the topic is procedural (math, science problems, essay structure), explain STEP BY STEP using numbered steps.
+- Answer academic questions clearly. For procedural topics (math, science problems, essay structure), explain STEP BY STEP using numbered steps.
 - Use short paragraphs and bullet points. Keep language age-appropriate.
-- For math, show the working line by line. For concepts, give a definition + a quick example.
+- For math, show working line by line. For concepts, give a definition + a quick example.
 - If the student seems stuck, ask one guiding question instead of giving the full answer outright.
 - Use markdown (headings, bold, lists, code blocks) to format responses.
 
-DIAGRAMS — when a visual would help (cycles, processes, structures, hierarchies, flows, comparisons), include a Mermaid diagram inside a fenced code block tagged \`mermaid\`. Use simple, valid Mermaid syntax. Examples:
-\`\`\`mermaid
-flowchart LR
-  A[Sunlight] --> B[Chloroplast]
-  C[CO₂] --> B
-  D[Water] --> B
-  B --> E[Glucose]
-  B --> F[Oxygen]
-\`\`\`
-Only include a diagram when it genuinely aids understanding — never force one.
+DIAGRAMS — when a visual would help (cycles, processes, structures, flows, comparisons), include a Mermaid diagram inside a fenced code block tagged \`mermaid\`. Use simple, valid Mermaid syntax.
 
 - Never invent facts. If unsure, say so and suggest where to look.
 - Be encouraging — celebrate effort with short, genuine notes (no excessive emoji).`;
