@@ -76,6 +76,19 @@ function Settings() {
         <Button onClick={save} className="w-full bg-gradient-primary text-primary-foreground">Save changes</Button>
       </Card>
 
+      <Link to="/donate" className="block">
+        <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
+            <Heart className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold">Support the creator</p>
+            <p className="text-xs text-muted-foreground">Buy a coffee, PayPal, or M-Pesa</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Card>
+      </Link>
+
       <Card className="mt-4 p-5">
         <h2 className="font-semibold">Danger zone</h2>
         <p className="mt-1 text-xs text-muted-foreground">This wipes all tasks, notes, timetable, badges and profile.</p>
