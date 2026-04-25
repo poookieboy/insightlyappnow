@@ -18,6 +18,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as DonateRouteImport } from './routes/donate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
@@ -68,6 +69,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DonateRoute = DonateRouteImport.update({
+  id: '/donate',
+  path: '/donate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -92,6 +98,7 @@ const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/donate': typeof DonateRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/donate': typeof DonateRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/donate': typeof DonateRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/donate'
     | '/home'
     | '/notes'
     | '/revision'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/donate'
     | '/home'
     | '/notes'
     | '/revision'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/donate'
     | '/home'
     | '/notes'
     | '/revision'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  DonateRoute: typeof DonateRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
   RevisionRoute: typeof RevisionRoute
@@ -262,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/donate': {
+      id: '/donate'
+      path: '/donate'
+      fullPath: '/donate'
+      preLoaderRoute: typeof DonateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -316,6 +336,7 @@ const TestsRouteWithChildren = TestsRoute._addFileChildren(TestsRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  DonateRoute: DonateRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
   RevisionRoute: RevisionRoute,
