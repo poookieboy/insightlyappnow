@@ -110,6 +110,8 @@ function Tutor() {
         } else {
           toast.error("Tutor is unavailable right now.");
         }
+        setLastFailed(text);
+        setMessages((prev) => prev.slice(0, -1));
         setLoading(false);
         return;
       }
@@ -146,9 +148,15 @@ function Tutor() {
           }
         }
       }
+      if (!assistantSoFar) {
+        toast.error("Tutor returned no response. Try again.");
+        setLastFailed(text);
+      }
     } catch (e) {
       console.error(e);
-      toast.error("Connection error. Try again.");
+      toast.error("Connection error. Check your network and try again.");
+      setLastFailed(text);
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);
     }
