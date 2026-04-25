@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { Send, Sparkles, Trash2, User, Bot } from "lucide-react";
+import { Send, Sparkles, Trash2, User, Bot, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
@@ -8,11 +8,21 @@ import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" });
+
+type Mode = "ask" | "explain" | "quiz" | "diagram" | "project";
+const MODES: { id: Mode; label: string; hint: string }[] = [
+  { id: "ask", label: "Ask", hint: "Ask anything — like ChatGPT." },
+  { id: "explain", label: "Step-by-step", hint: "Get a clear, numbered walkthrough." },
+  { id: "quiz", label: "Quiz me", hint: "I'll quiz you on a topic." },
+  { id: "diagram", label: "Diagram", hint: "Get a chart or diagram with explanation." },
+  { id: "project", label: "Project", hint: "Help with a school project." },
+];
 
 export const Route = createFileRoute("/tutor")({
   component: () => (
