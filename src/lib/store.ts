@@ -52,6 +52,27 @@ export interface BadgeState {
   unlocked: string[];
 }
 
+export interface TutorMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface TutorConversation {
+  id: string;
+  title: string;
+  projectId: string | null;
+  messages: TutorMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TutorProject {
+  id: string;
+  name: string;
+  instructions?: string;
+  createdAt: string;
+}
+
 interface AppState {
   profile: Profile | null;
   tasks: Task[];
@@ -59,6 +80,8 @@ interface AppState {
   notes: Note[];
   revisionDone: RevisionDone[];
   badges: BadgeState;
+  tutorConversations: TutorConversation[];
+  tutorProjects: TutorProject[];
   hydrated: boolean;
 }
 
@@ -71,6 +94,8 @@ const defaultState: AppState = {
   notes: [],
   revisionDone: [],
   badges: { unlocked: [] },
+  tutorConversations: [],
+  tutorProjects: [],
   hydrated: false,
 };
 
