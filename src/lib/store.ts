@@ -82,6 +82,7 @@ interface AppState {
   badges: BadgeState;
   tutorConversations: TutorConversation[];
   tutorProjects: TutorProject[];
+  generatedPapers: import("./papers").Paper[];
   hydrated: boolean;
 }
 
@@ -96,6 +97,7 @@ const defaultState: AppState = {
   badges: { unlocked: [] },
   tutorConversations: [],
   tutorProjects: [],
+  generatedPapers: [],
   hydrated: false,
 };
 
