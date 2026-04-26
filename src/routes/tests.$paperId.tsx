@@ -33,7 +33,10 @@ function PaperRunner() {
   const { state } = useStore();
   const profile = state.profile!;
   // Lookup is now band-based so it works regardless of profile curriculum/grade.
-  const paper = useMemo(() => getPaper(profile.curriculum, profile.grade, paperId), [profile, paperId]);
+  const paper = useMemo(
+    () => getPaper(profile.curriculum, profile.grade, paperId, state.generatedPapers),
+    [profile, paperId, state.generatedPapers],
+  );
 
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});

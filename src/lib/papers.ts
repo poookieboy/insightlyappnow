@@ -752,12 +752,54 @@ export function getPapers(_curriculum: Curriculum, grade: Grade): Paper[] {
   return withBandId(band, PAPERS_BY_BAND[band]);
 }
 
-export function getPaper(_curriculum: Curriculum, _grade: Grade, paperId: string): Paper | undefined {
+export function getPaper(_curriculum: Curriculum, _grade: Grade, paperId: string, generated: Paper[] = []): Paper | undefined {
+  const fromGen = generated.find((p) => p.id === paperId);
+  if (fromGen) return fromGen;
   for (const band of Object.keys(PAPERS_BY_BAND) as Band[]) {
     const found = withBandId(band, PAPERS_BY_BAND[band]).find((p) => p.id === paperId);
     if (found) return found;
   }
   return undefined;
+}
+
+// Normalise an AI-generated paper payload into a valid Paper.
+export function normaliseGeneratedPaper(raw: any, opts: {
+  subject: string; curriculum: Curriculum; grade: Grade; difficulty: Difficulty;
+}): Paper {
+  const id = `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const questions: PaperQuestion[] = (raw.questions || [])
+    .filter((q: any) => q && (q.kind === "mcq" || q.kind === "short") && typeof q.prompt === "string")
+    .map((q: any, i: number) => {
+      const marks = Number(q.marks) > 0 ? Number(q.marks) : 1;
+      if (q.kind === "mcq") {
+        return {
+          id: `q${i + 1}`,
+          kind: "mcq" as const,
+          prompt: q.prompt,
+          options: Array.isArray(q.options) ? q.options.map(String) : [],
+          correctIndex: Number.isInteger(q.correctIndex) ? q.correctIndex : 0,
+          marks,
+        };
+      }
+      return {
+        id: `q${i + 1}`,
+        kind: "short" as const,
+        prompt: q.prompt,
+        modelAnswer: String(q.modelAnswer ?? ""),
+        acceptable: Array.isArray(q.acceptable) ? q.acceptable.map(String) : [],
+        marks,
+      };
+    });
+  return {
+    id,
+    subject: opts.subject,
+    emoji: typeof raw.emoji === "string" ? raw.emoji : "📝",
+    title: typeof raw.title === "string" ? raw.title : `${opts.subject} mock paper`,
+    topic: typeof raw.topic === "string" ? raw.topic : opts.subject,
+    difficulty: opts.difficulty,
+    durationMinutes: Number(raw.durationMinutes) > 0 ? Number(raw.durationMinutes) : 30,
+    questions,
+  };
 }
 
 export function gradeShortAnswer(q: PaperQuestion, userAnswer: string): boolean {
