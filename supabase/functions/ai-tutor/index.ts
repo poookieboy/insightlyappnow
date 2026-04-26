@@ -20,6 +20,8 @@ interface RequestBody {
     grade?: string;
     curriculum?: string;
   };
+  projectInstructions?: string | null;
+  projectName?: string | null;
 }
 
 const MODE_INSTRUCTIONS: Record<string, string> = {
@@ -36,7 +38,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { messages, profile, mode } = (await req.json()) as RequestBody;
+    const { messages, profile, mode, projectInstructions, projectName } = (await req.json()) as RequestBody;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -46,8 +48,12 @@ Deno.serve(async (req) => {
 
     const modeLine = mode && MODE_INSTRUCTIONS[mode] ? `\nMODE: ${mode.toUpperCase()} — ${MODE_INSTRUCTIONS[mode]}` : "";
 
+    const projectLine = projectInstructions
+      ? `\nPROJECT CONTEXT (${projectName ?? "Unnamed"}): ${projectInstructions}\nFollow the project instructions above in every reply in this conversation.`
+      : "";
+
     const systemPrompt = `You are StudentSync Tutor — a warm, encouraging AI study coach for students, in the style of ChatGPT/Copilot.
-${profileLine}${modeLine}
+${profileLine}${modeLine}${projectLine}
 
 How you help:
 - Answer academic questions clearly. For procedural topics (math, science problems, essay structure), explain STEP BY STEP using numbered steps.
