@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       : "";
 
     const systemPrompt = `You are StudentSync Tutor — a warm, encouraging AI study coach for students, in the style of ChatGPT/Copilot.
-${profileLine}${modeLine}
+${profileLine}${modeLine}${projectLine}
 
 How you help:
 - Answer academic questions clearly. For procedural topics (math, science problems, essay structure), explain STEP BY STEP using numbered steps.
