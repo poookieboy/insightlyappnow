@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.ai-paper]
 verify_jwt = false
+
+[functions.ai-notes]
+verify_jwt = false
+
+[functions.ai-classify]
+verify_jwt = false
+
+[functions.ai-exam]
+verify_jwt = false
