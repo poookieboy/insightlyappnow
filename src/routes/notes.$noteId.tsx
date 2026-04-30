@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Save, Printer, Trash2, Copy, Bold, Italic, Underline as UnderlineIcon,
   List, ListOrdered, Heading1, Heading2, Image as ImageIcon, Quote, Link as LinkIcon,
-  Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight,
+  Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Sparkles, Loader2,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStore, uid } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
