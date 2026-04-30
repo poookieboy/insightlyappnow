@@ -18,6 +18,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalculatorRouteImport } from './routes/calculator'
@@ -70,6 +71,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExamsRoute = ExamsRouteImport.update({
+  id: '/exams',
+  path: '/exams',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DonateRoute = DonateRouteImport.update({
   id: '/donate',
   path: '/donate',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
+  '/exams': typeof ExamsRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
+  '/exams': typeof ExamsRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
+  '/exams': typeof ExamsRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/revision': typeof RevisionRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/calculator'
     | '/dashboard'
     | '/donate'
+    | '/exams'
     | '/home'
     | '/notes'
     | '/revision'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/calculator'
     | '/dashboard'
     | '/donate'
+    | '/exams'
     | '/home'
     | '/notes'
     | '/revision'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/calculator'
     | '/dashboard'
     | '/donate'
+    | '/exams'
     | '/home'
     | '/notes'
     | '/revision'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   CalculatorRoute: typeof CalculatorRoute
   DashboardRoute: typeof DashboardRoute
   DonateRoute: typeof DonateRoute
+  ExamsRoute: typeof ExamsRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
   RevisionRoute: typeof RevisionRoute
@@ -288,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/exams': {
+      id: '/exams'
+      path: '/exams'
+      fullPath: '/exams'
+      preLoaderRoute: typeof ExamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/donate': {
       id: '/donate'
       path: '/donate'
@@ -358,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalculatorRoute: CalculatorRoute,
   DashboardRoute: DashboardRoute,
   DonateRoute: DonateRoute,
+  ExamsRoute: ExamsRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
   RevisionRoute: RevisionRoute,
