@@ -105,6 +105,32 @@ function NoteViewer() {
     toast.success("Saved");
   };
 
+  const [aiLoading, setAiLoading] = useState<null | "summarize" | "simplify" | "quiz" | "exam">(null);
+  const runAI = async (action: "summarize" | "simplify" | "quiz" | "exam") => {
+    const text = editorRef.current?.innerText?.trim() || "";
+    if (!text) { toast.error("Note is empty"); return; }
+    setAiLoading(action);
+    try {
+      const profile = (useStore as any).state?.profile;
+      const { data, error } = await supabase.functions.invoke("ai-notes", {
+        body: { action, text, grade: profile?.grade, curriculum: profile?.curriculum },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const content: string = data?.content || "";
+      // Append result as a new section
+      const html = `<hr/><h2>✨ Nexus — ${action}</h2><pre style="white-space:pre-wrap;font-family:inherit">${content.replace(/[<>]/g, (c) => c === "<" ? "&lt;" : "&gt;")}</pre>`;
+      if (editorRef.current) {
+        editorRef.current.innerHTML = (editorRef.current.innerHTML || "") + html;
+      }
+      toast.success(`Nexus ${action} added`);
+    } catch (e: any) {
+      toast.error(e?.message || "AI action failed");
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
   const duplicate = () => {
     const html = editorRef.current?.innerHTML ?? note.content;
     update((s) => ({
