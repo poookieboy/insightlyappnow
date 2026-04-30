@@ -119,6 +119,8 @@ const defaultState: AppState = {
   tutorConversations: [],
   tutorProjects: [],
   generatedPapers: [],
+  examResults: [],
+  goals: [],
   hydrated: false,
 };
 
