@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Save, Printer, Trash2, Copy, Bold, Italic, Underline as UnderlineIcon,
   List, ListOrdered, Heading1, Heading2, Image as ImageIcon, Quote, Link as LinkIcon,
-  Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight,
+  Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Sparkles, Loader2,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStore, uid } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,32 @@ function NoteViewer() {
       ),
     }));
     toast.success("Saved");
+  };
+
+  const [aiLoading, setAiLoading] = useState<null | "summarize" | "simplify" | "quiz" | "exam">(null);
+  const runAI = async (action: "summarize" | "simplify" | "quiz" | "exam") => {
+    const text = editorRef.current?.innerText?.trim() || "";
+    if (!text) { toast.error("Note is empty"); return; }
+    setAiLoading(action);
+    try {
+      const profile = (useStore as any).state?.profile;
+      const { data, error } = await supabase.functions.invoke("ai-notes", {
+        body: { action, text, grade: profile?.grade, curriculum: profile?.curriculum },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const content: string = data?.content || "";
+      // Append result as a new section
+      const html = `<hr/><h2>✨ Nexus — ${action}</h2><pre style="white-space:pre-wrap;font-family:inherit">${content.replace(/[<>]/g, (c) => c === "<" ? "&lt;" : "&gt;")}</pre>`;
+      if (editorRef.current) {
+        editorRef.current.innerHTML = (editorRef.current.innerHTML || "") + html;
+      }
+      toast.success(`Nexus ${action} added`);
+    } catch (e: any) {
+      toast.error(e?.message || "AI action failed");
+    } finally {
+      setAiLoading(null);
+    }
   };
 
   const duplicate = () => {
