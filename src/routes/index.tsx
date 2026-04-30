@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, GraduationCap, Lightbulb } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ const GRADES: Grade[] = Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}` as
 function Onboarding() {
   const navigate = useNavigate();
   const { state, update } = useStore();
+  const { user, loading } = useAuth();
 
   const [name, setName] = useState("");
   const [dob, setDob] = useState<Date | undefined>();
@@ -31,8 +33,13 @@ function Onboarding() {
   const [grade, setGrade] = useState<Grade | "">("");
 
   useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
     if (state.hydrated && state.profile) navigate({ to: "/home" });
-  }, [state.hydrated, state.profile, navigate]);
+  }, [loading, user, state.hydrated, state.profile, navigate]);
 
   const age = dob ? calcAge(dob.toISOString()) : null;
 
