@@ -34,14 +34,10 @@ export const Route = createRootRoute({
       { name: "description", content: "StudentSync helps students manage tasks, revise with real questions, organize notes and stay motivated." },
       { name: "author", content: "StudentSync" },
       { property: "og:title", content: "StudentSync — Study smarter" },
-      { property: "og:description", content: "StudentSync helps students manage tasks, revise with real questions, organize notes and stay motivated." },
+      { property: "og:description", content: "Tasks, revision, notes and motivation — all in one student-friendly app." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "StudentSync — Study smarter" },
-      { name: "twitter:description", content: "StudentSync helps students manage tasks, revise with real questions, organize notes and stay motivated." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/95c03340-1d09-44e8-8ccd-143e1bfd6d9e/id-preview-b1da8f5d--d3bf1b54-c03c-4c98-a378-242e83c39f8e.lovable.app-1777230584723.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/95c03340-1d09-44e8-8ccd-143e1bfd6d9e/id-preview-b1da8f5d--d3bf1b54-c03c-4c98-a378-242e83c39f8e.lovable.app-1777230584723.png" },
     ],
     links: [
       {
