@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Heart, ChevronRight } from "lucide-react";
+import { Heart, ChevronRight, LogOut } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useStore, resetAll, type Curriculum, type Grade } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -88,6 +89,21 @@ function Settings() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      <Card className="mt-4 p-5">
+        <h2 className="font-semibold">Account</h2>
+        <Button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            toast.success("Signed out");
+            navigate({ to: "/auth" });
+          }}
+          variant="outline"
+          className="mt-3 w-full"
+        >
+          <LogOut className="h-4 w-4 mr-2" /> Sign out
+        </Button>
+      </Card>
 
       <Card className="mt-4 p-5">
         <h2 className="font-semibold">Danger zone</h2>
