@@ -61,6 +61,7 @@ export interface TutorConversation {
   id: string;
   title: string;
   projectId: string | null;
+  subject?: string;
   messages: TutorMessage[];
   createdAt: string;
   updatedAt: string;
@@ -73,6 +74,24 @@ export interface TutorProject {
   createdAt: string;
 }
 
+export interface ExamResult {
+  id: string;
+  date: string;
+  label: string;
+  subjects: { subject: string; score: number; outOf: number }[];
+  feedback?: string;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  targetPercent: number;
+  subject?: string;
+  deadline?: string;
+  createdAt: string;
+  done?: boolean;
+}
+
 interface AppState {
   profile: Profile | null;
   tasks: Task[];
@@ -83,6 +102,8 @@ interface AppState {
   tutorConversations: TutorConversation[];
   tutorProjects: TutorProject[];
   generatedPapers: import("./papers").Paper[];
+  examResults: ExamResult[];
+  goals: Goal[];
   hydrated: boolean;
 }
 
