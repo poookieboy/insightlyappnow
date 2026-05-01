@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Heart, ChevronRight, LogOut } from "lucide-react";
+import { useRef, useState } from "react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select";
 import { useStore, resetAll, type Curriculum, type Grade } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
