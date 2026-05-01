@@ -461,44 +461,68 @@ function Sidebar({
 
       <div className="flex-1 overflow-y-auto border-t px-3 py-2">
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Recent
+          By subject
         </p>
         {conversations.length === 0 && (
           <p className="px-2 py-3 text-xs text-muted-foreground">No chats yet.</p>
         )}
-        <div className="space-y-0.5">
-          {conversations.map((c) => (
-            <div key={c.id} className={cn(
-              "group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs hover:bg-muted",
-              c.id === activeId && "bg-muted",
-            )}>
-              <button onClick={() => onSelect(c.id)} className="flex-1 truncate text-left">
-                {c.title}
-              </button>
-              <select
-                value={c.projectId ?? ""}
-                onChange={(e) => onMoveToProject(c.id, e.target.value || null)}
-                className="rounded bg-transparent text-[10px] opacity-0 group-hover:opacity-100"
-                title="Move to project"
-              >
-                <option value="">No project</option>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <button
-                onClick={() => onRename(c.id)}
-                className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-              <button
-                onClick={() => onDelete(c.id)}
-                className="text-destructive opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
+        {(() => {
+          const groups = new Map<string, typeof conversations>();
+          for (const c of conversations) {
+            const key = c.subject || "Unsorted";
+            if (!groups.has(key)) groups.set(key, [] as typeof conversations);
+            groups.get(key)!.push(c);
+          }
+          const ordered = Array.from(groups.entries()).sort((a, b) => {
+            if (a[0] === "Unsorted") return 1;
+            if (b[0] === "Unsorted") return -1;
+            return a[0].localeCompare(b[0]);
+          });
+          return (
+            <div className="space-y-3">
+              {ordered.map(([subject, items]) => (
+                <div key={subject}>
+                  <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                    {subject}
+                  </p>
+                  <div className="space-y-0.5">
+                    {items.map((c) => (
+                      <div key={c.id} className={cn(
+                        "group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs hover:bg-muted",
+                        c.id === activeId && "bg-muted",
+                      )}>
+                        <button onClick={() => onSelect(c.id)} className="flex-1 truncate text-left">
+                          {c.title}
+                        </button>
+                        <select
+                          value={c.projectId ?? ""}
+                          onChange={(e) => onMoveToProject(c.id, e.target.value || null)}
+                          className="rounded bg-transparent text-[10px] opacity-0 group-hover:opacity-100"
+                          title="Move to project"
+                        >
+                          <option value="">No project</option>
+                          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                        <button
+                          onClick={() => onRename(c.id)}
+                          className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => onDelete(c.id)}
+                          className="text-destructive opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
