@@ -111,7 +111,7 @@ function NoteViewer() {
     if (!text) { toast.error("Note is empty"); return; }
     setAiLoading(action);
     try {
-      const profile = (useStore as any).state?.profile;
+      const profile = state.profile;
       const { data, error } = await supabase.functions.invoke("ai-notes", {
         body: { action, text, grade: profile?.grade, curriculum: profile?.curriculum },
       });
