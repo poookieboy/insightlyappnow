@@ -73,8 +73,8 @@ function Onboarding() {
               <Lightbulb className="absolute -right-2 -top-2 h-5 w-5 text-warning" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">StudentSync</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Learn smart. Grow daily.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Insightly</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Learn smart with Nexus, your AI companion.</p>
         </div>
 
         <div className="space-y-5 rounded-3xl bg-card p-6 shadow-card">

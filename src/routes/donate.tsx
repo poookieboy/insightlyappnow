@@ -36,7 +36,7 @@ function DonatePage() {
         <Heart className="mx-auto h-10 w-10" />
         <h1 className="mt-2 text-2xl font-bold">Support the creator</h1>
         <p className="mt-1 text-sm opacity-90">
-          StudentSync is free. If it helps you study, a small gift keeps it growing 💜
+          Insightly is free. If it helps you study, a small gift keeps it growing 💜
         </p>
       </Card>
 

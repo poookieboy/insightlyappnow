@@ -35,7 +35,7 @@ export function scheduleChecks(tasks: Task[], timetable: TimetableEntry[]) {
       const key = `task-${t.id}`;
       if (diff > 0 && diff < 60 * 60 * 1000 && !fired.has(key)) {
         fired.add(key);
-        notify("StudentSync", `Hey 👀 don't forget: ${t.title}`);
+        notify("Insightly", `Hey 👀 don't forget: ${t.title}`);
       }
     });
 
@@ -51,7 +51,7 @@ export function scheduleChecks(tasks: Task[], timetable: TimetableEntry[]) {
       const key = `tt-${entry.id}-${now.toDateString()}`;
       if (diff > 0 && diff < 60 * 60 * 1000 && !fired.has(key)) {
         fired.add(key);
-        notify("StudentSync", `${entry.subject} class in 1 hour`);
+        notify("Insightly", `${entry.subject} class in 1 hour`);
       }
     });
   };

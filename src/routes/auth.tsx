@@ -31,25 +31,47 @@ function AuthPage() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = /invalid/i.test(error.message)
+        ? "Wrong email or password. Please try again."
+        : error.message;
+      return toast.error(msg);
+    }
     toast.success("Welcome back!");
     navigate({ to: "/" });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 6) return toast.error("Password must be at least 6 characters");
     setBusy(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/`,
         data: { full_name: name },
       },
     });
     setBusy(false);
+    if (error) {
+      const msg = /already/i.test(error.message)
+        ? "That email is already registered. Try signing in."
+        : error.message;
+      return toast.error(msg);
+    }
+    toast.success("Check your email to verify your account ✉️");
+  };
+
+  const handleForgot = async () => {
+    if (!email) return toast.error("Enter your email above first");
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Check your email to confirm your account.");
+    toast.success("Password reset link sent — check your email");
   };
 
   const handleGoogle = async () => {
@@ -126,6 +148,13 @@ function AuthPage() {
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
                 </Button>
+                <button
+                  type="button"
+                  onClick={handleForgot}
+                  className="w-full text-center text-xs text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
               </form>
             </TabsContent>
 

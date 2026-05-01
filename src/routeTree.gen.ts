@@ -16,6 +16,7 @@ import { Route as TestsRouteImport } from './routes/tests'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExamsRouteImport } from './routes/exams'
@@ -60,6 +61,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const RevisionRoute = RevisionRouteImport.update({
   id: '/revision',
   path: '/revision',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotesRoute = NotesRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/exams': typeof ExamsRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/exams': typeof ExamsRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/exams': typeof ExamsRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/home'
     | '/notes'
+    | '/reset-password'
     | '/revision'
     | '/settings'
     | '/tasks'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/home'
     | '/notes'
+    | '/reset-password'
     | '/revision'
     | '/settings'
     | '/tasks'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/home'
     | '/notes'
+    | '/reset-password'
     | '/revision'
     | '/settings'
     | '/tasks'
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   ExamsRoute: typeof ExamsRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RevisionRoute: typeof RevisionRoute
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
@@ -298,6 +311,13 @@ declare module '@tanstack/react-router' {
       path: '/revision'
       fullPath: '/revision'
       preLoaderRoute: typeof RevisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notes': {
@@ -402,6 +422,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExamsRoute: ExamsRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   RevisionRoute: RevisionRoute,
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,
@@ -413,3 +434,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
