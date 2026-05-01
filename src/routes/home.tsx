@@ -38,6 +38,7 @@ function HomeScreen() {
   }, []);
 
   const profile = state.profile!;
+  const { profile: dbProfile } = useProfile();
   const opener = useMemo(() => motivation.opener(), []);
   const suggestion = smartSuggestion(profile, state.tasks, state.revisionDone);
 
@@ -50,6 +51,9 @@ function HomeScreen() {
   const doneIds = new Set(state.revisionDone.map((r) => r.questionId));
   const nextRevision = questions.find((q) => !doneIds.has(q.id));
 
+  const initials = (profile.name || "?")
+    .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+
   return (
     <AppShell>
       <header className="mb-6 flex items-start justify-between gap-3">
@@ -60,10 +64,17 @@ function HomeScreen() {
         </div>
         <Link
           to="/settings"
-          aria-label="Settings"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-foreground hover:shadow-glow transition-all"
+          aria-label="Open settings"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-primary text-sm font-bold text-primary-foreground shadow-glow ring-2 ring-background hover:opacity-90 transition-all"
         >
-          <SettingsIcon className="h-5 w-5" />
+          {dbProfile?.avatar_url ? (
+            <img src={dbProfile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+          ) : (
+            <span>{initials}</span>
+          )}
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-background bg-card text-foreground">
+            <SettingsIcon className="h-2.5 w-2.5" />
+          </span>
         </Link>
       </header>
 
