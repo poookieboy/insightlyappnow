@@ -4,6 +4,7 @@ import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon 
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { useStore } from "@/lib/store";
+import { useProfile } from "@/hooks/useProfile";
 import { motivation } from "@/lib/motivation";
 import { smartSuggestion } from "@/lib/suggestions";
 import { scheduleChecks, ensureNotificationPermission } from "@/lib/notifications";
