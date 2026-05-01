@@ -31,14 +31,51 @@ function Settings() {
   const { state, update } = useStore();
   const navigate = useNavigate();
   const profile = state.profile!;
+  const { user } = useAuth();
+  const { profile: dbProfile, refresh } = useProfile();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [name, setName] = useState(profile.name);
   const [curriculum, setCurriculum] = useState<Curriculum>(profile.curriculum);
   const [grade, setGrade] = useState<Grade>(profile.grade);
 
-  const save = () => {
+  const save = async () => {
     update((s) => (s.profile ? { ...s, profile: { ...s.profile, name: name.trim(), curriculum, grade } } : s));
+    if (user) {
+      await supabase.from("profiles").update({ display_name: name.trim() }).eq("user_id", user.id);
+    }
     toast.success("Saved ✨");
+  };
+
+  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5 MB");
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = pub.publicUrl;
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("user_id", user.id);
+      if (dbErr) throw dbErr;
+      await refresh();
+      toast.success("Profile picture updated 📸");
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const reset = () => {
@@ -48,10 +85,39 @@ function Settings() {
     navigate({ to: "/" });
   };
 
+  const initials = (dbProfile?.display_name || profile.name || "?")
+    .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+
   return (
     <AppShell>
       <h1 className="mb-1 text-2xl font-bold">Settings</h1>
       <p className="mb-5 text-sm text-muted-foreground">Update your profile or reset data.</p>
+
+      <Card className="mb-4 flex items-center gap-4 p-5">
+        <div className="relative">
+          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-primary text-lg font-bold text-primary-foreground shadow-glow">
+            {dbProfile?.avatar_url ? (
+              <img src={dbProfile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+            ) : (
+              <span>{initials}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-card text-foreground shadow-md hover:shadow-glow"
+            title="Change picture"
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickAvatar} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{dbProfile?.display_name || profile.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+        </div>
+      </Card>
 
       <Card className="space-y-4 p-5">
         <div className="space-y-2">
