@@ -51,6 +51,7 @@ const STARTERS = [
 ];
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
+const CLASSIFY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-classify`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 function Tutor() {
@@ -117,10 +118,36 @@ function Tutor() {
     setLastFailed(null);
 
     const conv = ensureConversation(text);
+    const isFirstMessage = conv.messages.length === 0;
     const userMsg: TutorMessage = { role: "user", content: text };
     const next = [...conv.messages, userMsg];
     writeMessages(conv.id, next, text);
     setLoading(true);
+
+    // Auto-classify subject + title from the first user message
+    if (isFirstMessage) {
+      (async () => {
+        try {
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
+          const r = await fetch(CLASSIFY_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ message: text }),
+          });
+          if (!r.ok) return;
+          const { subject, title } = await r.json();
+          update((s) => ({
+            ...s,
+            tutorConversations: s.tutorConversations.map((c) =>
+              c.id === conv.id
+                ? { ...c, subject: subject || c.subject, title: title || c.title }
+                : c,
+            ),
+          }));
+        } catch {/* ignore — classification is best-effort */}
+      })();
+    }
 
     let assistantSoFar = "";
     const upsert = (chunk: string) => {
