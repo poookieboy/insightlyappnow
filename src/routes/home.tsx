@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { Sparkles, ArrowRight, CheckCircle2, BookOpen } from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { useStore } from "@/lib/store";
@@ -51,9 +51,19 @@ function HomeScreen() {
 
   return (
     <AppShell>
-      <header className="mb-6">
-        <p className="text-sm text-muted-foreground">{opener}</p>
-        <h1 className="mt-1 text-2xl font-bold">Welcome back, {profile.name} 👋</h1>
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">{opener}</p>
+          <h1 className="mt-1 truncate text-2xl font-bold">Welcome back, {profile.name} 👋</h1>
+          <p className="text-[11px] text-muted-foreground">Insightly · powered by Nexus</p>
+        </div>
+        <Link
+          to="/settings"
+          aria-label="Settings"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-foreground hover:shadow-glow transition-all"
+        >
+          <SettingsIcon className="h-5 w-5" />
+        </Link>
       </header>
 
       <Card className="mb-4 overflow-hidden border-0 bg-gradient-primary p-5 text-primary-foreground shadow-glow">
