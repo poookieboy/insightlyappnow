@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon } from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon, Flame, Award } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { useStore } from "@/lib/store";
@@ -9,6 +9,8 @@ import { motivation } from "@/lib/motivation";
 import { smartSuggestion } from "@/lib/suggestions";
 import { scheduleChecks, ensureNotificationPermission } from "@/lib/notifications";
 import { getQuestions } from "@/lib/revision";
+import { computeStreak } from "@/lib/streak";
+import { BADGES } from "@/lib/badges";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
