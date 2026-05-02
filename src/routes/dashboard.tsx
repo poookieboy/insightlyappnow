@@ -33,7 +33,7 @@ function Dashboard() {
     .filter((e) => e.day === today)
     .sort((a, b) => a.time.localeCompare(b.time))[0];
 
-  const streak = computeStreak(state.tasks, state.revisionDone);
+  const streak = computeStreak(state.tasks, state.revisionDone, state.streakSettings);
 
   // Celebrate any newly-eligible badges when visiting the dashboard
   const evaluated = useRef(false);

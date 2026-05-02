@@ -1,4 +1,4 @@
-import type { Profile, Task, RevisionDone } from "./store";
+import type { Profile, Task, RevisionDone, StreakSettings } from "./store";
 import { getQuestions } from "./revision";
 import { computeStreak } from "./streak";
 
@@ -6,10 +6,11 @@ export function smartSuggestion(
   profile: Profile | null,
   tasks: Task[],
   revisionDone: RevisionDone[],
+  streakSettings?: StreakSettings,
 ): string {
   if (!profile) return "Let's get started 🚀";
 
-  const streak = computeStreak(tasks, revisionDone);
+  const streak = computeStreak(tasks, revisionDone, streakSettings);
   const lastActive = profile?.lastActive ? new Date(profile.lastActive).getTime() : Date.now();
   const daysSince = (Date.now() - lastActive) / (1000 * 60 * 60 * 24);
 

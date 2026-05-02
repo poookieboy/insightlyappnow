@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2 } from "lucide-react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useStore, resetAll, type Curriculum, type Grade } from "@/lib/store";
+import { useStore, resetAll, defaultStreakSettings, type Curriculum, type Grade } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -143,6 +143,65 @@ function Settings() {
           </Select>
         </div>
         <Button onClick={save} className="w-full bg-gradient-primary text-primary-foreground">Save changes</Button>
+      </Card>
+
+      <Card className="mt-4 space-y-4 p-5">
+        <div className="flex items-center gap-2">
+          <Flame className="h-5 w-5 text-orange-500" />
+          <h2 className="font-semibold">Streak rules</h2>
+        </div>
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Studying past midnight? Set a custom day-start so late-night sessions still count toward yesterday.
+        </p>
+
+        <div className="space-y-2">
+          <Label>Day starts at</Label>
+          <Select
+            value={String(state.streakSettings?.dayStartHour ?? defaultStreakSettings.dayStartHour)}
+            onValueChange={(v) =>
+              update((s) => ({
+                ...s,
+                streakSettings: { ...(s.streakSettings ?? defaultStreakSettings), dayStartHour: Number(v) },
+              }))
+            }
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((h) => (
+                <SelectItem key={h} value={String(h)}>
+                  {h === 0 ? "Midnight (12 AM)" : `${h} AM`}{h === 4 ? " — recommended" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            E.g. with 4 AM, a study session at 1 AM still counts as the previous day.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Grace days (skip allowance)</Label>
+          <Select
+            value={String(state.streakSettings?.graceDays ?? defaultStreakSettings.graceDays)}
+            onValueChange={(v) =>
+              update((s) => ({
+                ...s,
+                streakSettings: { ...(s.streakSettings ?? defaultStreakSettings), graceDays: Number(v) },
+              }))
+            }
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0 — strict, no missed days</SelectItem>
+              <SelectItem value="1">1 — miss a day, stay on streak</SelectItem>
+              <SelectItem value="2">2 — chill mode</SelectItem>
+              <SelectItem value="3">3 — relaxed</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Your streak survives this many missed days in a row before resetting.
+          </p>
+        </div>
       </Card>
 
       <Link to="/donate" className="block">

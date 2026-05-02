@@ -42,8 +42,8 @@ function HomeScreen() {
   const profile = state.profile!;
   const { profile: dbProfile } = useProfile();
   const opener = useMemo(() => motivation.opener(), []);
-  const suggestion = smartSuggestion(profile, state.tasks, state.revisionDone);
-  const streak = computeStreak(state.tasks, state.revisionDone);
+  const suggestion = smartSuggestion(profile, state.tasks, state.revisionDone, state.streakSettings);
+  const streak = computeStreak(state.tasks, state.revisionDone, state.streakSettings);
   const badgeCount = state.badges.unlocked.length;
 
   const upcoming = state.tasks
