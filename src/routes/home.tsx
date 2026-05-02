@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon } from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon, Flame, Award } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { useStore } from "@/lib/store";
@@ -9,6 +9,8 @@ import { motivation } from "@/lib/motivation";
 import { smartSuggestion } from "@/lib/suggestions";
 import { scheduleChecks, ensureNotificationPermission } from "@/lib/notifications";
 import { getQuestions } from "@/lib/revision";
+import { computeStreak } from "@/lib/streak";
+import { BADGES } from "@/lib/badges";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -41,6 +43,8 @@ function HomeScreen() {
   const { profile: dbProfile } = useProfile();
   const opener = useMemo(() => motivation.opener(), []);
   const suggestion = smartSuggestion(profile, state.tasks, state.revisionDone);
+  const streak = computeStreak(state.tasks, state.revisionDone);
+  const badgeCount = state.badges.unlocked.length;
 
   const upcoming = state.tasks
     .filter((t) => !t.completed)
@@ -87,6 +91,27 @@ function HomeScreen() {
           </div>
         </div>
       </Card>
+
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <Link to="/dashboard">
+          <Card className="h-full overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-pink-500 p-4 text-white shadow-glow transition-all active:scale-95">
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4" />
+              <p className="text-[11px] font-medium uppercase tracking-wide opacity-90">Streak</p>
+            </div>
+            <p className="mt-1 text-2xl font-bold">{streak}<span className="ml-1 text-sm font-medium opacity-90">{streak === 1 ? "day" : "days"}</span></p>
+          </Card>
+        </Link>
+        <Link to="/dashboard">
+          <Card className="h-full overflow-hidden border-0 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-95">
+            <div className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              <p className="text-[11px] font-medium uppercase tracking-wide opacity-90">Badges</p>
+            </div>
+            <p className="mt-1 text-2xl font-bold">{badgeCount}<span className="ml-1 text-sm font-medium opacity-90">/ {BADGES.length}</span></p>
+          </Card>
+        </Link>
+      </div>
 
       <Card className="mb-4 p-5">
         <div className="mb-3 flex items-center justify-between">

@@ -1,5 +1,6 @@
 import type { Profile, Task, RevisionDone } from "./store";
 import { getQuestions } from "./revision";
+import { computeStreak } from "./streak";
 
 export function smartSuggestion(
   profile: Profile | null,
@@ -7,6 +8,8 @@ export function smartSuggestion(
   revisionDone: RevisionDone[],
 ): string {
   if (!profile) return "Let's get started 🚀";
+
+  const streak = computeStreak(tasks, revisionDone);
   const lastActive = profile?.lastActive ? new Date(profile.lastActive).getTime() : Date.now();
   const daysSince = (Date.now() - lastActive) / (1000 * 60 * 60 * 24);
 
@@ -16,6 +19,8 @@ export function smartSuggestion(
     (t) => !t.completed && new Date(t.deadline).getTime() < Date.now(),
   );
   if (overdue.length > 0) return `You have ${overdue.length} overdue task${overdue.length > 1 ? "s" : ""} — tackle one now 💪`;
+
+  if (streak >= 3) return `🔥 ${streak}-day streak! Do one thing today to keep it alive.`;
 
   const upcoming = tasks
     .filter((t) => !t.completed)
@@ -29,3 +34,4 @@ export function smartSuggestion(
 
   return "All caught up! Try adding a new task or note 🌟";
 }
+
