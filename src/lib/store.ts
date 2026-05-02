@@ -92,6 +92,14 @@ export interface Goal {
   done?: boolean;
 }
 
+export interface StreakSettings {
+  /** Hour of day (0-23) at which a new "study day" begins. Default 4 = 4 AM,
+   *  so activity at 1 AM still counts toward the previous calendar day. */
+  dayStartHour: number;
+  /** Number of missed days the streak tolerates before resetting. Default 1. */
+  graceDays: number;
+}
+
 interface AppState {
   profile: Profile | null;
   tasks: Task[];
@@ -104,10 +112,16 @@ interface AppState {
   generatedPapers: import("./papers").Paper[];
   examResults: ExamResult[];
   goals: Goal[];
+  streakSettings: StreakSettings;
   hydrated: boolean;
 }
 
 const KEY = "studentsync:v1";
+
+export const defaultStreakSettings: StreakSettings = {
+  dayStartHour: 4,
+  graceDays: 1,
+};
 
 const defaultState: AppState = {
   profile: null,
@@ -121,6 +135,7 @@ const defaultState: AppState = {
   generatedPapers: [],
   examResults: [],
   goals: [],
+  streakSettings: defaultStreakSettings,
   hydrated: false,
 };
 
