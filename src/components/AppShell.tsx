@@ -1,11 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Sparkles, BookOpen, Calculator, TrendingUp } from "lucide-react";
+import { Home, Sparkles, LayoutGrid, Calculator, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/tutor", label: "Nexus", icon: Sparkles },
-  { to: "/workspace", label: "Notes", icon: BookOpen },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/exams", label: "Exams", icon: TrendingUp },
   { to: "/calculator", label: "Calc", icon: Calculator },
 ] as const;
