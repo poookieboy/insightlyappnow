@@ -695,9 +695,101 @@ const BANDS: Record<Band, SubjectPack[]> = {
   primary: PRIMARY, lower: LOWER, upper: UPPER, senior: SENIOR,
 };
 
+// CBC (Kenya) Junior & Senior School subject lists. Grade 7-9 do NOT take
+// stand-alone Biology/Chemistry/Physics/Geography — those are Senior School
+// pathway subjects. Filter accordingly so students see relevant subjects.
+const CBC_JUNIOR_SUBJECTS = new Set([
+  "Mathematics", "English", "Kiswahili", "Integrated Science",
+  "Social Studies", "History", "CRE", "IRE",
+  "Agriculture", "Home Science", "Pre-Technical Studies",
+  "Business Studies", "Creative Arts",
+]);
+
+// Extra CBC-specific packs to surface for upper (Grade 7-9).
+const CBC_UPPER_EXTRA: SubjectPack[] = [
+  {
+    subject: "Integrated Science", emoji: "🔬",
+    topics: [{ name: "Living Things", subtopics: [{ name: "Cells & Body Systems", questions: [
+      { id: "is1", question: "Powerhouse of the cell?", answer: "Mitochondria" },
+      { id: "is2", question: "Site of photosynthesis?", answer: "Chloroplast" },
+      { id: "is3", question: "Gas humans breathe out?", answer: "Carbon dioxide", options: ["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], correctIndex: 2 },
+      { id: "is4", question: "Word equation for respiration.", answer: "glucose + oxygen → carbon dioxide + water" },
+      { id: "is5", question: "Organ that pumps blood?", answer: "Heart" },
+    ]}]}],
+  },
+  {
+    subject: "Social Studies", emoji: "🌍",
+    topics: [{ name: "People & Government", subtopics: [{ name: "Kenya Today", questions: [
+      { id: "ss1", question: "How many counties does Kenya have?", answer: "47" },
+      { id: "ss2", question: "Capital city of Kenya?", answer: "Nairobi" },
+      { id: "ss3", question: "Head of a county government?", answer: "Governor" },
+      { id: "ss4", question: "Currency of Kenya?", answer: "Shilling" },
+      { id: "ss5", question: "Name one neighbour of Kenya.", answer: "Uganda" },
+    ]}]}],
+  },
+  {
+    subject: "History", emoji: "📜",
+    topics: [{ name: "Kenyan History", subtopics: [{ name: "Independence", questions: [
+      { id: "h1", question: "Year Kenya gained independence?", answer: "1963" },
+      { id: "h2", question: "First president of Kenya?", answer: "Jomo Kenyatta" },
+      { id: "h3", question: "Movement that fought for independence?", answer: "Mau Mau" },
+    ]}]}],
+  },
+  {
+    subject: "CRE", emoji: "✝️",
+    topics: [{ name: "New Testament", subtopics: [{ name: "Life of Jesus", questions: [
+      { id: "cre1", question: "Where was Jesus born?", answer: "Bethlehem" },
+      { id: "cre2", question: "Name two disciples.", answer: "Peter and John" },
+      { id: "cre3", question: "Greatest commandment?", answer: "Love God and love your neighbour" },
+      { id: "cre4", question: "Day Christians celebrate the resurrection?", answer: "Easter" },
+    ]}]}],
+  },
+  {
+    subject: "Agriculture", emoji: "🌾",
+    topics: [{ name: "Crop Production", subtopics: [{ name: "Soil & Crops", questions: [
+      { id: "ag1", question: "Best soil for farming?", answer: "Loam" },
+      { id: "ag2", question: "Name a cereal crop.", answer: "Maize" },
+      { id: "ag3", question: "Process of removing weeds?", answer: "Weeding" },
+    ]}]}],
+  },
+  {
+    subject: "Pre-Technical Studies", emoji: "🛠️",
+    topics: [{ name: "Tools & Safety", subtopics: [{ name: "Workshop", questions: [
+      { id: "pt1", question: "Tool for driving nails?", answer: "Hammer" },
+      { id: "pt2", question: "PPE for the eyes?", answer: "Goggles" },
+      { id: "pt3", question: "Renewable energy source?", answer: "Solar" },
+    ]}]}],
+  },
+  {
+    subject: "Business Studies", emoji: "💼",
+    topics: [{ name: "Trade", subtopics: [{ name: "Basics", questions: [
+      { id: "bs1", question: "Define trade.", answer: "The buying and selling of goods and services." },
+      { id: "bs2", question: "Document acknowledging payment?", answer: "Receipt" },
+      { id: "bs3", question: "Person who starts a business?", answer: "Entrepreneur" },
+    ]}]}],
+  },
+];
+
 export function getSubjects(curriculum: Curriculum, grade: Grade): SubjectPack[] {
   const band = GRADE_BAND[grade] || "lower";
-  const base = BANDS[band];
+  let base = BANDS[band];
+
+  // CBC: filter to CBC-relevant subjects for Junior/Senior school.
+  if (curriculum === "CBC" && (band === "upper" || band === "senior")) {
+    const extras = band === "upper" ? CBC_UPPER_EXTRA : [];
+    const merged = [...base, ...extras];
+    base = merged.filter((p) => CBC_JUNIOR_SUBJECTS.has(p.subject));
+    // De-dup by subject name (extras win).
+    const seen = new Set<string>();
+    const unique: SubjectPack[] = [];
+    for (const p of [...extras, ...base]) {
+      if (seen.has(p.subject)) continue;
+      seen.add(p.subject);
+      unique.push(p);
+    }
+    base = unique;
+  }
+
   // Prefix all question ids so they're unique per curriculum/grade context.
   return base.map((pack) => ({
     ...pack,
