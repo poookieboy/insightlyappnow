@@ -178,7 +178,7 @@ function TestsList() {
                     {list.map((p) => {
                       const totalMarks = p.questions.reduce((n, q) => n + q.marks, 0);
                       return (
-                        <Card className="flex items-center gap-2 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+                        <Card key={p.id} className="flex items-center gap-2 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
                           <Link to="/tests/$paperId" params={{ paperId: p.id }} className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
                               <FileText className="h-5 w-5" />
