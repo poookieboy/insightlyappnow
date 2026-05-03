@@ -802,12 +802,56 @@ export function normaliseGeneratedPaper(raw: any, opts: {
   };
 }
 
+// Forgiving fuzzy match for short-answer grading.
+// - Strips all whitespace and punctuation (except meaningful math symbols).
+// - Compares numerically when both sides are numbers (so "1,000" == "1000").
+// - Compares as token sets so word order / extra spaces / "the" etc. don't matter.
+// - Falls back to substring containment for longer answers.
 export function gradeShortAnswer(q: PaperQuestion, userAnswer: string): boolean {
   if (q.kind !== "short") return false;
-  const norm = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9αβπΩμ°\-+./²³√]+/gi, " ").replace(/\s+/g, " ").trim();
-  const u = norm(userAnswer);
-  if (!u) return false;
-  const targets = [q.modelAnswer || "", ...(q.acceptable || [])].map(norm);
-  return targets.some((t) => t && (t === u || (t.length > 3 && u.includes(t)) || (u.length > 3 && t.includes(u))));
+  const targets = [q.modelAnswer || "", ...(q.acceptable || [])].filter(Boolean);
+  return targets.some((t) => answersMatch(userAnswer, t));
+}
+
+const STOP = new Set(["a", "an", "the", "is", "are", "of", "to", "and", "or"]);
+
+function normLoose(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9αβπΩμ°\-+*/=.²³√]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function compact(s: string): string {
+  // remove ALL whitespace — so "x = 5" === "x=5" === "x = 5 "
+  return normLoose(s).replace(/\s+/g, "");
+}
+function tokens(s: string): string[] {
+  return normLoose(s).split(" ").filter((t) => t && !STOP.has(t));
+}
+function asNumber(s: string): number | null {
+  const cleaned = s.replace(/[,\s]/g, "");
+  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;
+  return Number(cleaned);
+}
+
+export function answersMatch(user: string, target: string): boolean {
+  if (!user.trim() || !target.trim()) return false;
+
+  const un = asNumber(user), tn = asNumber(target);
+  if (un !== null && tn !== null) return Math.abs(un - tn) < 1e-9;
+
+  const uc = compact(user), tc = compact(target);
+  if (!uc || !tc) return false;
+  if (uc === tc) return true;
+  if (tc.length >= 3 && uc.includes(tc)) return true;
+  if (uc.length >= 3 && tc.includes(uc)) return true;
+
+  const ut = tokens(user), tt = tokens(target);
+  if (tt.length === 0) return false;
+  const set = new Set(ut);
+  const overlap = tt.filter((t) => set.has(t)).length;
+  // 80% of target tokens present (or 100% for very short answers)
+  const ratio = overlap / tt.length;
+  return tt.length <= 2 ? ratio === 1 : ratio >= 0.8;
 }

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useStore } from "@/lib/store";
 import { getSubjects, getAllQuestions, type SubjectPack, type Topic, type Subtopic, type Question } from "@/lib/revision";
+import { answersMatch } from "@/lib/papers";
 import { evaluateBadges, notifyBadges } from "@/lib/badges";
 import { motivation } from "@/lib/motivation";
 import { toast } from "sonner";
@@ -285,14 +286,13 @@ function QuestionCard({
   const [reveal, setReveal] = useState(false);
   const isMcq = q.options && q.options.length > 0;
 
-  const normalizeAns = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9αβπΩμ°\-+./²³√]+/gi, " ").replace(/\s+/g, " ").trim();
   const correctTyped = useMemo(() => {
     if (isMcq) return false;
-    const u = normalizeAns(typed);
-    if (!u) return false;
-    const t = normalizeAns(q.answer);
-    return t === u || (t.length > 3 && u.includes(t)) || (u.length > 3 && t.includes(u));
+    if (!typed.trim()) return false;
+    // Reuse the forgiving grader so spacing/word order/casing all pass.
+    // Also try the model answer split by common alternative separators.
+    const variants = [q.answer, ...q.answer.split(/\s*(?:,|;|\bor\b|\/)\s*/i)];
+    return variants.some((v) => v && answersMatch(typed, v));
   }, [typed, q.answer, isMcq]);
 
   const handleCheck = () => {
