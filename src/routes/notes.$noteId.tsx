@@ -2,8 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Save, Printer, Trash2, Copy, Bold, Italic, Underline as UnderlineIcon,
-  List, ListOrdered, Heading1, Heading2, Image as ImageIcon, Quote, Link as LinkIcon,
-  Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Sparkles, Loader2,
+  List, ListOrdered, Heading1, Heading2, Heading3, Image as ImageIcon, Quote, Link as LinkIcon,
+  Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Sparkles, Loader2, Highlighter, Minus, Subscript, Superscript, Indent, Outdent,
+  Table as TableIcon, RemoveFormatting, Type,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
