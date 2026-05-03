@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronRight, FileText, Clock, GraduationCap, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { ChevronRight, FileText, Clock, GraduationCap, Sparkles, Loader2, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
