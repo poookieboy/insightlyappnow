@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronRight, FileText, Clock, GraduationCap, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { ChevronRight, FileText, Clock, GraduationCap, Sparkles, Loader2, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -119,7 +119,7 @@ function TestsList() {
             {generated.map((p) => {
               const totalMarks = p.questions.reduce((n, q) => n + q.marks, 0);
               return (
-                <Card key={p.id} className="flex items-center gap-3 p-4">
+                <Card key={p.id} className="flex items-center gap-2 p-4">
                   <Link to="/tests/$paperId" params={{ paperId: p.id }} className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
                       <span className="text-lg">{p.emoji}</span>
@@ -133,6 +133,15 @@ function TestsList() {
                         {p.subject} · {p.difficulty}
                       </span>
                     </div>
+                  </Link>
+                  <Link
+                    to="/tests/$paperId/preview"
+                    params={{ paperId: p.id }}
+                    className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Preview paper"
+                    title="Preview as PDF"
+                  >
+                    <Eye className="h-4 w-4" />
                   </Link>
                   <button
                     onClick={() => removeGenerated(p.id)}
@@ -169,8 +178,8 @@ function TestsList() {
                     {list.map((p) => {
                       const totalMarks = p.questions.reduce((n, q) => n + q.marks, 0);
                       return (
-                        <Link key={p.id} to="/tests/$paperId" params={{ paperId: p.id }} className="block">
-                          <Card className="flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+                        <Card key={p.id} className="flex items-center gap-2 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+                          <Link to="/tests/$paperId" params={{ paperId: p.id }} className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
                               <FileText className="h-5 w-5" />
                             </div>
@@ -186,9 +195,18 @@ function TestsList() {
                                 {p.difficulty}
                               </span>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </Card>
-                        </Link>
+                          </Link>
+                          <Link
+                            to="/tests/$paperId/preview"
+                            params={{ paperId: p.id }}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            aria-label="Preview paper"
+                            title="Preview as PDF"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </Card>
                       );
                     })}
                   </div>

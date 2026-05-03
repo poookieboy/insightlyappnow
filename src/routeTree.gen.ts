@@ -27,6 +27,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
+import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 
 const WorkspaceRoute = WorkspaceRouteImport.update({
   id: '/workspace',
@@ -118,6 +119,11 @@ const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   path: '/$noteId',
   getParentRoute: () => NotesRoute,
 } as any)
+const TestsPaperIdPreviewRoute = TestsPaperIdPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => TestsPaperIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,7 +143,8 @@ export interface FileRoutesByFullPath {
   '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
-  '/tests/$paperId': typeof TestsPaperIdRoute
+  '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
+  '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,7 +164,8 @@ export interface FileRoutesByTo {
   '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
-  '/tests/$paperId': typeof TestsPaperIdRoute
+  '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
+  '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,7 +186,8 @@ export interface FileRoutesById {
   '/tutor': typeof TutorRoute
   '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
-  '/tests/$paperId': typeof TestsPaperIdRoute
+  '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
+  '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
+    | '/tests/$paperId/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
+    | '/tests/$paperId/preview'
   id:
     | '__root__'
     | '/'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
+    | '/tests/$paperId/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -390,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesNoteIdRouteImport
       parentRoute: typeof NotesRoute
     }
+    '/tests/$paperId/preview': {
+      id: '/tests/$paperId/preview'
+      path: '/preview'
+      fullPath: '/tests/$paperId/preview'
+      preLoaderRoute: typeof TestsPaperIdPreviewRouteImport
+      parentRoute: typeof TestsPaperIdRoute
+    }
   }
 }
 
@@ -403,12 +422,24 @@ const NotesRouteChildren: NotesRouteChildren = {
 
 const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
 
+interface TestsPaperIdRouteChildren {
+  TestsPaperIdPreviewRoute: typeof TestsPaperIdPreviewRoute
+}
+
+const TestsPaperIdRouteChildren: TestsPaperIdRouteChildren = {
+  TestsPaperIdPreviewRoute: TestsPaperIdPreviewRoute,
+}
+
+const TestsPaperIdRouteWithChildren = TestsPaperIdRoute._addFileChildren(
+  TestsPaperIdRouteChildren,
+)
+
 interface TestsRouteChildren {
-  TestsPaperIdRoute: typeof TestsPaperIdRoute
+  TestsPaperIdRoute: typeof TestsPaperIdRouteWithChildren
 }
 
 const TestsRouteChildren: TestsRouteChildren = {
-  TestsPaperIdRoute: TestsPaperIdRoute,
+  TestsPaperIdRoute: TestsPaperIdRouteWithChildren,
 }
 
 const TestsRouteWithChildren = TestsRoute._addFileChildren(TestsRouteChildren)

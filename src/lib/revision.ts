@@ -705,68 +705,274 @@ const CBC_JUNIOR_SUBJECTS = new Set([
   "Business Studies", "Creative Arts",
 ]);
 
-// Extra CBC-specific packs to surface for upper (Grade 7-9).
+// Extra CBC-specific packs to surface for upper (Grade 7-9). Designed to cover
+// the broader Junior School learning areas with realistic topic depth.
 const CBC_UPPER_EXTRA: SubjectPack[] = [
   {
     subject: "Integrated Science", emoji: "🔬",
-    topics: [{ name: "Living Things", subtopics: [{ name: "Cells & Body Systems", questions: [
-      { id: "is1", question: "Powerhouse of the cell?", answer: "Mitochondria" },
-      { id: "is2", question: "Site of photosynthesis?", answer: "Chloroplast" },
-      { id: "is3", question: "Gas humans breathe out?", answer: "Carbon dioxide", options: ["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], correctIndex: 2 },
-      { id: "is4", question: "Word equation for respiration.", answer: "glucose + oxygen → carbon dioxide + water" },
-      { id: "is5", question: "Organ that pumps blood?", answer: "Heart" },
-    ]}]}],
+    topics: [
+      { name: "Living Things", subtopics: [
+        { name: "Cells & Body Systems", questions: [
+          { id: "is1", question: "Powerhouse of the cell?", answer: "Mitochondria" },
+          { id: "is2", question: "Site of photosynthesis?", answer: "Chloroplast" },
+          { id: "is3", question: "Gas humans breathe out?", answer: "Carbon dioxide", options: ["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], correctIndex: 2 },
+          { id: "is4", question: "Word equation for respiration.", answer: "glucose + oxygen → carbon dioxide + water" },
+          { id: "is5", question: "Organ that pumps blood?", answer: "Heart" },
+          { id: "is6", question: "Pigment that gives leaves their green colour?", answer: "Chlorophyll" },
+          { id: "is7", question: "Largest organ in the human body?", answer: "Skin" },
+          { id: "is8", question: "Process by which plants lose water through leaves?", answer: "Transpiration" },
+        ]},
+        { name: "Health & Nutrition", questions: [
+          { id: "hn1", question: "Vitamin we get from sunlight?", answer: "Vitamin D" },
+          { id: "hn2", question: "Disease caused by lack of vitamin C?", answer: "Scurvy" },
+          { id: "hn3", question: "Food group for body building?", answer: "Proteins" },
+          { id: "hn4", question: "Disease spread by mosquitoes?", answer: "Malaria" },
+        ]},
+      ]},
+      { name: "Matter & Energy", subtopics: [
+        { name: "States of Matter", questions: [
+          { id: "sm1", question: "Three states of matter?", answer: "Solid, liquid, gas" },
+          { id: "sm2", question: "Change from liquid to gas?", answer: "Evaporation" },
+          { id: "sm3", question: "Change from gas to liquid?", answer: "Condensation" },
+        ]},
+        { name: "Forces & Energy", questions: [
+          { id: "fe1", question: "Unit of force?", answer: "Newton" },
+          { id: "fe2", question: "Force pulling objects to the ground?", answer: "Gravity" },
+          { id: "fe3", question: "Energy in moving objects?", answer: "Kinetic energy" },
+          { id: "fe4", question: "Name one renewable energy source.", answer: "Solar" },
+        ]},
+      ]},
+      { name: "Environment", subtopics: [
+        { name: "Ecosystems", questions: [
+          { id: "ec1", question: "Producers in a food chain?", answer: "Plants" },
+          { id: "ec2", question: "Animals that eat only plants?", answer: "Herbivores" },
+          { id: "ec3", question: "Layer that protects us from UV rays?", answer: "Ozone layer" },
+        ]},
+      ]},
+    ],
+  },
+  {
+    subject: "Mathematics", emoji: "🧮",
+    topics: [
+      { name: "Numbers", subtopics: [
+        { name: "Fractions, Decimals & Percentages", questions: [
+          { id: "fdp1", question: "Convert 3/4 to a percentage.", answer: "75%" },
+          { id: "fdp2", question: "0.2 as a fraction in lowest terms?", answer: "1/5" },
+          { id: "fdp3", question: "Find 15% of 200.", answer: "30" },
+          { id: "fdp4", question: "Simplify 12/18.", answer: "2/3" },
+        ]},
+        { name: "Ratios & Proportions", questions: [
+          { id: "rp1", question: "Share Ksh 600 in ratio 2:3.", answer: "240 and 360" },
+          { id: "rp2", question: "Express 25:100 in simplest form.", answer: "1:4" },
+        ]},
+      ]},
+      { name: "Algebra", subtopics: [
+        { name: "Linear equations", questions: [
+          { id: "le1", question: "Solve: 2x + 5 = 13.", answer: "4" },
+          { id: "le2", question: "Solve: 3(x − 2) = 9.", answer: "5" },
+          { id: "le3", question: "Make y the subject: 2y + x = 10.", answer: "y = (10 − x)/2" },
+        ]},
+      ]},
+      { name: "Geometry & Measures", subtopics: [
+        { name: "Area & Perimeter", questions: [
+          { id: "ap1", question: "Area of a rectangle 8cm × 5cm.", answer: "40 cm²" },
+          { id: "ap2", question: "Perimeter of a square side 7cm.", answer: "28 cm" },
+          { id: "ap3", question: "Sum of interior angles of a triangle?", answer: "180°" },
+        ]},
+      ]},
+    ],
+  },
+  {
+    subject: "English", emoji: "📖",
+    topics: [
+      { name: "Grammar", subtopics: [
+        { name: "Parts of Speech", questions: [
+          { id: "ps1", question: "Word that names a person, place or thing?", answer: "Noun" },
+          { id: "ps2", question: "Word that describes a noun?", answer: "Adjective" },
+          { id: "ps3", question: "Past tense of 'go'?", answer: "Went" },
+          { id: "ps4", question: "Plural of 'leaf'?", answer: "Leaves" },
+        ]},
+        { name: "Tenses", questions: [
+          { id: "t1", question: "Past continuous of 'play'?", answer: "Was/were playing" },
+          { id: "t2", question: "Present perfect of 'eat'?", answer: "Have/has eaten" },
+        ]},
+      ]},
+      { name: "Composition & Comprehension", subtopics: [
+        { name: "Writing skills", questions: [
+          { id: "ws1", question: "Type of writing that tells a story?", answer: "Narrative" },
+          { id: "ws2", question: "Comparison using 'like' or 'as'?", answer: "Simile" },
+          { id: "ws3", question: "A formal letter ends with?", answer: "Yours faithfully" },
+        ]},
+      ]},
+    ],
+  },
+  {
+    subject: "Kiswahili", emoji: "🗣️",
+    topics: [
+      { name: "Sarufi", subtopics: [
+        { name: "Aina za maneno", questions: [
+          { id: "kw1", question: "Wingi wa 'mtoto'?", answer: "Watoto" },
+          { id: "kw2", question: "Kinyume cha 'kubwa'?", answer: "Kidogo" },
+          { id: "kw3", question: "Ngeli ya 'mti'?", answer: "U-I" },
+          { id: "kw4", question: "Tafsiri 'school' kwa Kiswahili.", answer: "Shule" },
+          { id: "kw5", question: "Mtu anayefundisha shuleni?", answer: "Mwalimu" },
+        ]},
+      ]},
+      { name: "Methali na Misemo", subtopics: [
+        { name: "Methali", questions: [
+          { id: "me1", question: "Kamilisha: Haba na haba ___ .", answer: "hujaza kibaba" },
+          { id: "me2", question: "Maana ya 'Asiyesikia la mkuu huvunjika guu'?", answer: "Asiyesikia ushauri hupatwa na shida" },
+        ]},
+      ]},
+    ],
   },
   {
     subject: "Social Studies", emoji: "🌍",
-    topics: [{ name: "People & Government", subtopics: [{ name: "Kenya Today", questions: [
-      { id: "ss1", question: "How many counties does Kenya have?", answer: "47" },
-      { id: "ss2", question: "Capital city of Kenya?", answer: "Nairobi" },
-      { id: "ss3", question: "Head of a county government?", answer: "Governor" },
-      { id: "ss4", question: "Currency of Kenya?", answer: "Shilling" },
-      { id: "ss5", question: "Name one neighbour of Kenya.", answer: "Uganda" },
-    ]}]}],
+    topics: [
+      { name: "Kenya & Africa", subtopics: [
+        { name: "Government & Counties", questions: [
+          { id: "ss1", question: "How many counties in Kenya?", answer: "47" },
+          { id: "ss2", question: "Capital city of Kenya?", answer: "Nairobi" },
+          { id: "ss3", question: "Head of a county government?", answer: "Governor" },
+          { id: "ss4", question: "Currency of Kenya?", answer: "Shilling" },
+          { id: "ss5", question: "Name one neighbour of Kenya.", answer: "Uganda" },
+          { id: "ss6", question: "Three arms of government?", answer: "Executive, Legislature, Judiciary" },
+          { id: "ss7", question: "Number of senators in Kenya?", answer: "67" },
+        ]},
+        { name: "Physical Features", questions: [
+          { id: "pf1", question: "Highest mountain in Kenya?", answer: "Mount Kenya" },
+          { id: "pf2", question: "Largest lake in Kenya?", answer: "Lake Victoria" },
+          { id: "pf3", question: "Longest river in Kenya?", answer: "River Tana" },
+        ]},
+      ]},
+    ],
   },
   {
     subject: "History", emoji: "📜",
-    topics: [{ name: "Kenyan History", subtopics: [{ name: "Independence", questions: [
-      { id: "h1", question: "Year Kenya gained independence?", answer: "1963" },
-      { id: "h2", question: "First president of Kenya?", answer: "Jomo Kenyatta" },
-      { id: "h3", question: "Movement that fought for independence?", answer: "Mau Mau" },
-    ]}]}],
+    topics: [
+      { name: "Pre-colonial & Colonial Kenya", subtopics: [
+        { name: "Communities & Migration", questions: [
+          { id: "hh1", question: "Three main language groups in Kenya?", answer: "Bantu, Nilotes, Cushites" },
+          { id: "hh2", question: "Year Kenya gained independence?", answer: "1963" },
+          { id: "hh3", question: "First president of Kenya?", answer: "Jomo Kenyatta" },
+          { id: "hh4", question: "Movement that fought for independence?", answer: "Mau Mau" },
+          { id: "hh5", question: "Year of the new constitution?", answer: "2010" },
+        ]},
+      ]},
+    ],
   },
   {
     subject: "CRE", emoji: "✝️",
-    topics: [{ name: "New Testament", subtopics: [{ name: "Life of Jesus", questions: [
-      { id: "cre1", question: "Where was Jesus born?", answer: "Bethlehem" },
-      { id: "cre2", question: "Name two disciples.", answer: "Peter and John" },
-      { id: "cre3", question: "Greatest commandment?", answer: "Love God and love your neighbour" },
-      { id: "cre4", question: "Day Christians celebrate the resurrection?", answer: "Easter" },
-    ]}]}],
+    topics: [
+      { name: "New Testament", subtopics: [
+        { name: "Life of Jesus", questions: [
+          { id: "cre1", question: "Where was Jesus born?", answer: "Bethlehem" },
+          { id: "cre2", question: "Name two disciples.", answer: "Peter and John" },
+          { id: "cre3", question: "Greatest commandment?", answer: "Love God and love your neighbour" },
+          { id: "cre4", question: "Day Christians celebrate the resurrection?", answer: "Easter" },
+          { id: "cre5", question: "Number of disciples Jesus chose?", answer: "12" },
+          { id: "cre6", question: "Place Jesus prayed before His arrest?", answer: "Gethsemane" },
+        ]},
+      ]},
+      { name: "Old Testament", subtopics: [
+        { name: "Patriarchs", questions: [
+          { id: "ot1", question: "Who built the ark?", answer: "Noah" },
+          { id: "ot2", question: "Father of faith?", answer: "Abraham" },
+          { id: "ot3", question: "Number of commandments?", answer: "10" },
+        ]},
+      ]},
+    ],
+  },
+  {
+    subject: "IRE", emoji: "☪️",
+    topics: [
+      { name: "Pillars & Practice", subtopics: [
+        { name: "Five Pillars", questions: [
+          { id: "ire1", question: "How many pillars of Islam?", answer: "5" },
+          { id: "ire2", question: "Holy book of Islam?", answer: "Qur'an" },
+          { id: "ire3", question: "Holy month of fasting?", answer: "Ramadan" },
+          { id: "ire4", question: "Number of daily prayers?", answer: "5" },
+          { id: "ire5", question: "Pilgrimage to Mecca is called?", answer: "Hajj" },
+        ]},
+      ]},
+    ],
   },
   {
     subject: "Agriculture", emoji: "🌾",
-    topics: [{ name: "Crop Production", subtopics: [{ name: "Soil & Crops", questions: [
-      { id: "ag1", question: "Best soil for farming?", answer: "Loam" },
-      { id: "ag2", question: "Name a cereal crop.", answer: "Maize" },
-      { id: "ag3", question: "Process of removing weeds?", answer: "Weeding" },
-    ]}]}],
+    topics: [
+      { name: "Crop Production", subtopics: [
+        { name: "Soil & Crops", questions: [
+          { id: "ag1", question: "Best soil for farming?", answer: "Loam" },
+          { id: "ag2", question: "Name a cereal crop.", answer: "Maize" },
+          { id: "ag3", question: "Process of removing weeds?", answer: "Weeding" },
+          { id: "ag4", question: "Manure made from decayed plants and animals?", answer: "Compost" },
+          { id: "ag5", question: "Growing different crops on same land in seasons?", answer: "Crop rotation" },
+        ]},
+      ]},
+      { name: "Livestock", subtopics: [
+        { name: "Animal husbandry", questions: [
+          { id: "lh1", question: "Young of a goat?", answer: "Kid" },
+          { id: "lh2", question: "Animal kept for milk?", answer: "Cow" },
+          { id: "lh3", question: "Disease that affects cattle through ticks?", answer: "East Coast Fever" },
+        ]},
+      ]},
+    ],
   },
   {
     subject: "Pre-Technical Studies", emoji: "🛠️",
-    topics: [{ name: "Tools & Safety", subtopics: [{ name: "Workshop", questions: [
-      { id: "pt1", question: "Tool for driving nails?", answer: "Hammer" },
-      { id: "pt2", question: "PPE for the eyes?", answer: "Goggles" },
-      { id: "pt3", question: "Renewable energy source?", answer: "Solar" },
-    ]}]}],
+    topics: [
+      { name: "Tools & Safety", subtopics: [
+        { name: "Workshop", questions: [
+          { id: "pt1", question: "Tool for driving nails?", answer: "Hammer" },
+          { id: "pt2", question: "PPE for the eyes?", answer: "Goggles" },
+          { id: "pt3", question: "Renewable energy source?", answer: "Solar" },
+          { id: "pt4", question: "Tool for measuring length accurately?", answer: "Tape measure" },
+          { id: "pt5", question: "Tool used to smoothen wood?", answer: "Plane" },
+        ]},
+      ]},
+      { name: "Digital Literacy", subtopics: [
+        { name: "Computer basics", questions: [
+          { id: "dl1", question: "Brain of the computer?", answer: "CPU" },
+          { id: "dl2", question: "Permanent storage device?", answer: "Hard disk" },
+          { id: "dl3", question: "Software used to browse the internet?", answer: "Web browser" },
+        ]},
+      ]},
+    ],
   },
   {
     subject: "Business Studies", emoji: "💼",
-    topics: [{ name: "Trade", subtopics: [{ name: "Basics", questions: [
-      { id: "bs1", question: "Define trade.", answer: "The buying and selling of goods and services." },
-      { id: "bs2", question: "Document acknowledging payment?", answer: "Receipt" },
-      { id: "bs3", question: "Person who starts a business?", answer: "Entrepreneur" },
-    ]}]}],
+    topics: [
+      { name: "Trade", subtopics: [
+        { name: "Basics", questions: [
+          { id: "bs1", question: "Define trade.", answer: "The buying and selling of goods and services." },
+          { id: "bs2", question: "Document acknowledging payment?", answer: "Receipt" },
+          { id: "bs3", question: "Person who starts a business?", answer: "Entrepreneur" },
+          { id: "bs4", question: "Trade between two countries?", answer: "International trade" },
+          { id: "bs5", question: "Document requesting goods from a supplier?", answer: "Order" },
+        ]},
+      ]},
+      { name: "Money & Banking", subtopics: [
+        { name: "Personal finance", questions: [
+          { id: "mb1", question: "Money set aside for future use?", answer: "Savings" },
+          { id: "mb2", question: "Interest paid for borrowing money?", answer: "Loan interest" },
+          { id: "mb3", question: "Mobile money platform popular in Kenya?", answer: "M-Pesa" },
+        ]},
+      ]},
+    ],
+  },
+  {
+    subject: "Creative Arts", emoji: "🎨",
+    topics: [
+      { name: "Art & Music", subtopics: [
+        { name: "Fundamentals", questions: [
+          { id: "ca1", question: "Three primary colours?", answer: "Red, yellow, blue" },
+          { id: "ca2", question: "Mixing red and yellow gives?", answer: "Orange" },
+          { id: "ca3", question: "Number of lines on a music staff?", answer: "5" },
+          { id: "ca4", question: "Instrument with strings and a bow?", answer: "Violin" },
+          { id: "ca5", question: "Traditional Kenyan dance from the Luo?", answer: "Ohangla" },
+        ]},
+      ]},
+    ],
   },
 ];
 
