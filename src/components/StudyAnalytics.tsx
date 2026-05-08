@@ -82,14 +82,10 @@ export function StudyAnalytics() {
       .slice(0, 6);
   }, [examResults]);
 
-  const streakInfo = useMemo(() => {
-    const ts = [
-      ...tasks.filter((t) => t.completedAt).map((t) => t.completedAt!),
-      ...revisionDone.map((r) => r.doneAt),
-      ...tutorConversations.map((c) => c.updatedAt),
-    ];
-    return computeStreak(ts, state.streakSettings ?? defaultStreakSettings);
-  }, [tasks, revisionDone, tutorConversations, state.streakSettings]);
+  const currentStreak = useMemo(
+    () => computeStreak(tasks, revisionDone, state.streakSettings ?? defaultStreakSettings),
+    [tasks, revisionDone, state.streakSettings],
+  );
 
   const totalChats = tutorConversations.length;
   const totalRevised = revisionDone.length;
