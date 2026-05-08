@@ -388,6 +388,45 @@ function Tutor() {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
           />
+          {voice.supported && (
+            <Button
+              type="button"
+              size="icon"
+              variant={voice.listening ? "default" : "outline"}
+              onClick={() => {
+                if (voice.listening) {
+                  voice.stop();
+                } else {
+                  setVoiceMode(true);
+                  voice.start((finalText) => {
+                    if (finalText) send(finalText);
+                  });
+                }
+              }}
+              title={voice.listening ? "Stop listening" : "Speak to Nexus"}
+              className={cn(
+                "h-9 w-9 shrink-0",
+                voice.listening && "animate-pulse bg-red-500 text-white hover:bg-red-600",
+              )}
+            >
+              {voice.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          )}
+          {voice.supported && (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => {
+                if (voice.speaking) voice.stopSpeaking();
+                setVoiceMode((v) => !v);
+              }}
+              title={voiceMode ? "Mute Nexus voice" : "Read replies aloud"}
+              className="h-9 w-9 shrink-0"
+            >
+              {voiceMode ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+          )}
           <Button
             type="submit"
             size="icon"
@@ -397,6 +436,11 @@ function Tutor() {
             <Send className="h-4 w-4" />
           </Button>
         </div>
+        {voice.listening && (
+          <p className="mt-1 text-center text-[11px] text-muted-foreground animate-fade-in">
+            🎙️ Listening… {voice.transcript && <span className="italic">"{voice.transcript}"</span>}
+          </p>
+        )}
       </form>
       <div className="h-20" />
 
