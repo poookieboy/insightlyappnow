@@ -61,6 +61,7 @@ function HomeScreen() {
 
   return (
     <AppShell>
+      <IntroTutorial />
       <header className="mb-6 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{opener}</p>
