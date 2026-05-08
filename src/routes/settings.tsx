@@ -207,6 +207,31 @@ function Settings() {
         </div>
       </Card>
 
+      <Card className="mt-4 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">Study analytics</h2>
+        </div>
+        <p className="-mt-1 mb-4 text-xs text-muted-foreground">
+          A detailed look at your study habits, subjects, and performance.
+        </p>
+        <StudyAnalytics />
+      </Card>
+
+      <Card className="mt-4 flex items-center gap-3 p-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
+          <PlayCircle className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold">Replay intro tutorial</p>
+          <p className="text-xs text-muted-foreground">Take the welcome walkthrough again</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setShowIntro(true)}>
+          Watch
+        </Button>
+      </Card>
+      {showIntro && <IntroTutorial forceOpen onClose={() => setShowIntro(false)} />}
+
       <Link to="/donate" className="block">
         <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
