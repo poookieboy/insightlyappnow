@@ -85,6 +85,16 @@ function Tutor() {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, loading]);
 
+  // Auto-speak the assistant's reply when voice mode is on (only after streaming finishes)
+  useEffect(() => {
+    if (!voiceMode || loading) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    if (last.content === lastSpokenRef.current) return;
+    lastSpokenRef.current = last.content;
+    voice.speak(last.content);
+  }, [messages, loading, voiceMode, voice]);
+
   const ensureConversation = (firstUserText: string): TutorConversation => {
     if (active) return active;
     const conv: TutorConversation = {
