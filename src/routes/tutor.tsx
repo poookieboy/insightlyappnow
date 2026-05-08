@@ -348,10 +348,15 @@ function Tutor() {
       <div className="space-y-3 pb-4">
         {messages.length === 0 && (
           <Card className="border-dashed bg-muted/40 p-4">
-            <p className="mb-1 text-sm font-semibold">👋 Welcome to your AI Tutor</p>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Start a new chat below, revisit past chats from the menu, and group related chats into <strong>Projects</strong> (like custom tutors per subject).
-            </p>
+            <div className="mb-3 flex items-center gap-3">
+              <img src={nexusAvatar} alt="Nexus" className="h-14 w-14 shrink-0 animate-scale-in" />
+              <div>
+                <p className="text-sm font-semibold">Hey, I'm Nexus 👋</p>
+                <p className="text-xs text-muted-foreground">
+                  Ask me anything, type or tap the mic to talk.
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 gap-2">
               {STARTERS.map((s) => (
                 <button
