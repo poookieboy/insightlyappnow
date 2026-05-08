@@ -71,6 +71,9 @@ function Tutor() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; id?: string }>({ open: false });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const voice = useVoiceChat();
+  const [voiceMode, setVoiceMode] = useState(false);
+  const lastSpokenRef = useRef<string>("");
 
   const active = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
