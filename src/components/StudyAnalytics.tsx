@@ -92,7 +92,7 @@ export function StudyAnalytics() {
   const completedTasks = tasks.filter((t) => t.completed).length;
 
   const stats = [
-    { label: "Streak", value: streakInfo.current, icon: Activity, color: "text-orange-500" },
+    { label: "Streak", value: currentStreak, icon: Activity, color: "text-orange-500" },
     { label: "Chats", value: totalChats, icon: PieIcon, color: "text-violet-500" },
     { label: "Revised", value: totalRevised, icon: Target, color: "text-emerald-500" },
     { label: "Notes", value: notes.length, icon: BarChart3, color: "text-blue-500" },
