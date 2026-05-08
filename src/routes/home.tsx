@@ -13,6 +13,7 @@ import { computeStreak } from "@/lib/streak";
 import { BADGES } from "@/lib/badges";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { IntroTutorial } from "@/components/IntroTutorial";
 
 export const Route = createFileRoute("/home")({
   component: () => (
