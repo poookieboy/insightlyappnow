@@ -41,6 +41,7 @@ function Settings() {
   const [name, setName] = useState(profile.name);
   const [curriculum, setCurriculum] = useState<Curriculum>(profile.curriculum);
   const [grade, setGrade] = useState<Grade>(profile.grade);
+  const [showIntro, setShowIntro] = useState(false);
 
   const save = async () => {
     update((s) => (s.profile ? { ...s, profile: { ...s.profile, name: name.trim(), curriculum, grade } } : s));
