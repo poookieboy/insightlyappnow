@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Send, Sparkles, Trash2, User, Bot, RefreshCw, Plus, MessageSquare,
-  FolderPlus, Folder, Menu, X, Pencil,
+  FolderPlus, Folder, Menu, X, Pencil, Mic, MicOff, Volume2, VolumeX,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
+import nexusAvatar from "@/assets/nexus-avatar.png";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
@@ -69,6 +71,9 @@ function Tutor() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; id?: string }>({ open: false });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const voice = useVoiceChat();
+  const [voiceMode, setVoiceMode] = useState(false);
+  const lastSpokenRef = useRef<string>("");
 
   const active = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
@@ -79,6 +84,16 @@ function Tutor() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, loading]);
+
+  // Auto-speak the assistant's reply when voice mode is on (only after streaming finishes)
+  useEffect(() => {
+    if (!voiceMode || loading) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    if (last.content === lastSpokenRef.current) return;
+    lastSpokenRef.current = last.content;
+    voice.speak(last.content);
+  }, [messages, loading, voiceMode, voice]);
 
   const ensureConversation = (firstUserText: string): TutorConversation => {
     if (active) return active;
@@ -333,10 +348,15 @@ function Tutor() {
       <div className="space-y-3 pb-4">
         {messages.length === 0 && (
           <Card className="border-dashed bg-muted/40 p-4">
-            <p className="mb-1 text-sm font-semibold">👋 Welcome to your AI Tutor</p>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Start a new chat below, revisit past chats from the menu, and group related chats into <strong>Projects</strong> (like custom tutors per subject).
-            </p>
+            <div className="mb-3 flex items-center gap-3">
+              <img src={nexusAvatar} alt="Nexus" className="h-14 w-14 shrink-0 animate-scale-in" />
+              <div>
+                <p className="text-sm font-semibold">Hey, I'm Nexus 👋</p>
+                <p className="text-xs text-muted-foreground">
+                  Ask me anything, type or tap the mic to talk.
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 gap-2">
               {STARTERS.map((s) => (
                 <button
@@ -373,6 +393,45 @@ function Tutor() {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
           />
+          {voice.supported && (
+            <Button
+              type="button"
+              size="icon"
+              variant={voice.listening ? "default" : "outline"}
+              onClick={() => {
+                if (voice.listening) {
+                  voice.stop();
+                } else {
+                  setVoiceMode(true);
+                  voice.start((finalText) => {
+                    if (finalText) send(finalText);
+                  });
+                }
+              }}
+              title={voice.listening ? "Stop listening" : "Speak to Nexus"}
+              className={cn(
+                "h-9 w-9 shrink-0",
+                voice.listening && "animate-pulse bg-red-500 text-white hover:bg-red-600",
+              )}
+            >
+              {voice.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          )}
+          {voice.supported && (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => {
+                if (voice.speaking) voice.stopSpeaking();
+                setVoiceMode((v) => !v);
+              }}
+              title={voiceMode ? "Mute Nexus voice" : "Read replies aloud"}
+              className="h-9 w-9 shrink-0"
+            >
+              {voiceMode ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+          )}
           <Button
             type="submit"
             size="icon"
@@ -382,6 +441,11 @@ function Tutor() {
             <Send className="h-4 w-4" />
           </Button>
         </div>
+        {voice.listening && (
+          <p className="mt-1 text-center text-[11px] text-muted-foreground animate-fade-in">
+            🎙️ Listening… {voice.transcript && <span className="italic">"{voice.transcript}"</span>}
+          </p>
+        )}
       </form>
       <div className="h-20" />
 

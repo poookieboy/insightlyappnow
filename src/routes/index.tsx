@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, GraduationCap, Lightbulb } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
+import insightlyIcon from "@/assets/insightly-icon.png";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,11 +68,8 @@ function Onboarding() {
     <div className="min-h-screen bg-gradient-soft px-5 py-10">
       <div className="mx-auto max-w-md animate-fade-in">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-primary shadow-glow">
-            <div className="relative">
-              <GraduationCap className="h-10 w-10 text-primary-foreground" />
-              <Lightbulb className="absolute -right-2 -top-2 h-5 w-5 text-warning" />
-            </div>
+          <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-primary shadow-glow animate-scale-in">
+            <img src={insightlyIcon} alt="Insightly" className="h-20 w-20" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Insightly</h1>
           <p className="mt-1 text-sm text-muted-foreground">Learn smart with Nexus, your AI companion.</p>

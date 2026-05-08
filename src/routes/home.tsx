@@ -13,6 +13,7 @@ import { computeStreak } from "@/lib/streak";
 import { BADGES } from "@/lib/badges";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { IntroTutorial } from "@/components/IntroTutorial";
 
 export const Route = createFileRoute("/home")({
   component: () => (
@@ -60,6 +61,7 @@ function HomeScreen() {
 
   return (
     <AppShell>
+      <IntroTutorial />
       <header className="mb-6 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{opener}</p>
