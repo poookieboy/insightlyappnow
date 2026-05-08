@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Send, Sparkles, Trash2, User, Bot, RefreshCw, Plus, MessageSquare,
-  FolderPlus, Folder, Menu, X, Pencil,
+  FolderPlus, Folder, Menu, X, Pencil, Mic, MicOff, Volume2, VolumeX,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
+import nexusAvatar from "@/assets/nexus-avatar.png";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
