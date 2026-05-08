@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, GraduationCap, Lightbulb } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
+import insightlyIcon from "@/assets/insightly-icon.png";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
