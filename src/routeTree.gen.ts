@@ -19,11 +19,13 @@ import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as GoProRouteImport } from './routes/go-pro'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
@@ -79,6 +81,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoProRoute = GoProRouteImport.update({
+  id: '/go-pro',
+  path: '/go-pro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExamsRoute = ExamsRouteImport.update({
   id: '/exams',
   path: '/exams',
@@ -104,6 +111,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -127,11 +139,13 @@ const TestsPaperIdPreviewRoute = TestsPaperIdPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
   '/exams': typeof ExamsRoute
+  '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
@@ -148,11 +162,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
   '/exams': typeof ExamsRoute
+  '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
@@ -170,11 +186,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
   '/exams': typeof ExamsRoute
+  '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
@@ -193,11 +211,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/calculator'
     | '/dashboard'
     | '/donate'
     | '/exams'
+    | '/go-pro'
     | '/home'
     | '/notes'
     | '/reset-password'
@@ -214,11 +234,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/calculator'
     | '/dashboard'
     | '/donate'
     | '/exams'
+    | '/go-pro'
     | '/home'
     | '/notes'
     | '/reset-password'
@@ -235,11 +257,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/calculator'
     | '/dashboard'
     | '/donate'
     | '/exams'
+    | '/go-pro'
     | '/home'
     | '/notes'
     | '/reset-password'
@@ -257,11 +281,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CalculatorRoute: typeof CalculatorRoute
   DashboardRoute: typeof DashboardRoute
   DonateRoute: typeof DonateRoute
   ExamsRoute: typeof ExamsRoute
+  GoProRoute: typeof GoProRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -346,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/go-pro': {
+      id: '/go-pro'
+      path: '/go-pro'
+      fullPath: '/go-pro'
+      preLoaderRoute: typeof GoProRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/exams': {
       id: '/exams'
       path: '/exams'
@@ -379,6 +412,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -446,11 +486,13 @@ const TestsRouteWithChildren = TestsRoute._addFileChildren(TestsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CalculatorRoute: CalculatorRoute,
   DashboardRoute: DashboardRoute,
   DonateRoute: DonateRoute,
   ExamsRoute: ExamsRoute,
+  GoProRoute: GoProRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,

@@ -76,15 +76,15 @@ function AdminPage() {
   const review = async (sub: Sub, status: "approved" | "rejected") => {
     if (!user) return;
     setBusyId(sub.id);
-    const update: Record<string, unknown> = {
+    const days = sub.plan === "yearly" ? 365 : 30;
+    const update = {
       status,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
+      ...(status === "approved"
+        ? { expires_at: new Date(Date.now() + days * 86400_000).toISOString() }
+        : {}),
     };
-    if (status === "approved") {
-      const days = sub.plan === "yearly" ? 365 : 30;
-      update.expires_at = new Date(Date.now() + days * 86400_000).toISOString();
-    }
     const { error } = await supabase.from("subscriptions").update(update).eq("id", sub.id);
     setBusyId(null);
     if (error) return toast.error(error.message);
