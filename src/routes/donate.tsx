@@ -1,28 +1,53 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Heart, Coffee, Smartphone, ChevronLeft, ExternalLink, Check } from "lucide-react";
+import { Heart, Smartphone, ChevronLeft, Check, Loader2 } from "lucide-react";
+import insightlyIcon from "@/assets/insightly-icon.png";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/donate")({
   component: DonatePage,
 });
 
-const LINKS = {
-  bmac: "https://buymeacoffee.com/studentsync",
-  mpesaPaybill: "852648",
-  mpesaAccount: "95408",
-  mpesaName: "Fortune Sacco",
-};
+const POCHI_NUMBER = "0740322098";
+const PRESETS = [50, 100, 200, 500, 1000];
 
 function DonatePage() {
-  const [mpesaOpen, setMpesaOpen] = useState(false);
+  const { user } = useAuth();
+  const [amount, setAmount] = useState("100");
+  const [code, setCode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const amt = Number(amount);
+    if (!amt || amt < 1) return toast.error("Enter an amount");
+    const cleaned = code.trim().toUpperCase();
+    if (!/^[A-Z0-9]{8,12}$/.test(cleaned)) {
+      return toast.error("Enter the M-Pesa confirmation code");
+    }
+    setBusy(true);
+    const { error } = await supabase.from("donations").insert({
+      user_id: user?.id ?? null,
+      amount: amt,
+      mpesa_code: cleaned,
+      phone: phone.trim() || null,
+      message: message.trim() || null,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Thank you for your support! 💜");
+    setCode("");
+    setMessage("");
+  };
 
   return (
     <AppShell>
@@ -33,172 +58,107 @@ function DonatePage() {
       </div>
 
       <Card className="mb-5 border-0 bg-gradient-primary p-6 text-center text-primary-foreground shadow-glow">
-        <Heart className="mx-auto h-10 w-10" />
-        <h1 className="mt-2 text-2xl font-bold">Support the creator</h1>
+        <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+          <img src={insightlyIcon} alt="" className="h-10 w-10" />
+        </div>
+        <Heart className="mx-auto h-8 w-8" />
+        <h1 className="mt-2 text-2xl font-bold">Support Insightly</h1>
         <p className="mt-1 text-sm opacity-90">
-          Insightly is free. If it helps you study, a small gift keeps it growing 💜
+          A small gift keeps the AI tutor running for students everywhere 💜
         </p>
       </Card>
 
-      <div className="space-y-3">
-        <button onClick={() => setMpesaOpen(true)} className="w-full text-left">
-          <Card className="flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600">
-              <Smartphone className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold">Pay with M-Pesa</p>
-              <p className="text-xs text-muted-foreground">Lipa na M-Pesa Paybill — Kenya</p>
-            </div>
-            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
-              Recommended
-            </span>
-          </Card>
-        </button>
+      <Card className="mb-4 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Smartphone className="h-5 w-5 text-emerald-600" />
+          <h2 className="font-semibold">Send via M-Pesa Pochi la Biashara</h2>
+        </div>
+        <ol className="space-y-2 text-sm">
+          <Step n={1}>Open M-Pesa → <strong>Send Money</strong></Step>
+          <Step n={2}>Phone: <strong className="font-mono">{POCHI_NUMBER}</strong></Step>
+          <Step n={3}>Amount: <strong>any amount you choose</strong></Step>
+          <Step n={4}>Enter PIN → confirm</Step>
+          <Step n={5}>Paste the confirmation code below</Step>
+        </ol>
+      </Card>
 
-        <a href={LINKS.bmac} target="_blank" rel="noreferrer" className="block">
-          <Card className="flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-600">
-              <Coffee className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold">Buy me a coffee ☕</p>
-              <p className="text-xs text-muted-foreground">One-time tip in any currency</p>
-            </div>
-            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-          </Card>
-        </a>
-      </div>
+      <Card className="space-y-4 p-5">
+        <div className="space-y-2">
+          <Label>Amount sent (KES)</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <div className="flex flex-wrap gap-1.5">
+            {PRESETS.map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setAmount(String(v))}
+                className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] hover:bg-muted"
+              >
+                KES {v}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="dcode">M-Pesa confirmation code</Label>
+          <Input
+            id="dcode"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="e.g. SLK7X3Q9MN"
+            maxLength={12}
+            className="font-mono"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="dphone">Your phone (optional)</Label>
+          <Input
+            id="dphone"
+            type="tel"
+            placeholder="07XX XXX XXX"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="dmsg">Message (optional)</Label>
+          <Textarea
+            id="dmsg"
+            placeholder="A note for the creator…"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            maxLength={500}
+            rows={3}
+          />
+        </div>
+
+        <Button
+          onClick={submit}
+          disabled={busy || !user}
+          className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : (<><Check className="mr-1 h-4 w-4" /> Confirm donation</>)}
+        </Button>
+        {!user && (
+          <p className="text-center text-[11px] text-muted-foreground">
+            <Link to="/auth" className="text-primary underline">Sign in</Link> to record your donation.
+          </p>
+        )}
+      </Card>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Thank you for supporting independent learners 🙏
       </p>
-
-      <MpesaDialog open={mpesaOpen} onClose={() => setMpesaOpen(false)} />
     </AppShell>
-  );
-}
-
-function MpesaDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [phone, setPhone] = useState("");
-  const [amount, setAmount] = useState("100");
-  const [step, setStep] = useState<"form" | "instructions">("form");
-
-  const handleSubmit = () => {
-    const cleaned = phone.replace(/\s+/g, "");
-    if (!/^(?:\+?254|0)?[71]\d{8}$/.test(cleaned)) {
-      toast.error("Enter a valid Kenyan phone number");
-      return;
-    }
-    if (!amount || Number(amount) < 1) {
-      toast.error("Enter an amount");
-      return;
-    }
-    setStep("instructions");
-  };
-
-  const reset = () => {
-    setStep("form");
-    setPhone("");
-    setAmount("100");
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && reset()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5 text-emerald-600" />
-            Pay with M-Pesa
-          </DialogTitle>
-        </DialogHeader>
-
-        {step === "form" ? (
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Enter your phone and amount. We'll show you the steps to complete payment on your phone.
-            </p>
-            <div>
-              <label className="mb-1 block text-xs font-medium">Phone number</label>
-              <Input
-                type="tel"
-                inputMode="tel"
-                placeholder="07XX XXX XXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium">Amount (KES)</label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {[50, 100, 200, 500, 1000].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setAmount(String(v))}
-                    className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] hover:bg-muted"
-                  >
-                    KES {v}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <DialogFooter className="gap-2 sm:gap-2">
-              <Button variant="outline" onClick={reset}>Cancel</Button>
-              <Button onClick={handleSubmit} className="bg-emerald-600 text-white hover:bg-emerald-700">
-                Continue
-              </Button>
-            </DialogFooter>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="rounded-xl border bg-emerald-500/5 p-3">
-              <p className="text-[11px] font-semibold uppercase text-emerald-700">Payment summary</p>
-              <div className="mt-1 grid grid-cols-2 gap-y-1 text-xs">
-                <span className="text-muted-foreground">Paybill</span>
-                <span className="text-right font-mono font-bold">{LINKS.mpesaPaybill}</span>
-                <span className="text-muted-foreground">Account</span>
-                <span className="text-right font-mono font-bold">{LINKS.mpesaAccount}</span>
-                <span className="text-muted-foreground">Amount</span>
-                <span className="text-right font-bold">KES {amount}</span>
-                <span className="text-muted-foreground">Phone</span>
-                <span className="text-right font-mono">{phone}</span>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-semibold">On your phone:</p>
-              <ol className="space-y-1.5 text-xs">
-                <Step n={1}>Open M-Pesa → <strong>Lipa na M-Pesa</strong></Step>
-                <Step n={2}>Choose <strong>Pay Bill</strong></Step>
-                <Step n={3}>Business no.: <strong className="font-mono">{LINKS.mpesaPaybill}</strong></Step>
-                <Step n={4}>Account no.: <strong className="font-mono">{LINKS.mpesaAccount}</strong></Step>
-                <Step n={5}>Amount: <strong>KES {amount}</strong> → enter PIN → confirm</Step>
-              </ol>
-            </div>
-
-            <p className="rounded-md bg-muted/40 p-2 text-[10px] text-muted-foreground">
-              💡 An automatic STK Push (popup on your phone) will be available soon — it requires Safaricom Daraja API setup.
-            </p>
-
-            <DialogFooter className="gap-2 sm:gap-2">
-              <Button variant="outline" onClick={() => setStep("form")}>Back</Button>
-              <Button onClick={reset} className="bg-emerald-600 text-white hover:bg-emerald-700">
-                <Check className="mr-1 h-4 w-4" /> Done
-              </Button>
-            </DialogFooter>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 }
 
