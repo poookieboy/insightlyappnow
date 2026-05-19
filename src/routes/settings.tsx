@@ -39,11 +39,23 @@ function Settings() {
   const { profile: dbProfile, refresh } = useProfile();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [name, setName] = useState(profile.name);
   const [curriculum, setCurriculum] = useState<Curriculum>(profile.curriculum);
   const [grade, setGrade] = useState<Grade>(profile.grade);
   const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   const save = async () => {
     update((s) => (s.profile ? { ...s, profile: { ...s.profile, name: name.trim(), curriculum, grade } } : s));
@@ -95,8 +107,15 @@ function Settings() {
 
   return (
     <AppShell>
-      <h1 className="mb-1 text-2xl font-bold">Settings</h1>
-      <p className="mb-5 text-sm text-muted-foreground">Update your profile or reset data.</p>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow">
+          <img src={insightlyIcon} alt="" className="h-7 w-7" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold leading-tight">Settings</h1>
+          <p className="text-xs text-muted-foreground">Update your profile or reset data.</p>
+        </div>
+      </div>
 
       <Card className="mb-4 flex items-center gap-4 p-5">
         <div className="relative">
