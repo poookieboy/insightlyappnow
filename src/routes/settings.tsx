@@ -253,6 +253,19 @@ function Settings() {
       </Card>
       {showIntro && <IntroTutorial forceOpen onClose={() => setShowIntro(false)} />}
 
+      <Link to="/go-pro" className="block">
+        <Card className="mt-4 flex items-center gap-3 border-primary/30 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+            <Crown className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold">Upgrade to Insightly Pro</p>
+            <p className="text-xs opacity-90">KES 150/mo or KES 1,500/yr</p>
+          </div>
+          <ChevronRight className="h-4 w-4 opacity-80" />
+        </Card>
+      </Link>
+
       <Link to="/donate" className="block">
         <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
@@ -260,11 +273,26 @@ function Settings() {
           </div>
           <div className="flex-1">
             <p className="font-semibold">Support the creator</p>
-            <p className="text-xs text-muted-foreground">Buy a coffee, PayPal, or M-Pesa</p>
+            <p className="text-xs text-muted-foreground">Donate via M-Pesa Pochi la Biashara</p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      {isAdmin && (
+        <Link to="/admin" className="block">
+          <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold">Admin panel</p>
+              <p className="text-xs text-muted-foreground">Review subscriptions & donations</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
 
       <Card className="mt-4 p-5">
         <h2 className="font-semibold">Account</h2>
