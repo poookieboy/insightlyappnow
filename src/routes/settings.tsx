@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle } from "lucide-react";
+import { useEffect } from "react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield } from "lucide-react";
+import insightlyIcon from "@/assets/insightly-icon.png";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
 import { IntroTutorial } from "@/components/IntroTutorial";
 import { AppShell } from "@/components/AppShell";
@@ -37,11 +39,23 @@ function Settings() {
   const { profile: dbProfile, refresh } = useProfile();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [name, setName] = useState(profile.name);
   const [curriculum, setCurriculum] = useState<Curriculum>(profile.curriculum);
   const [grade, setGrade] = useState<Grade>(profile.grade);
   const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   const save = async () => {
     update((s) => (s.profile ? { ...s, profile: { ...s.profile, name: name.trim(), curriculum, grade } } : s));
@@ -93,8 +107,15 @@ function Settings() {
 
   return (
     <AppShell>
-      <h1 className="mb-1 text-2xl font-bold">Settings</h1>
-      <p className="mb-5 text-sm text-muted-foreground">Update your profile or reset data.</p>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow">
+          <img src={insightlyIcon} alt="" className="h-7 w-7" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold leading-tight">Settings</h1>
+          <p className="text-xs text-muted-foreground">Update your profile or reset data.</p>
+        </div>
+      </div>
 
       <Card className="mb-4 flex items-center gap-4 p-5">
         <div className="relative">
@@ -232,6 +253,19 @@ function Settings() {
       </Card>
       {showIntro && <IntroTutorial forceOpen onClose={() => setShowIntro(false)} />}
 
+      <Link to="/go-pro" className="block">
+        <Card className="mt-4 flex items-center gap-3 border-primary/30 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+            <Crown className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold">Upgrade to Insightly Pro</p>
+            <p className="text-xs opacity-90">KES 150/mo or KES 1,500/yr</p>
+          </div>
+          <ChevronRight className="h-4 w-4 opacity-80" />
+        </Card>
+      </Link>
+
       <Link to="/donate" className="block">
         <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
@@ -239,11 +273,26 @@ function Settings() {
           </div>
           <div className="flex-1">
             <p className="font-semibold">Support the creator</p>
-            <p className="text-xs text-muted-foreground">Buy a coffee, PayPal, or M-Pesa</p>
+            <p className="text-xs text-muted-foreground">Donate via M-Pesa Pochi la Biashara</p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      {isAdmin && (
+        <Link to="/admin" className="block">
+          <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold">Admin panel</p>
+              <p className="text-xs text-muted-foreground">Review subscriptions & donations</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
 
       <Card className="mt-4 p-5">
         <h2 className="font-semibold">Account</h2>
