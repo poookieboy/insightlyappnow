@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle } from "lucide-react";
+import { useEffect } from "react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield } from "lucide-react";
+import insightlyIcon from "@/assets/insightly-icon.png";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
 import { IntroTutorial } from "@/components/IntroTutorial";
 import { AppShell } from "@/components/AppShell";

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GraduationCap, Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
+import insightlyIcon from "@/assets/insightly-icon.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,8 +93,8 @@ function AuthPage() {
     <div className="min-h-screen bg-gradient-soft flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <GraduationCap className="h-7 w-7" />
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-primary shadow-glow">
+            <img src={insightlyIcon} alt="Insightly" className="h-12 w-12" />
           </div>
           <h1 className="mt-4 text-2xl font-bold">Welcome to Insightly</h1>
           <p className="text-sm text-muted-foreground">Sign in to continue learning with Nexus</p>
