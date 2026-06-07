@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useEffect } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield } from "lucide-react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info } from "lucide-react";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
 import { IntroTutorial } from "@/components/IntroTutorial";
@@ -293,6 +293,20 @@ function Settings() {
           </Card>
         </Link>
       )}
+
+      <Link to="/about" className="block">
+        <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Info className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold">About Insightly</p>
+            <p className="text-xs text-muted-foreground">Built by Ezenuel Studios</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Card>
+      </Link>
+
 
       <Card className="mt-4 p-5">
         <h2 className="font-semibold">Account</h2>
