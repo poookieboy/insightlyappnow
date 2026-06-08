@@ -13,10 +13,12 @@ import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as TestsRouteImport } from './routes/tests'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as GoProRouteImport } from './routes/go-pro'
@@ -52,6 +54,11 @@ const TestsRoute = TestsRouteImport.update({
   path: '/tests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -70,6 +77,11 @@ const RevisionRoute = RevisionRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotesRoute = NotesRouteImport.update({
@@ -155,10 +167,12 @@ export interface FileRoutesByFullPath {
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/terms': typeof TermsRoute
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
@@ -179,10 +193,12 @@ export interface FileRoutesByTo {
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/terms': typeof TermsRoute
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
@@ -204,10 +220,12 @@ export interface FileRoutesById {
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/terms': typeof TermsRoute
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
@@ -230,10 +248,12 @@ export interface FileRouteTypes {
     | '/go-pro'
     | '/home'
     | '/notes'
+    | '/privacy'
     | '/reset-password'
     | '/revision'
     | '/settings'
     | '/tasks'
+    | '/terms'
     | '/tests'
     | '/timetable'
     | '/tutor'
@@ -254,10 +274,12 @@ export interface FileRouteTypes {
     | '/go-pro'
     | '/home'
     | '/notes'
+    | '/privacy'
     | '/reset-password'
     | '/revision'
     | '/settings'
     | '/tasks'
+    | '/terms'
     | '/tests'
     | '/timetable'
     | '/tutor'
@@ -278,10 +300,12 @@ export interface FileRouteTypes {
     | '/go-pro'
     | '/home'
     | '/notes'
+    | '/privacy'
     | '/reset-password'
     | '/revision'
     | '/settings'
     | '/tasks'
+    | '/terms'
     | '/tests'
     | '/timetable'
     | '/tutor'
@@ -303,10 +327,12 @@ export interface RootRouteChildren {
   GoProRoute: typeof GoProRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RevisionRoute: typeof RevisionRoute
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
+  TermsRoute: typeof TermsRoute
   TestsRoute: typeof TestsRouteWithChildren
   TimetableRoute: typeof TimetableRoute
   TutorRoute: typeof TutorRoute
@@ -343,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tasks': {
       id: '/tasks'
       path: '/tasks'
@@ -369,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notes': {
@@ -516,10 +556,12 @@ const rootRouteChildren: RootRouteChildren = {
   GoProRoute: GoProRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RevisionRoute: RevisionRoute,
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,
+  TermsRoute: TermsRoute,
   TestsRoute: TestsRouteWithChildren,
   TimetableRoute: TimetableRoute,
   TutorRoute: TutorRoute,

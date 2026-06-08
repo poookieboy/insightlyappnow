@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useEffect } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info } from "lucide-react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info, FileText, ShieldCheck, Sparkles } from "lucide-react";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
 import { IntroTutorial } from "@/components/IntroTutorial";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -18,6 +19,7 @@ import { useStore, resetAll, defaultStreakSettings, type Curriculum, type Grade 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
