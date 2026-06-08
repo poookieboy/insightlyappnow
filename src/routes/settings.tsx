@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useEffect } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info } from "lucide-react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info, FileText, ShieldCheck, Sparkles } from "lucide-react";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
 import { IntroTutorial } from "@/components/IntroTutorial";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -18,6 +19,7 @@ import { useStore, resetAll, defaultStreakSettings, type Curriculum, type Grade 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -37,6 +39,7 @@ function Settings() {
   const profile = state.profile!;
   const { user } = useAuth();
   const { profile: dbProfile, refresh } = useProfile();
+  const { info: subInfo } = useSubscription();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -142,6 +145,69 @@ function Settings() {
           <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
         </div>
       </Card>
+
+      {subInfo && (
+        <Card
+          className={`mb-4 overflow-hidden p-0 ${
+            subInfo.isPro
+              ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-400/5 to-orange-500/10"
+              : subInfo.isActive
+              ? "border-primary/30 bg-gradient-to-br from-primary/8 to-primary/3"
+              : "border-red-500/40 bg-gradient-to-br from-red-500/10 to-red-600/5"
+          }`}
+        >
+          <div className="p-5">
+            <div className="mb-3 flex items-center gap-3">
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+                  subInfo.isPro
+                    ? "bg-amber-500/20 text-amber-600"
+                    : subInfo.isActive
+                    ? "bg-primary/15 text-primary"
+                    : "bg-red-500/15 text-red-600"
+                }`}
+              >
+                {subInfo.isPro ? <Crown className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold">
+                    {subInfo.isPro ? "Insightly Pro" : subInfo.isActive ? "Free Trial" : "Trial Expired"}
+                  </h2>
+                  <Badge
+                    variant="secondary"
+                    className={
+                      subInfo.isPro
+                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                        : subInfo.isActive
+                        ? "bg-primary/15 text-primary"
+                        : "bg-red-500/15 text-red-700"
+                    }
+                  >
+                    {subInfo.isPro ? "ACTIVE" : subInfo.isActive ? "TRIAL" : "LOCKED"}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {subInfo.isPro
+                    ? `Renews ${subInfo.expiresAt.toLocaleDateString()}`
+                    : subInfo.isActive
+                    ? `${subInfo.daysLeft} day${subInfo.daysLeft === 1 ? "" : "s"} left · ends ${subInfo.expiresAt.toLocaleDateString()}`
+                    : `Ended ${subInfo.expiresAt.toLocaleDateString()}`}
+                </p>
+              </div>
+            </div>
+            {!subInfo.isPro && (
+              <Link to="/go-pro">
+                <Button className="w-full bg-gradient-primary text-primary-foreground">
+                  <Crown className="h-4 w-4 mr-2" />
+                  {subInfo.isActive ? "Upgrade to Pro" : "Reactivate — Upgrade now"}
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Card>
+      )}
+
 
       <Card className="space-y-4 p-5">
         <div className="space-y-2">
@@ -253,18 +319,20 @@ function Settings() {
       </Card>
       {showIntro && <IntroTutorial forceOpen onClose={() => setShowIntro(false)} />}
 
-      <Link to="/go-pro" className="block">
-        <Card className="mt-4 flex items-center gap-3 border-primary/30 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
-            <Crown className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold">Upgrade to Insightly Pro</p>
-            <p className="text-xs opacity-90">KES 150/mo or KES 1,500/yr</p>
-          </div>
-          <ChevronRight className="h-4 w-4 opacity-80" />
-        </Card>
-      </Link>
+      {!subInfo?.isPro && (
+        <Link to="/go-pro" className="block">
+          <Card className="mt-4 flex items-center gap-3 border-primary/30 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+              <Crown className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold">Upgrade to Insightly Pro</p>
+              <p className="text-xs opacity-90">KES 150/mo or KES 1,500/yr</p>
+            </div>
+            <ChevronRight className="h-4 w-4 opacity-80" />
+          </Card>
+        </Link>
+      )}
 
       <Link to="/donate" className="block">
         <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
@@ -306,6 +374,15 @@ function Settings() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      <Card className="mt-4 grid grid-cols-2 gap-2 p-2">
+        <Link to="/terms" className="flex items-center justify-center gap-2 rounded-xl p-3 text-sm font-medium text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground">
+          <FileText className="h-4 w-4" /> Terms
+        </Link>
+        <Link to="/privacy" className="flex items-center justify-center gap-2 rounded-xl p-3 text-sm font-medium text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground">
+          <ShieldCheck className="h-4 w-4" /> Privacy
+        </Link>
+      </Card>
 
 
       <Card className="mt-4 p-5">

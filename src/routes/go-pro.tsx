@@ -86,7 +86,7 @@ function GoProPage() {
   };
 
   return (
-    <AppShell>
+    <AppShell showTrialBanner={false}>
       <div className="mb-3">
         <Link to="/settings" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-4 w-4" /> Settings

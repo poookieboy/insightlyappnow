@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Home, Sparkles, LayoutGrid, Calculator, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrialBanner } from "./TrialBanner";
 
 const tabs = [
   { to: "/home", label: "Home", icon: Home },
@@ -38,10 +39,13 @@ export function TabBar() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, showTrialBanner = true }: { children: React.ReactNode; showTrialBanner?: boolean }) {
   return (
     <div className="min-h-screen bg-gradient-soft pb-24">
-      <div className="mx-auto max-w-md px-4 pt-6 animate-fade-in">{children}</div>
+      <div className="mx-auto max-w-md px-4 pt-6 animate-fade-in">
+        {showTrialBanner && <TrialBanner />}
+        {children}
+      </div>
       <TabBar />
     </div>
   );
