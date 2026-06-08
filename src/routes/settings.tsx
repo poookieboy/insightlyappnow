@@ -375,6 +375,15 @@ function Settings() {
         </Card>
       </Link>
 
+      <Card className="mt-4 grid grid-cols-2 gap-2 p-2">
+        <Link to="/terms" className="flex items-center justify-center gap-2 rounded-xl p-3 text-sm font-medium text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground">
+          <FileText className="h-4 w-4" /> Terms
+        </Link>
+        <Link to="/privacy" className="flex items-center justify-center gap-2 rounded-xl p-3 text-sm font-medium text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground">
+          <ShieldCheck className="h-4 w-4" /> Privacy
+        </Link>
+      </Card>
+
 
       <Card className="mt-4 p-5">
         <h2 className="font-semibold">Account</h2>
