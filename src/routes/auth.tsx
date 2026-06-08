@@ -204,6 +204,12 @@ function AuthPage() {
           <span className="inline-flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5" /> 7-day free trial</span>
           <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Secure sign-in</span>
         </div>
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">
+          By continuing you agree to our{" "}
+          <a href="/terms" className="underline hover:text-foreground">Terms</a>
+          {" "}and{" "}
+          <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>.
+        </p>
       </div>
     </div>
   );
