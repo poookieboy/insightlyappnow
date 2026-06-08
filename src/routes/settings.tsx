@@ -319,18 +319,20 @@ function Settings() {
       </Card>
       {showIntro && <IntroTutorial forceOpen onClose={() => setShowIntro(false)} />}
 
-      <Link to="/go-pro" className="block">
-        <Card className="mt-4 flex items-center gap-3 border-primary/30 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
-            <Crown className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold">Upgrade to Insightly Pro</p>
-            <p className="text-xs opacity-90">KES 150/mo or KES 1,500/yr</p>
-          </div>
-          <ChevronRight className="h-4 w-4 opacity-80" />
-        </Card>
-      </Link>
+      {!subInfo?.isPro && (
+        <Link to="/go-pro" className="block">
+          <Card className="mt-4 flex items-center gap-3 border-primary/30 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+              <Crown className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold">Upgrade to Insightly Pro</p>
+              <p className="text-xs opacity-90">KES 150/mo or KES 1,500/yr</p>
+            </div>
+            <ChevronRight className="h-4 w-4 opacity-80" />
+          </Card>
+        </Link>
+      )}
 
       <Link to="/donate" className="block">
         <Card className="mt-4 flex items-center gap-3 p-4 transition-all hover:shadow-glow active:scale-[0.98]">
