@@ -44,6 +44,30 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          privacy_version: string
+          tos_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          privacy_version: string
+          tos_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          privacy_version?: string
+          tos_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -130,6 +154,48 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscription_status: {
+        Row: {
+          created_at: string
+          id: string
+          pro_until: string | null
+          provider: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+          trial_ends_at: string
+          trial_started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pro_until?: string | null
+          provider?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pro_until?: string | null
+          provider?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

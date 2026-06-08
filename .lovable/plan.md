@@ -1,87 +1,55 @@
-- I’ll fix the current broken/slow parts first, then expand the learning features in a stable way.
+# Insightly: Pro/Trial Enforcement + Redesign Plan
 
-## What I found
+This is a large scope. I'll ship it in **3 phases** so each phase is reviewable and working, not a giant unverifiable mega-edit.
 
-- The AI backend function responds successfully when called directly, so the app-side connection issue is likely caused by the current browser request/stream handling and environment fallback behavior.
-- Mock papers can fail to open because the paper runner only searches using the currently saved profile curriculum/grade. If the user changes the selector on the papers list but does not save it, the opened paper ID no longer matches the profile context.
-- Mock paper scoring currently has a results-state bug: answers are graded with `setAnswers`, then the score screen reads the old answers immediately, so scores can show wrong/empty until state catches up.
-- Revision and paper content exists, but it is still limited. Requested CBC subjects like CRE, Home Science, Agriculture, and Pre-Technical Studies are missing or underrepresented.
-- Notes are saved as plain cards. Workspace documents can be saved, but Notes does not yet open them in a proper editable document/PDF-like viewer.
-- Several UI interactions use heavy animations, localStorage writes on every edit/input, and full-list rendering, which can make buttons feel laggy on mobile.
+## Phase 1 — Auth, Trial, Payments, TOS (functional core)
 
-## Plan
+**Database (1 migration):**
+- `public.user_subscription_status` table — `user_id`, `tier` (`trial`/`pro`/`expired`), `trial_started_at`, `trial_ends_at`, `pro_until`, `provider` (`stripe`/`mpesa`), timestamps. RLS: user reads own, service role writes. Auto-row on signup via trigger (extend `handle_new_user`).
+- `public.legal_acceptances` — `user_id`, `tos_version`, `privacy_version`, `accepted_at`. RLS: user reads/inserts own.
 
-### 1. Fix the AI tutor connection and upgrade it into a ChatGPT/Copilot-style tutor
+**Trial logic:**
+- On signup, trigger sets `tier='trial'`, `trial_ends_at = now() + 7 days`.
+- New hook `useSubscription()` reads status; computes `isActive = tier==='pro' || (tier==='trial' && trial_ends_at>now())`.
+- `RequireProfile` extended → if `!isActive`, redirect to `/go-pro` (only `/settings`, `/go-pro`, `/about`, `/donate`, `/auth` accessible).
+- Trial banner in `AppShell` showing days remaining; turns red at ≤2 days; "Trial expired" full-screen card when over.
 
-- Make the tutor call more robust by using the standard Lovable Cloud function invocation path/client instead of relying on a fragile hand-built URL/key flow.
-- Improve streaming parsing so it handles partial chunks safely and shows a clearer error if the backend is unreachable.
-- Add ChatGPT-like tabs/modes at the top of the tutor:
-  - Ask
-  - Explain step-by-step
-  - Quiz me
-  - Diagram/chart
-  - Project helper
-- Update the AI prompt so it can create Mermaid diagrams/charts when helpful, explain with steps, help with project work, and ask follow-up questions when the student is stuck.
-- Add a “retry” action on failed messages instead of losing the question.
+**Settings — Pro status card:**
+- Shows current tier with badge, days left, plan expiry, "Manage subscription" / "Upgrade" CTAs.
 
-### 2. Fix mock papers opening and auto-grading
+**Payments (auto-activate):**
+- **Stripe**: Enable Lovable's built-in Stripe payments. Create monthly (KES 150) and yearly (KES 1500) products. Checkout from `/go-pro`. Webhook server route `/api/public/stripe-webhook` flips `tier='pro'`, sets `pro_until`.
+- **M-Pesa STK Push**: Needs Daraja credentials. I'll request `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY` as secrets. Server fn `initiateStkPush` → callback route `/api/public/mpesa-callback` auto-activates Pro.
 
-- Change paper lookup so `/tests/$paperId` can find a paper from the selected paper ID itself, not only the saved profile curriculum/grade.
-- Preserve selected curriculum/grade through navigation from the test list.
-- Fix the submit flow so grading is computed synchronously before showing results.
-- Improve short-answer grading normalization and show:
-  - your answer
-  - correct/model answer
-  - why it was marked right/wrong
-- Improve the test runner UI with clearer question navigation, answered/unanswered indicators, timer, submit confirmation, and review screen.
+**Terms of Service & Privacy Policy:**
+- Generate `/terms` and `/privacy` route pages with full content (Insightly by Ezenuel Studios, Kenya jurisdiction, student data handling, AI usage disclosure, payment terms).
+- On first login after signup OR if `legal_acceptances` row missing for current version → modal blocks app until both checkboxes checked + Accept clicked. Writes acceptance row.
 
-### 3. Add more curriculum subjects and topic coverage
+**Google sign-in verification:**
+- Confirmed `lovable.auth.signInWithOAuth("google")` is wired. I'll add console diagnostics and a "Test Google connection" debug button in `/auth` dev-only. After Phase 1 deploy I'll invoke a server fn that checks the configured providers and report back.
 
-- Expand revision + mock paper banks with curriculum-friendly subject packs.
-- Add requested CBC-style subjects such as:
-  - CRE / Christian Religious Education
-  - Home Science
-  - Agriculture
-  - Pre-Technical Studies
-  - Integrated Science / Science
-  - Social Studies
-  - English
-  - Kiswahili where applicable
-  - Mathematics
-- Keep support for all existing curriculum choices and all grades by using shared grade bands, with room to make each curriculum more specific over time.
-- Add topic and subtopic structures for each subject, then generate 1–20 practice questions per topic/subtopic where practical.
-- Add difficulty tags: Easy, Medium, Hard.
+## Phase 2 — AI revamp + voice
 
-### 4. Improve Revision behavior
+- Remove AI hero image from `/tutor`.
+- Restyle `/tutor` to **grey/black professional theme**: dark slate surfaces, neutral chat bubbles, no purple gradient, monospace accents.
+- New server fn `ai-tts` calling **OpenAI TTS via Lovable AI Gateway** (`openai/gpt-5-mini` doesn't do TTS — I'll verify the gateway supports `gpt-4o-mini-tts` or fall back to Gemini TTS; if neither, I'll come back to you with options).
+- `useVoiceChat` updated: server returns audio blob, client plays it. Voice = `nova` or `alloy` (warmest).
 
-- Replace “show answer / mark as done” style flow with typed-answer checking everywhere.
-- Let students retry, reveal the answer, or ask the AI to explain the exact question.
-- Add filters for subject, topic, and difficulty.
-- Add subject tests from revision topics using the same improved timer and grading system as mock papers.
+## Phase 3 — Full UI redesign
 
-### 5. Upgrade Notes into editable document/PDF-style review
+I'll generate **3 rendered design directions** for the home/dashboard using `design--create_directions` (locked palette/type/layout picked from a quick visual preference round). You pick one, then I rebuild every page (home, tasks, notes, timetable, revision, exams, tests, tutor, calculator, settings, go-pro, about, auth) to that direction in one sweep.
 
-- Add a document viewer/editor for saved notes/workspace documents.
-- Show notes in a clean page-like layout similar to a PDF sheet, but still editable.
-- Add actions for:
-  - open/edit note
-  - save changes
-  - duplicate
-  - print/export using the browser print dialog as PDF
-- Render saved rich-text notes from Workspace correctly instead of showing raw HTML/plain previews.
+**Streak animation upgrade** (part of Phase 3):
+- Flame icon with pulsing glow + counter that springs/scales on increment
+- Streak milestone celebration (confetti at 7/30/100 days)
+- Live shimmer on streak badge in dashboard
 
-### 6. Fix laggy buttons and mobile performance
+---
 
-- Reduce unnecessary animations on frequently changing screens.
-- Debounce document draft saving instead of writing to storage on every keystroke.
-- Avoid rebuilding large question lists unnecessarily.
-- Make buttons use faster active states and prevent double-click/double-submit issues.
-- Clean up list rendering and progress calculations for smoother mobile usage.
+## What I need from you before starting
 
-## Technical notes
+1. **M-Pesa Daraja credentials** (4 secrets) — I'll prompt with `add_secret` at the right moment. If you don't have these yet, I can ship Phase 1 with Stripe-only auto + M-Pesa staying manual, and add STK Push when you have the keys. **Tell me: have Daraja creds, or Stripe-only for now?**
+2. **Stripe enable** — I'll trigger it; you'll fill the brief form (email, business name).
+3. **Confirm I should start Phase 1 immediately** after you answer #1.
 
-- I will not edit the auto-generated Cloud client/type files.
-- I will keep this mostly frontend/content-library based; no new database tables are needed for this pass.
-- I’ll test the AI function directly again after code changes and verify the app uses the safer invocation path.
-- I’ll run the project build/type check after implementation to catch route, import, and TypeScript issues.
-- Q also fix the way that the notes are saved
+Phases 2 and 3 follow automatically — no extra approval needed unless something blocks.
