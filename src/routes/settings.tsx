@@ -146,6 +146,69 @@ function Settings() {
         </div>
       </Card>
 
+      {subInfo && (
+        <Card
+          className={`mb-4 overflow-hidden p-0 ${
+            subInfo.isPro
+              ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-400/5 to-orange-500/10"
+              : subInfo.isActive
+              ? "border-primary/30 bg-gradient-to-br from-primary/8 to-primary/3"
+              : "border-red-500/40 bg-gradient-to-br from-red-500/10 to-red-600/5"
+          }`}
+        >
+          <div className="p-5">
+            <div className="mb-3 flex items-center gap-3">
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+                  subInfo.isPro
+                    ? "bg-amber-500/20 text-amber-600"
+                    : subInfo.isActive
+                    ? "bg-primary/15 text-primary"
+                    : "bg-red-500/15 text-red-600"
+                }`}
+              >
+                {subInfo.isPro ? <Crown className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold">
+                    {subInfo.isPro ? "Insightly Pro" : subInfo.isActive ? "Free Trial" : "Trial Expired"}
+                  </h2>
+                  <Badge
+                    variant="secondary"
+                    className={
+                      subInfo.isPro
+                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                        : subInfo.isActive
+                        ? "bg-primary/15 text-primary"
+                        : "bg-red-500/15 text-red-700"
+                    }
+                  >
+                    {subInfo.isPro ? "ACTIVE" : subInfo.isActive ? "TRIAL" : "LOCKED"}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {subInfo.isPro
+                    ? `Renews ${subInfo.expiresAt.toLocaleDateString()}`
+                    : subInfo.isActive
+                    ? `${subInfo.daysLeft} day${subInfo.daysLeft === 1 ? "" : "s"} left · ends ${subInfo.expiresAt.toLocaleDateString()}`
+                    : `Ended ${subInfo.expiresAt.toLocaleDateString()}`}
+                </p>
+              </div>
+            </div>
+            {!subInfo.isPro && (
+              <Link to="/go-pro">
+                <Button className="w-full bg-gradient-primary text-primary-foreground">
+                  <Crown className="h-4 w-4 mr-2" />
+                  {subInfo.isActive ? "Upgrade to Pro" : "Reactivate — Upgrade now"}
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Card>
+      )}
+
+
       <Card className="space-y-4 p-5">
         <div className="space-y-2">
           <Label>Name</Label>
