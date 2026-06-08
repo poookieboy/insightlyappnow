@@ -39,6 +39,7 @@ function Settings() {
   const profile = state.profile!;
   const { user } = useAuth();
   const { profile: dbProfile, refresh } = useProfile();
+  const { info: subInfo } = useSubscription();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
