@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import {
   BookOpen, ListTodo, CalendarDays, StickyNote, Lock, Sparkles,
-  FileText, Award, Flame, Trophy,
+  FileText, Award, Trophy,
 } from "lucide-react";
+import { StreakFlame } from "@/components/StreakFlame";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -74,13 +75,13 @@ function Dashboard() {
 
       {/* Stats row: streak + badges */}
       <div className="mb-5 grid grid-cols-2 gap-3">
-        <Card className="overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-pink-500 p-4 text-white shadow-glow">
-          <div className="flex items-center gap-2">
-            <Flame className="h-5 w-5" />
-            <p className="text-xs font-medium uppercase tracking-wide opacity-90">Streak</p>
+        <Card className="relative overflow-hidden border-0 bg-gradient-ocean p-4 text-primary-foreground shadow-glow">
+          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10 blur-2xl" />
+          <p className="text-[11px] font-medium uppercase tracking-widest opacity-80">Streak</p>
+          <div className="mt-2">
+            <StreakFlame count={streak} size="lg" label={false} className="text-white" />
           </div>
-          <p className="mt-2 text-3xl font-bold">{streak}<span className="ml-1 text-base font-medium opacity-90">{streak === 1 ? "day" : "days"}</span></p>
-          <p className="text-[11px] opacity-80">{streak > 0 ? "Keep it alive! 🔥" : "Do something today to start"}</p>
+          <p className="mt-1 text-[11px] opacity-80">{streak > 0 ? "Keep it alive! 🔥" : "Do something today to start"}</p>
         </Card>
         <Card className="overflow-hidden border-0 bg-gradient-primary p-4 text-primary-foreground shadow-glow">
           <div className="flex items-center gap-2">
