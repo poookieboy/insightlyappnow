@@ -7,7 +7,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
-import nexusAvatar from "@/assets/nexus-avatar.png";
+// Hero avatar removed — Nexus chat is now a clean grey/black surface.
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
@@ -280,7 +280,7 @@ function Tutor() {
   };
 
   return (
-    <AppShell>
+    <AppShell className="theme-nexus dark">
       <div className="mb-3 flex items-center justify-between gap-2">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger asChild>
@@ -347,13 +347,15 @@ function Tutor() {
 
       <div className="space-y-3 pb-4">
         {messages.length === 0 && (
-          <Card className="border-dashed bg-muted/40 p-4">
-            <div className="mb-3 flex items-center gap-3">
-              <img src={nexusAvatar} alt="Nexus" className="h-14 w-14 shrink-0 animate-scale-in" />
+          <Card className="border-dashed bg-muted/40 p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-700 to-zinc-900 text-white shadow-glow">
+                <Sparkles className="h-5 w-5" />
+              </div>
               <div>
-                <p className="text-sm font-semibold">Hey, I'm Nexus 👋</p>
+                <p className="font-display text-base font-semibold">Nexus</p>
                 <p className="text-xs text-muted-foreground">
-                  Ask me anything, type or tap the mic to talk.
+                  Ask anything, type or tap the mic to talk.
                 </p>
               </div>
             </div>
@@ -362,7 +364,7 @@ function Tutor() {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="rounded-xl border bg-card p-3 text-left text-sm transition-all hover:border-primary hover:shadow-glow"
+                  className="rounded-xl border border-border/60 bg-card/60 p-3 text-left text-sm transition-all hover:border-primary hover:bg-card"
                 >
                   {s}
                 </button>

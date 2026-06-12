@@ -39,9 +39,9 @@ export function TabBar() {
   );
 }
 
-export function AppShell({ children, showTrialBanner = true }: { children: React.ReactNode; showTrialBanner?: boolean }) {
+export function AppShell({ children, showTrialBanner = true, className }: { children: React.ReactNode; showTrialBanner?: boolean; className?: string }) {
   return (
-    <div className="min-h-screen bg-gradient-soft pb-24">
+    <div className={cn("min-h-screen bg-gradient-soft pb-24", className)}>
       <div className="mx-auto max-w-md px-4 pt-6 animate-fade-in">
         {showTrialBanner && <TrialBanner />}
         {children}

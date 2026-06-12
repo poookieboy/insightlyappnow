@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon, Flame, Award } from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Settings as SettingsIcon, Award } from "lucide-react";
+import { StreakFlame } from "@/components/StreakFlame";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { useStore } from "@/lib/store";
@@ -94,23 +95,28 @@ function HomeScreen() {
         </div>
       </Card>
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <Link to="/dashboard">
-          <Card className="h-full overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-pink-500 p-4 text-white shadow-glow transition-all active:scale-95">
-            <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4" />
-              <p className="text-[11px] font-medium uppercase tracking-wide opacity-90">Streak</p>
+      {/* Bento stats — streak takes the spotlight, badges sit beside it */}
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        <Link to="/dashboard" className="col-span-2">
+          <Card className="relative h-full overflow-hidden border-0 bg-gradient-ocean p-5 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+            <p className="text-[11px] font-medium uppercase tracking-widest opacity-80">Daily Streak</p>
+            <div className="mt-2">
+              <StreakFlame count={streak} size="lg" label={false} className="text-white" />
             </div>
-            <p className="mt-1 text-2xl font-bold">{streak}<span className="ml-1 text-sm font-medium opacity-90">{streak === 1 ? "day" : "days"}</span></p>
+            <p className="mt-2 text-[11px] opacity-80">
+              {streak > 0 ? "Keep the flame alive — study today" : "Start something today to ignite it"}
+            </p>
           </Card>
         </Link>
         <Link to="/dashboard">
-          <Card className="h-full overflow-hidden border-0 bg-gradient-primary p-4 text-primary-foreground shadow-glow transition-all active:scale-95">
-            <div className="flex items-center gap-2">
+          <Card className="h-full overflow-hidden border bg-card p-4 transition-all hover:border-primary/40 hover:shadow-card active:scale-[0.97]">
+            <div className="flex items-center gap-1.5 text-primary">
               <Award className="h-4 w-4" />
-              <p className="text-[11px] font-medium uppercase tracking-wide opacity-90">Badges</p>
+              <p className="text-[10px] font-medium uppercase tracking-wide">Badges</p>
             </div>
-            <p className="mt-1 text-2xl font-bold">{badgeCount}<span className="ml-1 text-sm font-medium opacity-90">/ {BADGES.length}</span></p>
+            <p className="mt-2 font-display text-3xl font-bold">{badgeCount}</p>
+            <p className="text-[10px] text-muted-foreground">/ {BADGES.length} unlocked</p>
           </Card>
         </Link>
       </div>
