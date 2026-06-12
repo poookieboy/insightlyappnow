@@ -5,6 +5,7 @@ import {
   FileText, Award, Trophy,
 } from "lucide-react";
 import { StreakFlame } from "@/components/StreakFlame";
+import { BadgeMedal } from "@/components/BadgeMedal";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -112,26 +113,12 @@ function Dashboard() {
         <h2 className="text-lg font-semibold">My Badges</h2>
         <span className="text-xs text-muted-foreground">{unlockedCount}/{BADGES.length} unlocked</span>
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        {BADGES.map((b) => {
-          const has = unlocked.has(b.id);
-          return (
-            <Card
-              key={b.id}
-              title={b.description}
-              className={cn(
-                "flex flex-col items-center p-3 text-center transition-all",
-                has
-                  ? "bg-gradient-primary text-primary-foreground shadow-glow animate-pop"
-                  : "opacity-60 hover:opacity-100",
-              )}
-            >
-              <div className="text-2xl">{has ? b.emoji : <Lock className="h-5 w-5" />}</div>
-              <p className="mt-1 text-[11px] font-semibold leading-tight">{b.name}</p>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
+        {BADGES.map((b, i) => (
+          <BadgeMedal key={b.id} badge={b} unlocked={unlocked.has(b.id)} index={i} />
+        ))}
       </div>
+
     </AppShell>
   );
 }
