@@ -5,6 +5,7 @@ import {
   FileText, Award, Trophy,
 } from "lucide-react";
 import { StreakFlame } from "@/components/StreakFlame";
+import { BadgeMedal } from "@/components/BadgeMedal";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
