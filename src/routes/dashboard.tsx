@@ -54,7 +54,7 @@ function Dashboard() {
   }, []);
 
   const cards = [
-    { to: "/tutor" as const, icon: "🤖", title: "AI Tutor", subtitle: "Ask Nexus anything", Icon: Sparkles },
+    { to: "/tutor" as const, icon: "🤖", title: "AI Tutor", subtitle: "Ask Iris anything", Icon: Sparkles },
     { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: `${paperCount} generated`, Icon: FileText },
     { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By subject", Icon: BookOpen },
     { to: "/tasks" as const, icon: "✅", title: "Tasks", subtitle: `${pending} pending`, Icon: ListTodo },

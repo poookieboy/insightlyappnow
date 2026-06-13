@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Sparkles, LayoutGrid, BookOpen, Trophy, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import insightlyIcon from "@/assets/insightly-icon.png";
-import nexusAvatar from "@/assets/nexus-avatar.png";
+import irisAvatar from "@/assets/iris-avatar.png";
 
 const KEY = "insightly:intro:v1";
 
@@ -16,8 +16,8 @@ const slides = [
     accent: "from-indigo-500 to-violet-500",
   },
   {
-    icon: <img src={nexusAvatar} alt="Nexus" className="h-28 w-28" />,
-    title: "Meet Nexus",
+    icon: <img src={irisAvatar} alt="Iris" className="h-28 w-28" />,
+    title: "Meet Iris",
     body: "Your personal AI tutor. Ask questions, get step-by-step explanations, take quizzes, or chat by voice.",
     accent: "from-violet-500 to-fuchsia-500",
   },
@@ -35,8 +35,8 @@ const slides = [
   },
   {
     icon: <Mic className="h-16 w-16 text-primary" />,
-    title: "Talk to Nexus",
-    body: "Tap the mic in the tutor to speak your question — Nexus will read the answer back to you.",
+    title: "Talk to Iris",
+    body: "Tap the mic in the tutor to speak your question — Iris will read the answer back to you.",
     accent: "from-orange-500 to-pink-500",
   },
   {

@@ -132,7 +132,7 @@ export function StudyAnalytics() {
           </ResponsiveContainer>
         ) : (
           <p className="py-6 text-center text-xs text-muted-foreground">
-            Complete tasks, revise, or chat with Nexus to see your weekly activity here.
+            Complete tasks, revise, or chat with Iris to see your weekly activity here.
           </p>
         )}
       </Card>
@@ -155,7 +155,7 @@ export function StudyAnalytics() {
           </ResponsiveContainer>
         ) : (
           <p className="py-6 text-center text-xs text-muted-foreground">
-            Chat with Nexus about different subjects to see this chart.
+            Chat with Iris about different subjects to see this chart.
           </p>
         )}
       </Card>

@@ -141,7 +141,7 @@ function AddExam() {
 
       <Card className="p-4">
         <label className="mb-1 block text-xs font-medium">Notes (optional)</label>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything you want Nexus to know — e.g. 'I struggled with algebra'" />
+        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything you want Iris to know — e.g. 'I struggled with algebra'" />
       </Card>
 
       <Button onClick={save} disabled={loading} className="w-full bg-gradient-primary text-primary-foreground">

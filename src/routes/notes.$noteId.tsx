@@ -121,11 +121,11 @@ function NoteViewer() {
       if (data?.error) throw new Error(data.error);
       const content: string = data?.content || "";
       // Append result as a new section
-      const html = `<hr/><h2>✨ Nexus — ${action}</h2><pre style="white-space:pre-wrap;font-family:inherit">${content.replace(/[<>]/g, (c) => c === "<" ? "&lt;" : "&gt;")}</pre>`;
+      const html = `<hr/><h2>✨ Iris — ${action}</h2><pre style="white-space:pre-wrap;font-family:inherit">${content.replace(/[<>]/g, (c) => c === "<" ? "&lt;" : "&gt;")}</pre>`;
       if (editorRef.current) {
         editorRef.current.innerHTML = (editorRef.current.innerHTML || "") + html;
       }
-      toast.success(`Nexus ${action} added`);
+      toast.success(`Iris ${action} added`);
     } catch (e: any) {
       toast.error(e?.message || "AI action failed");
     } finally {
@@ -284,7 +284,7 @@ function NoteViewer() {
               className="h-7 px-2 text-xs"
               onClick={() => runAI(a)}
               disabled={!!aiLoading}
-              title={`Nexus: ${a}`}
+              title={`Iris: ${a}`}
             >
               {aiLoading === a ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
               <span className="ml-1 capitalize">{a}</span>

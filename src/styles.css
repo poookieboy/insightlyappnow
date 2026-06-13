@@ -111,9 +111,9 @@
   --ring: oklch(0.7 0.13 215);
 }
 
-/* Tutor (Nexus) page tokens — graphite + warm coffee-brown,
+/* Tutor (Iris) page tokens — graphite + warm coffee-brown,
  * intentionally distinct from the cool ocean app palette. */
-.theme-nexus {
+.theme-iris {
   --background: oklch(0.18 0.005 60);
   --foreground: oklch(0.96 0.005 60);
   --card: oklch(0.24 0.008 60);

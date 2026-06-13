@@ -67,7 +67,7 @@ function HomeScreen() {
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{opener}</p>
           <h1 className="mt-1 truncate text-2xl font-bold">Welcome back, {profile.name} 👋</h1>
-          <p className="text-[11px] text-muted-foreground">Insightly · powered by Nexus</p>
+          <p className="text-[11px] text-muted-foreground">Insightly · powered by Iris</p>
         </div>
         <Link
           to="/settings"
