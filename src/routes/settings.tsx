@@ -18,7 +18,7 @@ import {
 import { useStore, resetAll, defaultStreakSettings, type Curriculum, type Grade } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, notifyProfileChanged } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
@@ -76,22 +76,33 @@ function Settings() {
     if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5 MB");
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, file, { upsert: true, contentType: file.type, cacheControl: "3600" });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-      const url = pub.publicUrl;
+      // Cache-bust so every <img> reloads even if it was already showing a stale URL
+      const url = `${pub.publicUrl}?v=${Date.now()}`;
+      // Use upsert in case the profiles row is somehow missing (e.g. older accounts)
       const { error: dbErr } = await supabase
         .from("profiles")
-        .update({ avatar_url: url })
-        .eq("user_id", user.id);
+        .upsert(
+          { user_id: user.id, avatar_url: url, display_name: dbProfile?.display_name ?? profile.name },
+          { onConflict: "user_id" },
+        );
       if (dbErr) throw dbErr;
+      // Broadcast instantly so Home / TabBar / any mounted useProfile() updates without remount
+      notifyProfileChanged({
+        user_id: user.id,
+        display_name: dbProfile?.display_name ?? profile.name,
+        avatar_url: url,
+      });
       await refresh();
       toast.success("Profile picture updated 📸");
     } catch (err: any) {
+      console.error("avatar upload failed", err);
       toast.error(err?.message || "Upload failed");
     } finally {
       setUploading(false);

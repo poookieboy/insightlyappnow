@@ -5,7 +5,7 @@ import { TrialBanner } from "./TrialBanner";
 
 const tabs = [
   { to: "/home", label: "Home", icon: Home },
-  { to: "/tutor", label: "Nexus", icon: Sparkles },
+  { to: "/tutor", label: "Iris", icon: Sparkles },
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/exams", label: "Exams", icon: TrendingUp },
   { to: "/calculator", label: "Calc", icon: Calculator },

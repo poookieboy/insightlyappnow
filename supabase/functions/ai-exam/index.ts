@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     if (!Array.isArray(results) || results.length === 0) throw new Error("No results provided");
 
     const lines = results.map(r => `- ${r.subject}: ${r.score}/${r.outOf} (${Math.round((r.score / Math.max(1, r.outOf)) * 100)}%)`).join("\n");
-    const sys = `You are Nexus, a supportive ${curriculum ?? "CBC"} study coach for a ${grade ?? "student"}.
+    const sys = `You are Iris, a supportive ${curriculum ?? "CBC"} study coach for a ${grade ?? "student"}.
 Given a student's exam results, give them a kind, honest analysis:
 1. **Overall** — one-line summary with overall %
 2. **Strengths** — top 2 subjects + why that's good

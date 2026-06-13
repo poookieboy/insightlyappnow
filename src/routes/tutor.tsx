@@ -7,7 +7,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
-// Hero avatar removed — Nexus chat is now a clean grey/black surface.
+// Hero avatar removed — Iris chat is now a clean grey/black surface.
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
@@ -280,7 +280,7 @@ function Tutor() {
   };
 
   return (
-    <AppShell className="theme-nexus dark">
+    <AppShell className="theme-iris dark">
       <div className="mb-3 flex items-center justify-between gap-2">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger asChild>
@@ -353,7 +353,7 @@ function Tutor() {
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-display text-base font-semibold">Nexus</p>
+                <p className="font-display text-base font-semibold">Iris</p>
                 <p className="text-xs text-muted-foreground">
                   Ask anything, type or tap the mic to talk.
                 </p>
@@ -410,7 +410,7 @@ function Tutor() {
                   });
                 }
               }}
-              title={voice.listening ? "Stop listening" : "Speak to Nexus"}
+              title={voice.listening ? "Stop listening" : "Speak to Iris"}
               className={cn(
                 "h-9 w-9 shrink-0",
                 voice.listening && "animate-pulse bg-red-500 text-white hover:bg-red-600",
@@ -428,7 +428,7 @@ function Tutor() {
                 if (voice.speaking) voice.stopSpeaking();
                 setVoiceMode((v) => !v);
               }}
-              title={voiceMode ? "Mute Nexus voice" : "Read replies aloud"}
+              title={voiceMode ? "Mute Iris voice" : "Read replies aloud"}
               className="h-9 w-9 shrink-0"
             >
               {voiceMode ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}

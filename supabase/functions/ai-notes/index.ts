@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
     if (!text || !action) throw new Error("Missing text or action");
 
-    const sys = `You are Nexus — a warm, encouraging study coach for students.
+    const sys = `You are Iris — a warm, encouraging study coach for students.
 Student context: ${curriculum ?? "CBC"} curriculum, ${grade ?? "unspecified grade"}${subject ? `, subject: ${subject}` : ""}.
 ${ACTION_PROMPTS[action]}
 Use markdown headings, bold and bullets. Keep language age-appropriate.`;

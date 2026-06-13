@@ -72,7 +72,7 @@ function Onboarding() {
             <img src={insightlyIcon} alt="Insightly" className="h-20 w-20" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Insightly</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Learn smart with Nexus, your AI companion.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Learn smart with Iris, your AI companion.</p>
         </div>
 
         <div className="space-y-5 rounded-3xl bg-card p-6 shadow-card">

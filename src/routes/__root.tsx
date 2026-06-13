@@ -30,10 +30,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Insightly — Study smarter with Nexus" },
-      { name: "description", content: "Insightly helps students manage tasks, revise with real questions, organize notes, and stay motivated — guided by Nexus, your AI companion." },
+      { title: "Insightly — Study smarter with Iris" },
+      { name: "description", content: "Insightly helps students manage tasks, revise with real questions, organize notes, and stay motivated — guided by Iris, your AI companion." },
       { name: "author", content: "Insightly" },
-      { property: "og:title", content: "Insightly — Study smarter with Nexus" },
+      { property: "og:title", content: "Insightly — Study smarter with Iris" },
       { property: "og:description", content: "Tasks, revision, notes, AI tutoring — all in one student-friendly app." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
