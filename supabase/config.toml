@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.ai-exam]
 verify_jwt = false
+
+[functions.ai-revision]
+verify_jwt = false
