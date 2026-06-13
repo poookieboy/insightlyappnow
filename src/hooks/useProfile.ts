@@ -8,24 +8,43 @@ export interface DbProfile {
   avatar_url: string | null;
 }
 
+// Shared cache + listeners so an upload in Settings immediately updates Home.
+let cache: DbProfile | null = null;
+const subscribers = new Set<(p: DbProfile | null) => void>();
+
+function broadcast(p: DbProfile | null) {
+  cache = p;
+  subscribers.forEach((cb) => cb(p));
+}
+
+/** Notify every mounted useProfile() instance that the profile changed. */
+export function notifyProfileChanged(p: DbProfile | null) {
+  broadcast(p);
+}
+
 export function useProfile() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<DbProfile | null>(null);
+  const [profile, setProfile] = useState<DbProfile | null>(cache);
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!user) { setProfile(null); return; }
+    if (!user) { broadcast(null); return; }
     setLoading(true);
     const { data } = await supabase
       .from("profiles")
       .select("user_id,display_name,avatar_url")
       .eq("user_id", user.id)
       .maybeSingle();
-    setProfile(data as DbProfile | null);
+    broadcast((data as DbProfile | null) ?? null);
     setLoading(false);
   }, [user]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const cb = (p: DbProfile | null) => setProfile(p);
+    subscribers.add(cb);
+    refresh();
+    return () => { subscribers.delete(cb); };
+  }, [refresh]);
 
   return { profile, loading, refresh };
 }
