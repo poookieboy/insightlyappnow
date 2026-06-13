@@ -9,7 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { motivation } from "@/lib/motivation";
 import { smartSuggestion } from "@/lib/suggestions";
 import { scheduleChecks, ensureNotificationPermission } from "@/lib/notifications";
-import { getQuestions } from "@/lib/revision";
+import { getSubjects } from "@/lib/revision";
 import { computeStreak } from "@/lib/streak";
 import { BADGES } from "@/lib/badges";
 import { Card } from "@/components/ui/card";
@@ -53,9 +53,9 @@ function HomeScreen() {
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, 3);
 
-  const questions = getQuestions(profile.curriculum, profile.grade);
-  const doneIds = new Set(state.revisionDone.map((r) => r.questionId));
-  const nextRevision = questions.find((q) => !doneIds.has(q.id));
+  const subjectList = getSubjects(profile.curriculum, profile.grade);
+  const nextSubject = subjectList[Math.floor(Date.now() / 86400000) % Math.max(1, subjectList.length)];
+  const nextTopic = nextSubject?.topics?.[0];
 
   const initials = (profile.name || "?")
     .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
@@ -150,10 +150,15 @@ function HomeScreen() {
           <h2 className="font-semibold">Next revision</h2>
           <BookOpen className="h-4 w-4 text-primary" />
         </div>
-        {nextRevision ? (
+        {nextTopic ? (
           <>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{nextRevision.subject}</p>
-            <p className="mt-1 text-sm">{nextRevision.question}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {nextSubject.emoji} {nextSubject.subject}
+            </p>
+            <p className="mt-1 text-sm">
+              Practice <span className="font-semibold">{nextTopic.name}</span> — Iris will generate
+              fresh, exam-quality questions and mark your answers in any format.
+            </p>
             <Link to="/revision">
               <Button className="mt-3 w-full bg-gradient-primary text-primary-foreground" size="sm">
                 Start revising <ArrowRight className="ml-1 h-4 w-4" />
@@ -161,7 +166,7 @@ function HomeScreen() {
             </Link>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">All revision done — amazing! 🎉</p>
+          <p className="text-sm text-muted-foreground">Set your curriculum in Settings to start revising.</p>
         )}
       </Card>
     </AppShell>
