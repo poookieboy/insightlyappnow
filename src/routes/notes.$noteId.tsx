@@ -153,6 +153,44 @@ function NoteViewer() {
 
   const printAsPdf = () => window.print();
 
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const downloadPdf = async () => {
+    const node = document.getElementById("note-page");
+    if (!node) return;
+    setPdfLoading(true);
+    try {
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: node.scrollWidth,
+      });
+      const img = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(img, "JPEG", 0, position, imgW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(img, "JPEG", 0, position, imgW, imgH);
+        heightLeft -= pageH;
+      }
+      const safe = (title || "note").replace(/[^a-z0-9-_ ]/gi, "").trim() || "note";
+      pdf.save(`${safe}.pdf`);
+      toast.success("PDF downloaded");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't generate PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   const insertTable = () => {
     const rows = Number(prompt("Rows", "3") || 0);
     const cols = Number(prompt("Columns", "3") || 0);
@@ -177,7 +215,10 @@ function NoteViewer() {
         </Link>
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" onClick={duplicate} title="Duplicate"><Copy className="h-4 w-4" /></Button>
-          <Button size="sm" variant="ghost" onClick={printAsPdf} title="Print / Save PDF"><Printer className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={downloadPdf} disabled={pdfLoading} title="Download PDF">
+            {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={printAsPdf} title="Print"><Printer className="h-4 w-4" /></Button>
           <Button size="sm" variant="ghost" onClick={remove} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
           <Button size="sm" onClick={save}><Save className="mr-1 h-4 w-4" /> Save</Button>
         </div>
