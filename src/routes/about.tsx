@@ -51,9 +51,7 @@ function AboutPage() {
       >
         <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-5 text-white shadow-xl transition-all hover:shadow-glow active:scale-[0.98]">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black ring-1 ring-white/10">
-              <img src={ezenuelStudios.url} alt="Ezen Uel Studios" className="h-14 w-14 object-contain" />
-            </div>
+            <img src={ezenuelStudios.url} alt="Ezen Uel Studios" className="h-16 w-16 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/50">Crafted by</p>
               <p className="text-lg font-bold">Ezen Uel Studios</p>
