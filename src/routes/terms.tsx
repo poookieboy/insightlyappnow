@@ -6,7 +6,7 @@ export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
       { title: "Terms of Service — Insightly" },
-      { name: "description", content: "Terms of Service for Insightly by Ezenuel Studios." },
+      { name: "description", content: "Terms of Service for Insightly by Ezen Uel Studios." },
     ],
   }),
 });
@@ -26,7 +26,7 @@ function TermsPage() {
           <Section title="1. Acceptance">
             <p>
               By creating an Insightly account ("Service") or using any feature, you agree to these Terms of Service ("Terms").
-              Insightly is operated by <strong>Ezenuel Studios</strong> ("we", "us", "our") from Nairobi, Kenya. If you do not
+              Insightly is operated by <strong>Ezen Uel Studios</strong> ("we", "us", "our") from Nairobi, Kenya. If you do not
               agree, do not use the Service.
             </p>
           </Section>

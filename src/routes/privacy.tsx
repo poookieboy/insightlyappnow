@@ -6,7 +6,7 @@ export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
       { title: "Privacy Policy — Insightly" },
-      { name: "description", content: "How Insightly by Ezenuel Studios collects, uses, and protects your data." },
+      { name: "description", content: "How Insightly by Ezen Uel Studios collects, uses, and protects your data." },
     ],
   }),
 });
@@ -25,7 +25,7 @@ function PrivacyPage() {
         <div className="prose prose-sm mt-8 max-w-none space-y-5 text-foreground">
           <Section title="1. Who we are">
             <p>
-              Insightly is built by <strong>Ezenuel Studios</strong>, based in Nairobi, Kenya. We are the data controller of the
+              Insightly is built by <strong>Ezen Uel Studios</strong>, based in Nairobi, Kenya. We are the data controller of the
               information you provide while using the app.
             </p>
           </Section>

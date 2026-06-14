@@ -72,8 +72,8 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
       <DialogContent className="max-w-md overflow-hidden p-0 border-0">
-        <div className={cn("relative bg-gradient-to-br p-8 text-center transition-colors duration-500", slide.accent)}>
-          <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-3xl bg-white/20 backdrop-blur-md animate-scale-in" key={i}>
+        <div className={cn("relative bg-gradient-to-br p-10 text-center transition-colors duration-500", slide.accent)}>
+          <div className="mx-auto flex items-center justify-center animate-scale-in" key={i}>
             {slide.icon}
           </div>
         </div>
