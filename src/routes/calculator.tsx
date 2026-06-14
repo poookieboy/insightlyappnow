@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Calculator, BookOpen, ChevronLeft, Delete } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Calculator, BookOpen, ChevronLeft, FunctionSquare, Search } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { FORMULAS } from "@/lib/formulas";
 
 export const Route = createFileRoute("/calculator")({
   component: () => (
@@ -34,16 +35,90 @@ function CalculatorPage() {
       <p className="mb-4 text-sm text-muted-foreground">Casio-style. With conversions and 4-figure tables.</p>
 
       <Tabs defaultValue="calc" className="mb-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="calc">Calc</TabsTrigger>
           <TabsTrigger value="convert">Convert</TabsTrigger>
           <TabsTrigger value="tables">Tables</TabsTrigger>
+          <TabsTrigger value="formulas">Formulas</TabsTrigger>
         </TabsList>
         <TabsContent value="calc"><SciCalc /></TabsContent>
         <TabsContent value="convert"><Converter /></TabsContent>
         <TabsContent value="tables"><FourFigureTables /></TabsContent>
+        <TabsContent value="formulas"><FormulasPanel /></TabsContent>
       </Tabs>
     </AppShell>
+  );
+}
+
+// ============================================================
+// Formulas — all subjects
+// ============================================================
+function FormulasPanel() {
+  const [subject, setSubject] = useState(FORMULAS[0].id);
+  const [q, setQ] = useState("");
+  const current = FORMULAS.find((s) => s.id === subject)!;
+
+  const filtered = useMemo(() => {
+    if (!q.trim()) return current.sections;
+    const needle = q.toLowerCase();
+    return current.sections
+      .map((sec) => ({
+        ...sec,
+        formulas: sec.formulas.filter(
+          (f) => f.name.toLowerCase().includes(needle) || f.expression.toLowerCase().includes(needle),
+        ),
+      }))
+      .filter((sec) => sec.formulas.length > 0);
+  }, [current, q]);
+
+  return (
+    <Card className="mt-3 p-3">
+      <div className="mb-3 flex items-center gap-2">
+        <FunctionSquare className="h-4 w-4 text-primary" />
+        <Select value={subject} onValueChange={setSubject}>
+          <SelectTrigger className="h-8 flex-1"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {FORMULAS.map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.emoji} {s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="relative mb-3">
+        <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search formulas…"
+          className="h-8 pl-7 text-xs"
+        />
+      </div>
+      <div className="space-y-4">
+        {filtered.length === 0 && (
+          <p className="text-center text-xs text-muted-foreground">No formulas match.</p>
+        )}
+        {filtered.map((sec) => (
+          <div key={sec.heading}>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {sec.heading}
+            </p>
+            <div className="space-y-1.5">
+              {sec.formulas.map((f) => (
+                <button
+                  key={f.name}
+                  onClick={() => { navigator.clipboard?.writeText(f.expression); toast.success("Copied"); }}
+                  className="block w-full rounded-lg border bg-card p-2.5 text-left transition-colors hover:bg-muted/50"
+                >
+                  <p className="text-xs font-medium">{f.name}</p>
+                  <p className="mt-0.5 font-mono text-[13px] text-primary">{f.expression}</p>
+                  {f.note && <p className="mt-0.5 text-[10px] text-muted-foreground">{f.note}</p>}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 

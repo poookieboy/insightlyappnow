@@ -8,10 +8,10 @@ import { Card } from "@/components/ui/card";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Insightly — by Ezenuel Studios" },
-      { name: "description", content: "Insightly is an AI study companion built by Ezenuel Studios for curriculum-aligned learners." },
-      { property: "og:title", content: "About Insightly — by Ezenuel Studios" },
-      { property: "og:description", content: "Insightly is an AI study companion built by Ezenuel Studios for curriculum-aligned learners." },
+      { title: "About Insightly — by Ezen Uel Studios" },
+      { name: "description", content: "Insightly is an AI study companion built by Ezen Uel Studios for curriculum-aligned learners." },
+      { property: "og:title", content: "About Insightly — by Ezen Uel Studios" },
+      { property: "og:description", content: "Insightly is an AI study companion built by Ezen Uel Studios for curriculum-aligned learners." },
     ],
   }),
   component: AboutPage,
@@ -27,9 +27,7 @@ function AboutPage() {
       </div>
 
       <Card className="mb-5 overflow-hidden border-0 bg-gradient-primary p-6 text-center text-primary-foreground shadow-glow">
-        <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 backdrop-blur">
-          <img src={insightlyIcon} alt="Insightly" className="h-16 w-16 rounded-2xl" />
-        </div>
+        <img src={insightlyIcon} alt="Insightly" className="mx-auto mb-3 h-20 w-20 object-contain" />
         <h1 className="text-2xl font-bold tracking-tight">Insightly</h1>
         <p className="mt-1 text-sm opacity-90">Your AI-powered study companion.</p>
       </Card>
@@ -53,12 +51,10 @@ function AboutPage() {
       >
         <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-5 text-white shadow-xl transition-all hover:shadow-glow active:scale-[0.98]">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black ring-1 ring-white/10">
-              <img src={ezenuelStudios.url} alt="Ezenuel Studios" className="h-14 w-14 object-contain" />
-            </div>
+            <img src={ezenuelStudios.url} alt="Ezen Uel Studios" className="h-16 w-16 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/50">Crafted by</p>
-              <p className="text-lg font-bold">Ezenuel Studios</p>
+              <p className="text-lg font-bold">Ezen Uel Studios</p>
               <p className="flex items-center gap-1 text-xs text-white/60">
                 ezenuelstudios.lovable.app <ExternalLink className="h-3 w-3" />
               </p>
@@ -68,7 +64,7 @@ function AboutPage() {
       </a>
 
       <p className="mt-6 text-center text-[11px] text-muted-foreground">
-        © {new Date().getFullYear()} Ezenuel Studios. All rights reserved.
+        © {new Date().getFullYear()} Ezen Uel Studios. All rights reserved.
       </p>
     </AppShell>
   );

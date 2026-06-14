@@ -8,39 +8,40 @@ import irisAvatar from "@/assets/iris-avatar.png";
 
 const KEY = "insightly:intro:v1";
 
+const ICON = "h-20 w-20";
 const slides = [
   {
-    icon: <img src={insightlyIcon} alt="Insightly" className="h-24 w-24" />,
+    icon: <img src={insightlyIcon} alt="Insightly" className={cn(ICON, "object-contain")} />,
     title: "Welcome to Insightly",
     body: "Your all-in-one study companion — notes, tasks, revision, mock papers, exam tracking, and more.",
     accent: "from-indigo-500 to-violet-500",
   },
   {
-    icon: <img src={irisAvatar} alt="Iris" className="h-28 w-28" />,
+    icon: <img src={irisAvatar} alt="Iris" className={cn(ICON, "object-contain")} />,
     title: "Meet Iris",
     body: "Your personal AI tutor. Ask questions, get step-by-step explanations, take quizzes, or chat by voice.",
     accent: "from-violet-500 to-fuchsia-500",
   },
   {
-    icon: <LayoutGrid className="h-16 w-16 text-primary" />,
+    icon: <LayoutGrid className={cn(ICON, "text-white")} strokeWidth={1.5} />,
     title: "Dashboard at a glance",
     body: "Track your streak, badges, timetable, and AI-generated content all from one beautiful dashboard.",
     accent: "from-blue-500 to-cyan-500",
   },
   {
-    icon: <BookOpen className="h-16 w-16 text-primary" />,
+    icon: <BookOpen className={cn(ICON, "text-white")} strokeWidth={1.5} />,
     title: "Smart revision & papers",
     body: "Practice with curriculum-matched questions and AI-generated mock papers tailored to your grade.",
     accent: "from-emerald-500 to-teal-500",
   },
   {
-    icon: <Mic className="h-16 w-16 text-primary" />,
+    icon: <Mic className={cn(ICON, "text-white")} strokeWidth={1.5} />,
     title: "Talk to Iris",
     body: "Tap the mic in the tutor to speak your question — Iris will read the answer back to you.",
     accent: "from-orange-500 to-pink-500",
   },
   {
-    icon: <Trophy className="h-16 w-16 text-warning" />,
+    icon: <Trophy className={cn(ICON, "text-white")} strokeWidth={1.5} />,
     title: "Earn badges, build streaks",
     body: "Stay consistent. Unlock achievements as you study, and watch your progress in beautiful charts.",
     accent: "from-amber-500 to-rose-500",
@@ -72,8 +73,8 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
       <DialogContent className="max-w-md overflow-hidden p-0 border-0">
-        <div className={cn("relative bg-gradient-to-br p-8 text-center transition-colors duration-500", slide.accent)}>
-          <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-3xl bg-white/20 backdrop-blur-md animate-scale-in" key={i}>
+        <div className={cn("relative bg-gradient-to-br p-10 text-center transition-colors duration-500", slide.accent)}>
+          <div className="mx-auto flex items-center justify-center animate-scale-in" key={i}>
             {slide.icon}
           </div>
         </div>

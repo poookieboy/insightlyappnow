@@ -5,7 +5,7 @@ import {
   List, ListOrdered, Heading1, Heading2, Heading3, Image as ImageIcon, Quote, Link as LinkIcon,
   Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Sparkles, Loader2, Highlighter, Minus, Subscript, Superscript, Indent, Outdent,
-  Table as TableIcon, RemoveFormatting, Type,
+  Table as TableIcon, RemoveFormatting, Type, FileDown,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
@@ -15,6 +15,8 @@ import { useStore, uid } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: () => (
@@ -151,6 +153,44 @@ function NoteViewer() {
 
   const printAsPdf = () => window.print();
 
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const downloadPdf = async () => {
+    const node = document.getElementById("note-page");
+    if (!node) return;
+    setPdfLoading(true);
+    try {
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: node.scrollWidth,
+      });
+      const img = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(img, "JPEG", 0, position, imgW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(img, "JPEG", 0, position, imgW, imgH);
+        heightLeft -= pageH;
+      }
+      const safe = (title || "note").replace(/[^a-z0-9-_ ]/gi, "").trim() || "note";
+      pdf.save(`${safe}.pdf`);
+      toast.success("PDF downloaded");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't generate PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   const insertTable = () => {
     const rows = Number(prompt("Rows", "3") || 0);
     const cols = Number(prompt("Columns", "3") || 0);
@@ -175,7 +215,10 @@ function NoteViewer() {
         </Link>
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" onClick={duplicate} title="Duplicate"><Copy className="h-4 w-4" /></Button>
-          <Button size="sm" variant="ghost" onClick={printAsPdf} title="Print / Save PDF"><Printer className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={downloadPdf} disabled={pdfLoading} title="Download PDF">
+            {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={printAsPdf} title="Print"><Printer className="h-4 w-4" /></Button>
           <Button size="sm" variant="ghost" onClick={remove} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
           <Button size="sm" onClick={save}><Save className="mr-1 h-4 w-4" /> Save</Button>
         </div>
@@ -294,7 +337,7 @@ function NoteViewer() {
       </div>
 
       {/* Word-like A4 page */}
-      <div className="mx-auto w-full max-w-[816px] rounded-md bg-white p-10 text-black shadow-xl ring-1 ring-border sm:p-14 dark:bg-zinc-100 print:p-0 print:shadow-none print:ring-0" style={{ fontFamily: "Calibri, sans-serif", minHeight: "1056px" }}>
+      <div id="note-page" className="mx-auto w-full max-w-[816px] rounded-md bg-white p-10 text-black shadow-xl ring-1 ring-border sm:p-14 dark:bg-zinc-100 print:p-0 print:shadow-none print:ring-0" style={{ fontFamily: "Calibri, sans-serif", minHeight: "1056px" }}>
         <h1 className="mb-4 hidden text-2xl font-bold print:block">{title}</h1>
         {note.imageDataUrl && (
           <img src={note.imageDataUrl} alt={title} className="mb-4 max-h-96 w-full rounded object-contain" />

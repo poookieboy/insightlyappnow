@@ -380,7 +380,7 @@ function Settings() {
           </div>
           <div className="flex-1">
             <p className="font-semibold">About Insightly</p>
-            <p className="text-xs text-muted-foreground">Built by Ezenuel Studios</p>
+            <p className="text-xs text-muted-foreground">Built by Ezen Uel Studios</p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
