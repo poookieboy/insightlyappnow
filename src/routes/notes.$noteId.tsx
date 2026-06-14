@@ -337,7 +337,7 @@ function NoteViewer() {
       </div>
 
       {/* Word-like A4 page */}
-      <div className="mx-auto w-full max-w-[816px] rounded-md bg-white p-10 text-black shadow-xl ring-1 ring-border sm:p-14 dark:bg-zinc-100 print:p-0 print:shadow-none print:ring-0" style={{ fontFamily: "Calibri, sans-serif", minHeight: "1056px" }}>
+      <div id="note-page" className="mx-auto w-full max-w-[816px] rounded-md bg-white p-10 text-black shadow-xl ring-1 ring-border sm:p-14 dark:bg-zinc-100 print:p-0 print:shadow-none print:ring-0" style={{ fontFamily: "Calibri, sans-serif", minHeight: "1056px" }}>
         <h1 className="mb-4 hidden text-2xl font-bold print:block">{title}</h1>
         {note.imageDataUrl && (
           <img src={note.imageDataUrl} alt={title} className="mb-4 max-h-96 w-full rounded object-contain" />
