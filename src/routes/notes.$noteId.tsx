@@ -5,7 +5,7 @@ import {
   List, ListOrdered, Heading1, Heading2, Heading3, Image as ImageIcon, Quote, Link as LinkIcon,
   Strikethrough, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Sparkles, Loader2, Highlighter, Minus, Subscript, Superscript, Indent, Outdent,
-  Table as TableIcon, RemoveFormatting, Type,
+  Table as TableIcon, RemoveFormatting, Type, FileDown,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
@@ -15,6 +15,8 @@ import { useStore, uid } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: () => (
