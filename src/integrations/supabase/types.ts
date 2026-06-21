@@ -212,6 +212,28 @@ export type Database = {
         }
         Returns: boolean
       }
+      submit_mpesa_payment: {
+        Args: { p_code: string; p_plan: string }
+        Returns: {
+          amount: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          mpesa_code: string
+          plan: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscriptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "user"
