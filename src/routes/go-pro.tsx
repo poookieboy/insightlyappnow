@@ -72,17 +72,23 @@ function GoProPage() {
       return toast.error("Enter the M-Pesa confirmation code (e.g. SLK7X3Q9MN)");
     }
     setBusy(true);
-    const { error } = await supabase.from("subscriptions").insert({
-      user_id: user.id,
-      plan,
-      amount: PLANS[plan].price,
-      mpesa_code: cleaned,
+    const { error } = await supabase.rpc("submit_mpesa_payment", {
+      p_plan: plan,
+      p_code: cleaned,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Request submitted! We'll verify within 24h.");
+    if (error) {
+      const msg = /already been used/i.test(error.message)
+        ? "That M-Pesa code has already been used."
+        : /Invalid M-Pesa code/i.test(error.message)
+        ? "That doesn't look like a valid M-Pesa code."
+        : error.message;
+      return toast.error(msg);
+    }
+    toast.success("Payment verified — Pro is active 🎉");
     setCode("");
     loadSubs();
+    setTimeout(() => navigate({ to: "/home" }), 800);
   };
 
   return (
