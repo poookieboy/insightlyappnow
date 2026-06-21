@@ -87,8 +87,7 @@ export function DevicePermissions() {
 
   const queryPerm = async (name: "camera" | "microphone"): Promise<State> => {
     try {
-      // @ts-expect-error - camera/microphone are valid PermissionName in browsers
-      const r = await navigator.permissions.query({ name });
+      const r = await navigator.permissions.query({ name: name as PermissionName });
       return (r.state as State) ?? "prompt";
     } catch {
       return "prompt";
