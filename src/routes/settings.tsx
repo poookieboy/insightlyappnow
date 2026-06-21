@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useEffect } from "react";
-import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info, FileText, ShieldCheck, Sparkles } from "lucide-react";
+import { Heart, ChevronRight, LogOut, Camera, Loader2, Flame, BarChart3, PlayCircle, Crown, Shield, Info, FileText, ShieldCheck, Sparkles, KeyRound } from "lucide-react";
+import { DevicePermissions } from "@/components/DevicePermissions";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
 import { IntroTutorial } from "@/components/IntroTutorial";
@@ -314,6 +315,17 @@ function Settings() {
           A detailed look at your study habits, subjects, and performance.
         </p>
         <StudyAnalytics />
+      </Card>
+
+      <Card className="mt-4 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <KeyRound className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">App permissions</h2>
+        </div>
+        <p className="-mt-1 mb-3 text-xs text-muted-foreground">
+          Manage what Insightly can use on this device.
+        </p>
+        <DevicePermissions />
       </Card>
 
       <Card className="mt-4 flex items-center gap-3 p-4">
