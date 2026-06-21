@@ -317,6 +317,17 @@ function Settings() {
         <StudyAnalytics />
       </Card>
 
+      <Card className="mt-4 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <KeyRound className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">App permissions</h2>
+        </div>
+        <p className="-mt-1 mb-3 text-xs text-muted-foreground">
+          Manage what Insightly can use on this device.
+        </p>
+        <DevicePermissions />
+      </Card>
+
       <Card className="mt-4 flex items-center gap-3 p-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
           <PlayCircle className="h-5 w-5" />
