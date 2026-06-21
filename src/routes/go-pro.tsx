@@ -184,7 +184,7 @@ function GoProPage() {
               className="font-mono"
             />
             <p className="text-[11px] text-muted-foreground">
-              We'll verify within 24h and activate your Pro plan.
+              Auto-verified instantly. Codes are checked for format and reuse.
             </p>
             <Button
               onClick={submit}
