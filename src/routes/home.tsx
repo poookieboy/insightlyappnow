@@ -94,7 +94,7 @@ function HomeScreen() {
 
       {/* Bento stats — streak takes the spotlight, badges sit beside it */}
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <Link to="/dashboard" className="col-span-2">
+        <Link to="/profile" className="col-span-2">
           <Card className="relative h-full overflow-hidden border-0 bg-gradient-ocean p-5 text-primary-foreground shadow-glow transition-all active:scale-[0.98]">
             <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
             <p className="text-[11px] font-medium uppercase tracking-widest opacity-80">Daily Streak</p>
@@ -106,7 +106,7 @@ function HomeScreen() {
             </p>
           </Card>
         </Link>
-        <Link to="/dashboard">
+        <Link to="/profile">
           <Card className="h-full overflow-hidden border bg-card p-4 transition-all hover:border-primary/40 hover:shadow-card active:scale-[0.97]">
             <div className="flex items-center gap-1.5 text-primary">
               <Award className="h-4 w-4" />
