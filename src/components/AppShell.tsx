@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Sparkles, LayoutGrid, Calculator, TrendingUp } from "lucide-react";
+import { Home, Sparkles, LayoutGrid, User, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TrialBanner } from "./TrialBanner";
 
@@ -7,8 +7,8 @@ const tabs = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/tutor", label: "Iris", icon: Sparkles },
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { to: "/exams", label: "Exams", icon: TrendingUp },
-  { to: "/calculator", label: "Calc", icon: Calculator },
+  { to: "/profile", label: "Profile", icon: User },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
 export function TabBar() {
