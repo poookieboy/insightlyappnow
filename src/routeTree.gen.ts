@@ -18,6 +18,7 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
@@ -77,6 +78,11 @@ const RevisionRoute = RevisionRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/notes'
     | '/privacy'
+    | '/profile'
     | '/reset-password'
     | '/revision'
     | '/settings'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/notes'
     | '/privacy'
+    | '/profile'
     | '/reset-password'
     | '/revision'
     | '/settings'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/notes'
     | '/privacy'
+    | '/profile'
     | '/reset-password'
     | '/revision'
     | '/settings'
@@ -328,6 +340,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
+  ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RevisionRoute: typeof RevisionRoute
   SettingsRoute: typeof SettingsRoute
@@ -402,6 +415,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -557,6 +577,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
+  ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RevisionRoute: RevisionRoute,
   SettingsRoute: SettingsRoute,
