@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { Sparkles, ArrowRight, CheckCircle2, BookOpen } from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Award } from "lucide-react";
 import { StreakFlame } from "@/components/StreakFlame";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
