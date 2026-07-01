@@ -1,18 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import {
-  BookOpen, ListTodo, CalendarDays, StickyNote, Lock, Sparkles,
-  FileText, Award, Trophy,
-} from "lucide-react";
-import { StreakFlame } from "@/components/StreakFlame";
-import { BadgeMedal } from "@/components/BadgeMedal";
+import { BookOpen, ListTodo, CalendarDays, StickyNote, Sparkles, FileText, Trophy, Calculator, TrendingUp, Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
 import { useStore } from "@/lib/store";
-import { BADGES, evaluateBadges, notifyBadges } from "@/lib/badges";
-import { computeStreak } from "@/lib/streak";
-import { cn } from "@/lib/utils";
+import { evaluateBadges, notifyBadges } from "@/lib/badges";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (
@@ -25,17 +18,13 @@ export const Route = createFileRoute("/dashboard")({
 function Dashboard() {
   const { state, update } = useStore();
   const pending = state.tasks.filter((t) => !t.completed).length;
-  const completedCount = state.tasks.filter((t) => t.completed).length;
   const noteCount = state.notes.length;
-  const paperCount = state.generatedPapers.length;
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const today = days[new Date().getDay()];
   const nextClass = state.timetable
     .filter((e) => e.day === today)
     .sort((a, b) => a.time.localeCompare(b.time))[0];
-
-  const streak = computeStreak(state.tasks, state.revisionDone, state.streakSettings);
 
   // Celebrate any newly-eligible badges when visiting the dashboard
   const evaluated = useRef(false);
@@ -54,18 +43,15 @@ function Dashboard() {
   }, []);
 
   const cards = [
-    { to: "/tutor" as const, icon: "🤖", title: "AI Tutor", subtitle: "Ask Iris anything", Icon: Sparkles },
-    { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: `${paperCount} generated`, Icon: FileText },
+    { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: "Coming soon", Icon: FileText, disabled: true },
     { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By subject", Icon: BookOpen },
     { to: "/tasks" as const, icon: "✅", title: "Tasks", subtitle: `${pending} pending`, Icon: ListTodo },
     { to: "/timetable" as const, icon: "📅", title: "Timetable", subtitle: nextClass ? `Next: ${nextClass.subject}` : "No classes today", Icon: CalendarDays },
     { to: "/notes" as const, icon: "🗒️", title: "Notes", subtitle: `${noteCount} saved`, Icon: StickyNote },
     { to: "/exams" as const, icon: "📊", title: "Exams & Goals", subtitle: "Track progress", Icon: Trophy },
+    { to: "/calculator" as const, icon: "🧮", title: "Calculator", subtitle: "Scientific + formulas", Icon: Calculator },
     { to: "/workspace" as const, icon: "🧠", title: "Workspace", subtitle: "Focus mode", Icon: Sparkles },
   ];
-
-  const unlocked = new Set(state.badges.unlocked);
-  const unlockedCount = unlocked.size;
 
   return (
     <AppShell>
@@ -74,51 +60,26 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground">All your study tools in one place ✨</p>
       </header>
 
-      {/* Stats row: streak + badges */}
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <Card className="relative overflow-hidden border-0 bg-gradient-ocean p-4 text-primary-foreground shadow-glow">
-          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10 blur-2xl" />
-          <p className="text-[11px] font-medium uppercase tracking-widest opacity-80">Streak</p>
-          <div className="mt-2">
-            <StreakFlame count={streak} size="lg" label={false} className="text-white" />
-          </div>
-          <p className="mt-1 text-[11px] opacity-80">{streak > 0 ? "Keep it alive! 🔥" : "Do something today to start"}</p>
-        </Card>
-        <Card className="overflow-hidden border-0 bg-gradient-primary p-4 text-primary-foreground shadow-glow">
-          <div className="flex items-center gap-2">
-            <Award className="h-5 w-5" />
-            <p className="text-xs font-medium uppercase tracking-wide opacity-90">Badges</p>
-          </div>
-          <p className="mt-2 text-3xl font-bold">{unlockedCount}<span className="ml-1 text-base font-medium opacity-90">/ {BADGES.length}</span></p>
-          <p className="text-[11px] opacity-80">{completedCount} task{completedCount === 1 ? "" : "s"} done</p>
-        </Card>
-      </div>
-
       {/* Tools grid */}
       <h2 className="mb-3 text-lg font-semibold">Tools</h2>
       <div className="mb-6 grid grid-cols-2 gap-3">
-        {cards.map(({ to, icon, title, subtitle }) => (
-          <Link key={to} to={to}>
-            <Card className="group h-full p-4 transition-all hover:-translate-y-0.5 hover:shadow-glow active:scale-95">
-              <div className="text-3xl transition-transform group-hover:scale-110">{icon}</div>
+        {cards.map(({ to, icon, title, subtitle, disabled }) => {
+          const inner = (
+            <Card className={`group h-full p-4 transition-all ${disabled ? "opacity-60" : "hover:-translate-y-0.5 hover:shadow-glow active:scale-95"}`}>
+              <div className="flex items-start justify-between">
+                <div className="text-3xl transition-transform group-hover:scale-110">{icon}</div>
+                {disabled && <Clock className="h-4 w-4 text-muted-foreground" />}
+              </div>
               <p className="mt-2 font-semibold leading-tight">{title}</p>
               <p className="text-xs text-muted-foreground">{subtitle}</p>
             </Card>
-          </Link>
-        ))}
+          );
+          if (disabled) return <div key={to}>{inner}</div>;
+          return <Link key={to} to={to}>{inner}</Link>;
+        })}
       </div>
-
-      {/* Badges */}
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">My Badges</h2>
-        <span className="text-xs text-muted-foreground">{unlockedCount}/{BADGES.length} unlocked</span>
-      </div>
-      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
-        {BADGES.map((b, i) => (
-          <BadgeMedal key={b.id} badge={b} unlocked={unlocked.has(b.id)} index={i} />
-        ))}
-      </div>
-
     </AppShell>
   );
 }
+
+
