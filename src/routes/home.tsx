@@ -70,8 +70,8 @@ function HomeScreen() {
           <p className="text-[11px] text-muted-foreground">Insightly · powered by Iris</p>
         </div>
         <Link
-          to="/settings"
-          aria-label="Open settings"
+          to="/profile"
+          aria-label="Open profile"
           className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-primary text-sm font-bold text-primary-foreground shadow-glow ring-2 ring-background hover:opacity-90 transition-all"
         >
           {dbProfile?.avatar_url ? (
@@ -79,9 +79,6 @@ function HomeScreen() {
           ) : (
             <span>{initials}</span>
           )}
-          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-background bg-card text-foreground">
-            <SettingsIcon className="h-2.5 w-2.5" />
-          </span>
         </Link>
       </header>
 
