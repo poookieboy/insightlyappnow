@@ -43,8 +43,9 @@ function Dashboard() {
   }, []);
 
   const cards = [
+    { to: "/quiz" as const, icon: "📝", title: "Subject Quiz", subtitle: "10 MCQ + 10 written", Icon: FileText },
+    { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By topic & subject", Icon: BookOpen },
     { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: "Coming soon", Icon: FileText, disabled: true },
-    { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By subject", Icon: BookOpen },
     { to: "/tasks" as const, icon: "✅", title: "Tasks", subtitle: `${pending} pending`, Icon: ListTodo },
     { to: "/timetable" as const, icon: "📅", title: "Timetable", subtitle: nextClass ? `Next: ${nextClass.subject}` : "No classes today", Icon: CalendarDays },
     { to: "/notes" as const, icon: "🗒️", title: "Notes", subtitle: `${noteCount} saved`, Icon: StickyNote },
