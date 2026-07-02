@@ -1,55 +1,64 @@
-# Insightly: Pro/Trial Enforcement + Redesign Plan
+# Curriculum & App Overhaul — Phased Plan
 
-This is a large scope. I'll ship it in **3 phases** so each phase is reviewable and working, not a giant unverifiable mega-edit.
-
-## Phase 1 — Auth, Trial, Payments, TOS (functional core)
-
-**Database (1 migration):**
-- `public.user_subscription_status` table — `user_id`, `tier` (`trial`/`pro`/`expired`), `trial_started_at`, `trial_ends_at`, `pro_until`, `provider` (`stripe`/`mpesa`), timestamps. RLS: user reads own, service role writes. Auto-row on signup via trigger (extend `handle_new_user`).
-- `public.legal_acceptances` — `user_id`, `tos_version`, `privacy_version`, `accepted_at`. RLS: user reads/inserts own.
-
-**Trial logic:**
-- On signup, trigger sets `tier='trial'`, `trial_ends_at = now() + 7 days`.
-- New hook `useSubscription()` reads status; computes `isActive = tier==='pro' || (tier==='trial' && trial_ends_at>now())`.
-- `RequireProfile` extended → if `!isActive`, redirect to `/go-pro` (only `/settings`, `/go-pro`, `/about`, `/donate`, `/auth` accessible).
-- Trial banner in `AppShell` showing days remaining; turns red at ≤2 days; "Trial expired" full-screen card when over.
-
-**Settings — Pro status card:**
-- Shows current tier with badge, days left, plan expiry, "Manage subscription" / "Upgrade" CTAs.
-
-**Payments (auto-activate):**
-- **Stripe**: Enable Lovable's built-in Stripe payments. Create monthly (KES 150) and yearly (KES 1500) products. Checkout from `/go-pro`. Webhook server route `/api/public/stripe-webhook` flips `tier='pro'`, sets `pro_until`.
-- **M-Pesa STK Push**: Needs Daraja credentials. I'll request `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY` as secrets. Server fn `initiateStkPush` → callback route `/api/public/mpesa-callback` auto-activates Pro.
-
-**Terms of Service & Privacy Policy:**
-- Generate `/terms` and `/privacy` route pages with full content (Insightly by Ezenuel Studios, Kenya jurisdiction, student data handling, AI usage disclosure, payment terms).
-- On first login after signup OR if `legal_acceptances` row missing for current version → modal blocks app until both checkboxes checked + Accept clicked. Writes acceptance row.
-
-**Google sign-in verification:**
-- Confirmed `lovable.auth.signInWithOAuth("google")` is wired. I'll add console diagnostics and a "Test Google connection" debug button in `/auth` dev-only. After Phase 1 deploy I'll invoke a server fn that checks the configured providers and report back.
-
-## Phase 2 — AI revamp + voice
-
-- Remove AI hero image from `/tutor`.
-- Restyle `/tutor` to **grey/black professional theme**: dark slate surfaces, neutral chat bubbles, no purple gradient, monospace accents.
-- New server fn `ai-tts` calling **OpenAI TTS via Lovable AI Gateway** (`openai/gpt-5-mini` doesn't do TTS — I'll verify the gateway supports `gpt-4o-mini-tts` or fall back to Gemini TTS; if neither, I'll come back to you with options).
-- `useVoiceChat` updated: server returns audio blob, client plays it. Voice = `nova` or `alloy` (warmest).
-
-## Phase 3 — Full UI redesign
-
-I'll generate **3 rendered design directions** for the home/dashboard using `design--create_directions` (locked palette/type/layout picked from a quick visual preference round). You pick one, then I rebuild every page (home, tasks, notes, timetable, revision, exams, tests, tutor, calculator, settings, go-pro, about, auth) to that direction in one sweep.
-
-**Streak animation upgrade** (part of Phase 3):
-- Flame icon with pulsing glow + counter that springs/scales on increment
-- Streak milestone celebration (confetti at 7/30/100 days)
-- Live shimmer on streak badge in dashboard
+This is a large batch (8 workstreams). I'll ship it in 4 phases so each lands working, not half-done. Reply "go" and I start Phase 1. Say "skip to phase X" any time.
 
 ---
 
-## What I need from you before starting
+## Phase 1 — Access + Notes redesign (ship first)
 
-1. **M-Pesa Daraja credentials** (4 secrets) — I'll prompt with `add_secret` at the right moment. If you don't have these yet, I can ship Phase 1 with Stripe-only auto + M-Pesa staying manual, and add STK Push when you have the keys. **Tell me: have Daraja creds, or Stripe-only for now?**
-2. **Stripe enable** — I'll trigger it; you'll fill the brief form (email, business name).
-3. **Confirm I should start Phase 1 immediately** after you answer #1.
+**Infinite Pro for two accounts**
+- Migration: seed `user_subscription_status` rows for `khybastan@gmail.com` and `uelezen3@gmail.com` with `pro_until = '2099-12-31'`, and add a trigger on `auth.users` insert so if either email ever signs up later they auto-get infinite Pro.
 
-Phases 2 and 3 follow automatically — no extra approval needed unless something blocks.
+**Notes redesign — two tabs**
+- **My Notes** (user-created): rich editor stays (Word-like), plus new support for inline **images**, **freehand drawing** (canvas → embedded image), **voice recording** (MediaRecorder → base64 audio player), and **tags** (multi-select chips, filterable). Preview cards become compact with quick actions (open, pin, tag, delete, PDF).
+- **For You** (AI curriculum notes): generated by a new `ai-curriculum-notes` edge function. Organised as Subject → Topic → Note, filtered by the user's curriculum + grade. Each note includes: overview, key points, worked example, diagram description, practical activity, flashcards, and revision Qs.
+
+---
+
+## Phase 2 — Curriculum content & grade filtering
+
+- Rewrite `src/lib/revision.ts` subject/topic catalog so it's keyed by `(curriculum, grade)`. Every screen (Revision, Notes "For You", Exams, Home suggestions) reads only topics matching the signed-in student's grade.
+- Add curricula `IGCSE`, `IB`, `British`, `American`, `844` as **Coming soon** chips (disabled, badge). CBC stays fully functional.
+- Content upgrade per topic: detailed notes body, diagram/instruction blocks, practical activity, key-points summary, revision Qs, flashcards (front/back).
+
+---
+
+## Phase 3 — Exams & Mock Papers upgrade
+
+- Add metadata to every paper/quiz: `difficulty` (Easy/Medium/Hard), `estimatedMinutes`, `topicsCovered[]`.
+- New **Subject Quiz** flow (separate from mock papers): pick subject → AI generates **10 MCQ + 10 written** questions for the student's grade.
+  - MCQ: auto-marked instantly.
+  - Written: sent to `ai-grade` edge function → per-question score + feedback + model answer.
+- Pre-submission panel: shows expected difficulty, time, and topic coverage so students know what they're getting into.
+- Post-submission: score breakdown by topic, time spent, weak-area callouts.
+
+---
+
+## Phase 4 — AI response UI + Analytics dashboard
+
+- **AI response renderer**: new `<AIResponse />` component that parses model output into collapsible sections — Summary, Explanation, Examples, Diagram, Key Points, Next Steps. All AI-heavy screens (Iris tutor, notes AI, exam analysis, revision feedback) switch to it. Update system prompts to emit that section structure.
+- **Exam analysis dashboard** (`/exams` + Profile analytics): replace tables with Recharts visuals:
+  - Radar: topic-by-topic performance
+  - Bar: strengths vs weaknesses
+  - Line: progress over time
+  - Donut: mark distribution
+  - Stat tiles: accuracy %, time spent, position, weak areas (prioritised by lowest score)
+  - AI-generated insights + personalised study plan panel at bottom (uses `ai-exam`).
+
+---
+
+## Technical notes
+
+- New tables: `user_notes` (rich content JSON, tags[], audio_url, drawings jsonb), `ai_curriculum_notes` (subject, topic, grade, curriculum, body jsonb), `quiz_attempts` (answers, mcq_score, written_scores jsonb, feedback jsonb).
+- New edge functions: `ai-curriculum-notes`, `ai-grade`, `ai-quiz-generate`. All use `google/gemini-3-flash-preview`.
+- Recharts already installed via shadcn `chart.tsx`.
+- Voice recording + drawing stay client-side; audio blobs stored in `avatars` bucket under `notes/<user>/…` (or a new `note-media` bucket if you prefer — tell me).
+- Grade filter is enforced in every catalog lookup; a single `useCurriculumContent(subject?)` hook returns only grade-matching items.
+
+---
+
+## What I need from you before Phase 1
+
+1. **"go"** to start.
+2. Confirm free-access mechanism: I'll use the **DB flag** approach (survives client changes) unless you'd rather hardcode the emails in the client.
+3. Note-media bucket: reuse `avatars` or create a new `note-media` bucket? (Default: new bucket, private, per-user folders.)
