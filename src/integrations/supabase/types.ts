@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_curriculum_notes: {
+        Row: {
+          body: Json
+          created_at: string
+          curriculum: string
+          grade: string
+          id: string
+          subject: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          body: Json
+          created_at?: string
+          curriculum: string
+          grade: string
+          id?: string
+          subject: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          created_at?: string
+          curriculum?: string
+          grade?: string
+          id?: string
+          subject?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       donations: {
         Row: {
           amount: number
@@ -95,6 +128,66 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          curriculum: string
+          difficulty: string | null
+          estimated_minutes: number | null
+          feedback: Json | null
+          grade: string
+          id: string
+          mcq_score: number | null
+          mcq_total: number | null
+          questions: Json
+          subject: string
+          time_spent_seconds: number | null
+          topics: string[]
+          updated_at: string
+          user_id: string
+          written_scores: Json | null
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          curriculum: string
+          difficulty?: string | null
+          estimated_minutes?: number | null
+          feedback?: Json | null
+          grade: string
+          id?: string
+          mcq_score?: number | null
+          mcq_total?: number | null
+          questions: Json
+          subject: string
+          time_spent_seconds?: number | null
+          topics?: string[]
+          updated_at?: string
+          user_id: string
+          written_scores?: Json | null
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          curriculum?: string
+          difficulty?: string | null
+          estimated_minutes?: number | null
+          feedback?: Json | null
+          grade?: string
+          id?: string
+          mcq_score?: number | null
+          mcq_total?: number | null
+          questions?: Json
+          subject?: string
+          time_spent_seconds?: number | null
+          topics?: string[]
+          updated_at?: string
+          user_id?: string
+          written_scores?: Json | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number
@@ -132,6 +225,42 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notes: {
+        Row: {
+          content_html: string | null
+          created_at: string
+          id: string
+          media: Json
+          pinned: boolean
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_html?: string | null
+          created_at?: string
+          id?: string
+          media?: Json
+          pinned?: boolean
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_html?: string | null
+          created_at?: string
+          id?: string
+          media?: Json
+          pinned?: boolean
+          tags?: string[]
+          title?: string
           updated_at?: string
           user_id?: string
         }

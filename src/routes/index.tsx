@@ -20,7 +20,14 @@ export const Route = createFileRoute("/")({
   component: Onboarding,
 });
 
-const CURRICULA: Curriculum[] = ["CBC", "IGCSE", "Cambridge", "British", "American", "IB"];
+const CURRICULA: { value: Curriculum; comingSoon?: boolean }[] = [
+  { value: "CBC" },
+  { value: "IGCSE", comingSoon: true },
+  { value: "Cambridge", comingSoon: true },
+  { value: "British", comingSoon: true },
+  { value: "American", comingSoon: true },
+  { value: "IB", comingSoon: true },
+];
 const GRADES: Grade[] = Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}` as Grade);
 
 function Onboarding() {
@@ -112,7 +119,11 @@ function Onboarding() {
             <Select value={curriculum} onValueChange={(v) => setCurriculum(v as Curriculum)}>
               <SelectTrigger><SelectValue placeholder="Select curriculum" /></SelectTrigger>
               <SelectContent>
-                {CURRICULA.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {CURRICULA.map((c) => (
+                  <SelectItem key={c.value} value={c.value} disabled={c.comingSoon}>
+                    {c.value}{c.comingSoon ? " — Coming soon" : ""}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
