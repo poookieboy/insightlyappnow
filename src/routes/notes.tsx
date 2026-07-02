@@ -75,7 +75,7 @@ function MyNotes() {
     const { data, error } = await supabase.from("user_notes")
       .select("*").order("pinned", { ascending: false }).order("updated_at", { ascending: false });
     if (error) toast.error(error.message);
-    setNotes((data as UserNote[]) ?? []);
+    setNotes(((data ?? []) as unknown) as UserNote[]);
     setLoading(false);
   }
 
@@ -88,8 +88,8 @@ function MyNotes() {
       user_id: user.id, title: "Untitled", content_html: "", tags: [], media: [], pinned: false,
     }).select("*").single();
     if (error) return toast.error(error.message);
-    setNotes((n) => [data as UserNote, ...n]);
-    setEditing(data as UserNote);
+    setNotes((n) => [(data as unknown) as UserNote, ...n]);
+    setEditing((data as unknown) as UserNote);
   }
 
   async function remove(id: string) {
