@@ -24,6 +24,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as GoProRouteImport } from './routes/go-pro'
+import { Route as ExternalQuizRouteImport } from './routes/external-quiz'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -111,6 +112,11 @@ const GoProRoute = GoProRouteImport.update({
   path: '/go-pro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExternalQuizRoute = ExternalQuizRouteImport.update({
+  id: '/external-quiz',
+  path: '/external-quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExamsRoute = ExamsRouteImport.update({
   id: '/exams',
   path: '/exams',
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
   '/exams': typeof ExamsRoute
+  '/external-quiz': typeof ExternalQuizRoute
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
   '/exams': typeof ExamsRoute
+  '/external-quiz': typeof ExternalQuizRoute
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
   '/exams': typeof ExamsRoute
+  '/external-quiz': typeof ExternalQuizRoute
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/donate'
     | '/exams'
+    | '/external-quiz'
     | '/go-pro'
     | '/home'
     | '/notes'
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/donate'
     | '/exams'
+    | '/external-quiz'
     | '/go-pro'
     | '/home'
     | '/notes'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/donate'
     | '/exams'
+    | '/external-quiz'
     | '/go-pro'
     | '/home'
     | '/notes'
@@ -348,6 +360,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DonateRoute: typeof DonateRoute
   ExamsRoute: typeof ExamsRoute
+  ExternalQuizRoute: typeof ExternalQuizRoute
   GoProRoute: typeof GoProRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GoProRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/external-quiz': {
+      id: '/external-quiz'
+      path: '/external-quiz'
+      fullPath: '/external-quiz'
+      preLoaderRoute: typeof ExternalQuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/exams': {
       id: '/exams'
       path: '/exams'
@@ -593,6 +613,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DonateRoute: DonateRoute,
   ExamsRoute: ExamsRoute,
+  ExternalQuizRoute: ExternalQuizRoute,
   GoProRoute: GoProRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
@@ -612,12 +633,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

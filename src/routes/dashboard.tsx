@@ -44,6 +44,7 @@ function Dashboard() {
 
   const cards = [
     { to: "/quiz" as const, icon: "📝", title: "Subject Quiz", subtitle: "10 MCQ + 10 written", Icon: FileText },
+    { to: "/external-quiz" as const, icon: "🎯", title: "Quiz Bank", subtitle: "From question bank", Icon: FileText },
     { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By topic & subject", Icon: BookOpen },
     { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: "Coming soon", Icon: FileText, disabled: true },
     { to: "/tasks" as const, icon: "✅", title: "Tasks", subtitle: `${pending} pending`, Icon: ListTodo },
