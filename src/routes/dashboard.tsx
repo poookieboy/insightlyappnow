@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { BookOpen, ListTodo, CalendarDays, StickyNote, Sparkles, FileText, Trophy, Calculator, TrendingUp, Clock } from "lucide-react";
+import { BookOpen, ListTodo, CalendarDays, StickyNote, FileText, Trophy, Calculator, Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -43,7 +43,6 @@ function Dashboard() {
   }, []);
 
   const cards = [
-    { to: "/quiz" as const, icon: "📝", title: "Subject Quiz", subtitle: "10 MCQ + 10 written", Icon: FileText },
     { to: "/external-quiz" as const, icon: "🎯", title: "Quiz Bank", subtitle: "From question bank", Icon: FileText },
     { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By topic & subject", Icon: BookOpen },
     { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: "Coming soon", Icon: FileText, disabled: true },
@@ -52,7 +51,6 @@ function Dashboard() {
     { to: "/notes" as const, icon: "🗒️", title: "Notes", subtitle: `${noteCount} saved`, Icon: StickyNote },
     { to: "/exams" as const, icon: "📊", title: "Exams & Goals", subtitle: "Track progress", Icon: Trophy },
     { to: "/calculator" as const, icon: "🧮", title: "Calculator", subtitle: "Scientific + formulas", Icon: Calculator },
-    { to: "/workspace" as const, icon: "🧠", title: "Workspace", subtitle: "Focus mode", Icon: Sparkles },
   ];
 
   return (

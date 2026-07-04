@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { externalSupabase, type QuizQuestion } from "@/integrations/external-supabase/client";
+import { externalSupabase, normalizeQuestion, type QuizQuestion, type QuizQuestionRow } from "@/integrations/external-supabase/client";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
@@ -73,7 +73,7 @@ function ExternalQuiz() {
       if (difficulty !== "any") q = q.eq("difficulty", difficulty);
       const { data, error } = await q;
       if (error) throw error;
-      const rows = (data ?? []) as QuizQuestion[];
+      const rows = ((data ?? []) as QuizQuestionRow[]).map(normalizeQuestion);
       if (!rows.length) { toast.error("No questions match those filters"); setPhase("setup"); return; }
       // Shuffle
       rows.sort(() => Math.random() - 0.5);

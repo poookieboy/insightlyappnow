@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as TestsRouteImport } from './routes/tests'
@@ -18,7 +17,6 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as NotesRouteImport } from './routes/notes'
@@ -37,11 +35,6 @@ import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 
-const WorkspaceRoute = WorkspaceRouteImport.update({
-  id: '/workspace',
-  path: '/workspace',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TutorRoute = TutorRouteImport.update({
   id: '/tutor',
   path: '/tutor',
@@ -80,11 +73,6 @@ const RevisionRoute = RevisionRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuizRoute = QuizRouteImport.update({
-  id: '/quiz',
-  path: '/quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -188,7 +176,6 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
-  '/quiz': typeof QuizRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
@@ -197,7 +184,6 @@ export interface FileRoutesByFullPath {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
-  '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
@@ -217,7 +203,6 @@ export interface FileRoutesByTo {
   '/notes': typeof NotesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
-  '/quiz': typeof QuizRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
@@ -226,7 +211,6 @@ export interface FileRoutesByTo {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
-  '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
@@ -247,7 +231,6 @@ export interface FileRoutesById {
   '/notes': typeof NotesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
-  '/quiz': typeof QuizRoute
   '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
   '/settings': typeof SettingsRoute
@@ -256,7 +239,6 @@ export interface FileRoutesById {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
-  '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
@@ -278,7 +260,6 @@ export interface FileRouteTypes {
     | '/notes'
     | '/privacy'
     | '/profile'
-    | '/quiz'
     | '/reset-password'
     | '/revision'
     | '/settings'
@@ -287,7 +268,6 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
-    | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/tests/$paperId/preview'
@@ -307,7 +287,6 @@ export interface FileRouteTypes {
     | '/notes'
     | '/privacy'
     | '/profile'
-    | '/quiz'
     | '/reset-password'
     | '/revision'
     | '/settings'
@@ -316,7 +295,6 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
-    | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/tests/$paperId/preview'
@@ -336,7 +314,6 @@ export interface FileRouteTypes {
     | '/notes'
     | '/privacy'
     | '/profile'
-    | '/quiz'
     | '/reset-password'
     | '/revision'
     | '/settings'
@@ -345,7 +322,6 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
-    | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/tests/$paperId/preview'
@@ -366,7 +342,6 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
-  QuizRoute: typeof QuizRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RevisionRoute: typeof RevisionRoute
   SettingsRoute: typeof SettingsRoute
@@ -375,18 +350,10 @@ export interface RootRouteChildren {
   TestsRoute: typeof TestsRouteWithChildren
   TimetableRoute: typeof TimetableRoute
   TutorRoute: typeof TutorRoute
-  WorkspaceRoute: typeof WorkspaceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workspace': {
-      id: '/workspace'
-      path: '/workspace'
-      fullPath: '/workspace'
-      preLoaderRoute: typeof WorkspaceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/tutor': {
       id: '/tutor'
       path: '/tutor'
@@ -441,13 +408,6 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quiz': {
-      id: '/quiz'
-      path: '/quiz'
-      fullPath: '/quiz'
-      preLoaderRoute: typeof QuizRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -619,7 +579,6 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
-  QuizRoute: QuizRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RevisionRoute: RevisionRoute,
   SettingsRoute: SettingsRoute,
@@ -628,7 +587,6 @@ const rootRouteChildren: RootRouteChildren = {
   TestsRoute: TestsRouteWithChildren,
   TimetableRoute: TimetableRoute,
   TutorRoute: TutorRoute,
-  WorkspaceRoute: WorkspaceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
