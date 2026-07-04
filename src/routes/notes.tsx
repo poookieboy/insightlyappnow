@@ -65,10 +65,28 @@ function NotesHub() {
 
 /* --------------------------------- My Notes -------------------------------- */
 
+const NOTE_COLORS = [
+  { bg: "bg-amber-100", ring: "ring-amber-200", accent: "text-amber-900" },
+  { bg: "bg-rose-100", ring: "ring-rose-200", accent: "text-rose-900" },
+  { bg: "bg-sky-100", ring: "ring-sky-200", accent: "text-sky-900" },
+  { bg: "bg-emerald-100", ring: "ring-emerald-200", accent: "text-emerald-900" },
+  { bg: "bg-violet-100", ring: "ring-violet-200", accent: "text-violet-900" },
+  { bg: "bg-orange-100", ring: "ring-orange-200", accent: "text-orange-900" },
+  { bg: "bg-teal-100", ring: "ring-teal-200", accent: "text-teal-900" },
+  { bg: "bg-pink-100", ring: "ring-pink-200", accent: "text-pink-900" },
+];
+
+function colorFor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return NOTE_COLORS[h % NOTE_COLORS.length];
+}
+
 function MyNotes() {
   const [notes, setNotes] = useState<UserNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<UserNote | null>(null);
+  const [category, setCategory] = useState<string>("all");
 
   async function load() {
     setLoading(true);
@@ -106,54 +124,125 @@ function MyNotes() {
     setNotes((all) => [...all.map((x) => (x.id === n.id ? { ...x, pinned: next } : x))].sort((a, b) => Number(b.pinned) - Number(a.pinned)));
   }
 
+  const allTags = useMemo(() => {
+    const s = new Set<string>();
+    notes.forEach((n) => n.tags?.forEach((t) => s.add(t)));
+    return Array.from(s);
+  }, [notes]);
+
+  const filtered = useMemo(() => {
+    if (category === "all") return notes;
+    return notes.filter((n) => n.tags?.includes(category));
+  }, [notes, category]);
+
   if (editing) {
     return <NoteEditor note={editing} onClose={() => { setEditing(null); load(); }} onDelete={() => remove(editing.id)} />;
   }
 
   return (
-    <div className="space-y-3">
-      <Button onClick={createBlank} className="w-full bg-gradient-primary text-primary-foreground">
-        <Plus className="mr-1 h-4 w-4" /> New Note
-      </Button>
+    <div className="relative min-h-[70vh] pb-20">
+      {/* Category chips */}
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {["all", ...allTags].map((t) => {
+          const active = category === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setCategory(t)}
+              className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-semibold transition-all ${
+                active
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {t === "all" ? "All" : `# ${t}`}
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="flex justify-center p-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : notes.length === 0 ? (
-        <Card className="p-6 text-center text-sm text-muted-foreground">No notes yet — tap New Note to start ✨</Card>
+      ) : filtered.length === 0 ? (
+        <div className="mt-10 flex flex-col items-center gap-2 px-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-3xl">📝</div>
+          <p className="font-semibold">No notes yet</p>
+          <p className="text-xs text-muted-foreground">Tap the + button to create your first colorful note.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {notes.map((n) => (
-            <Card key={n.id} className="group relative overflow-hidden p-3 transition-all hover:-translate-y-0.5 hover:shadow-glow">
-              <button onClick={() => setEditing(n)} className="block w-full text-left">
-                <div className="flex items-start justify-between">
-                  <p className="line-clamp-1 font-semibold">{n.title || "Untitled"}</p>
-                  {n.pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
+        <div className="columns-2 gap-3 [column-fill:_balance]">
+          {filtered.map((n) => {
+            const c = colorFor(n.id);
+            const preview = n.content_html ? stripHtml(n.content_html) : "";
+            return (
+              <div key={n.id} className="mb-3 break-inside-avoid">
+                <button
+                  onClick={() => setEditing(n)}
+                  className={`group block w-full rounded-2xl p-3 text-left shadow-sm ring-1 transition-all hover:-translate-y-0.5 hover:shadow-lg ${c.bg} ${c.ring}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`line-clamp-2 text-sm font-bold leading-snug ${c.accent}`}>
+                      {n.title || "Untitled"}
+                    </p>
+                    {n.pinned && <Pin className={`h-3.5 w-3.5 shrink-0 ${c.accent}`} />}
+                  </div>
+
+                  {preview && (
+                    <p className="mt-1.5 line-clamp-5 text-[11px] leading-relaxed text-neutral-700">
+                      {preview}
+                    </p>
+                  )}
+
+                  {n.media?.some((m) => m.kind === "image" || m.kind === "drawing") && (
+                    <div className="mt-2 grid grid-cols-2 gap-1">
+                      {n.media.filter((m) => m.kind === "image" || m.kind === "drawing").slice(0, 2).map((m, i) => (
+                        <img key={i} src={m.url} alt="" className="h-16 w-full rounded-md object-cover" />
+                      ))}
+                    </div>
+                  )}
+
+                  {n.media?.some((m) => m.kind === "audio") && (
+                    <div className="mt-2 flex items-center gap-1 text-[10px] text-neutral-700">
+                      <Mic className="h-3 w-3" /> Voice note
+                    </div>
+                  )}
+
+                  {n.tags?.length ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {n.tags.slice(0, 3).map((t) => (
+                        <span key={t} className="rounded-full bg-white/60 px-2 py-0.5 text-[10px] font-medium text-neutral-700">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <p className="mt-2 text-[10px] text-neutral-500">
+                    {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </p>
+                </button>
+                <div className="mt-1 flex justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => togglePin(n)}>
+                    <Pin className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => remove(n.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                {n.content_html && (
-                  <p className="mt-1 line-clamp-3 text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: stripHtml(n.content_html) }} />
-                )}
-                {n.media?.length ? (
-                  <div className="mt-2 flex gap-1">
-                    {n.media.slice(0, 3).map((m, i) => (
-                      <div key={i} className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                        {m.kind === "image" || m.kind === "drawing" ? <ImageIcon className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                {n.tags?.length ? (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {n.tags.slice(0, 3).map((t) => <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>)}
-                  </div>
-                ) : null}
-              </button>
-              <div className="mt-2 flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
-                <Button size="icon" variant="ghost" onClick={() => togglePin(n)}><Pin className="h-3.5 w-3.5" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => remove(n.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      {/* Floating action button */}
+      <button
+        onClick={createBlank}
+        aria-label="New note"
+        className="fixed bottom-24 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
     </div>
   );
 }
