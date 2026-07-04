@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as TestsRouteImport } from './routes/tests'
@@ -37,11 +36,6 @@ import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 
-const WorkspaceRoute = WorkspaceRouteImport.update({
-  id: '/workspace',
-  path: '/workspace',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TutorRoute = TutorRouteImport.update({
   id: '/tutor',
   path: '/tutor',
@@ -197,7 +191,6 @@ export interface FileRoutesByFullPath {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
-  '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
@@ -226,7 +219,6 @@ export interface FileRoutesByTo {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
-  '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
@@ -256,7 +248,6 @@ export interface FileRoutesById {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
-  '/workspace': typeof WorkspaceRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
@@ -287,7 +278,6 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
-    | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/tests/$paperId/preview'
@@ -316,7 +306,6 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
-    | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/tests/$paperId/preview'
@@ -345,7 +334,6 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
-    | '/workspace'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/tests/$paperId/preview'
@@ -375,18 +363,10 @@ export interface RootRouteChildren {
   TestsRoute: typeof TestsRouteWithChildren
   TimetableRoute: typeof TimetableRoute
   TutorRoute: typeof TutorRoute
-  WorkspaceRoute: typeof WorkspaceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workspace': {
-      id: '/workspace'
-      path: '/workspace'
-      fullPath: '/workspace'
-      preLoaderRoute: typeof WorkspaceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/tutor': {
       id: '/tutor'
       path: '/tutor'
@@ -628,17 +608,7 @@ const rootRouteChildren: RootRouteChildren = {
   TestsRoute: TestsRouteWithChildren,
   TimetableRoute: TimetableRoute,
   TutorRoute: TutorRoute,
-  WorkspaceRoute: WorkspaceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

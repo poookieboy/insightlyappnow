@@ -44,6 +44,12 @@ export function normalizeQuestion(r: QuizQuestionRow): QuizQuestion {
   const opts = [r.option_a, r.option_b, r.option_c, r.option_d]
     .map((o) => (o ?? "").toString().trim())
     .filter(Boolean);
+  // correct_answer may be stored as a letter ("A".."D") or as full option text.
+  let correct = (r.correct_answer ?? r.sample_answer ?? "").toString().trim();
+  if (type === "multiple_choice" && /^[A-Da-d]$/.test(correct)) {
+    const idx = correct.toUpperCase().charCodeAt(0) - 65;
+    correct = opts[idx] ?? correct;
+  }
   return {
     id: r.id,
     subject: r.subject,
@@ -52,7 +58,7 @@ export function normalizeQuestion(r: QuizQuestionRow): QuizQuestion {
     type,
     question: r.question,
     options: type === "multiple_choice" ? opts : null,
-    correct_answer: (r.correct_answer ?? r.sample_answer ?? "").toString(),
+    correct_answer: correct,
     explanation: r.explanation,
     max: Number(r.marks ?? 1),
   };
