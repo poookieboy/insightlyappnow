@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, BarChart3, Crown, Sparkles, ChevronRight, Flame } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { Award, BarChart3, Crown, Sparkles, ChevronRight, Flame, CalendarDays } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { useStore } from "@/lib/store";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { BADGES } from "@/lib/badges";
+import { ACHIEVEMENT_BADGES, MONTHLY_BADGES, BADGES, evaluateBadges, notifyBadges } from "@/lib/badges";
 import { computeStreak } from "@/lib/streak";
 
 export const Route = createFileRoute("/profile")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { state } = useStore();
+  const { state, update } = useStore();
   const { user } = useAuth();
   const { profile: dbProfile } = useProfile();
   const { info: subInfo } = useSubscription();
@@ -34,6 +35,39 @@ function ProfilePage() {
   const unlocked = new Set(state.badges.unlocked);
   const initials = (dbProfile?.display_name || profile.name || "?")
     .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+
+  const currentMonth = new Date().getMonth() + 1;
+
+  // Re-evaluate badges on profile visit so time-based/newly-eligible badges pop.
+  const evaluated = useRef(false);
+  useEffect(() => {
+    if (evaluated.current) return;
+    evaluated.current = true;
+    const { next, newly } = evaluateBadges(state.badges, {
+      tasks: state.tasks,
+      revisionDone: state.revisionDone,
+      notes: state.notes,
+      examResults: state.examResults,
+      goals: state.goals,
+      tutorConversations: state.tutorConversations,
+    });
+    if (newly.length) {
+      update((s) => ({ ...s, badges: next }));
+      notifyBadges(newly);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const monthlySorted = useMemo(() => {
+    // Show current month first, then chronological.
+    return [...MONTHLY_BADGES].sort((a, b) => {
+      const am = a.month === currentMonth ? -1 : 0;
+      const bm = b.month === currentMonth ? -1 : 0;
+      if (am !== bm) return am - bm;
+      return (a.month ?? 0) - (b.month ?? 0);
+    });
+  }, [currentMonth]);
+
 
   return (
     <AppShell>
