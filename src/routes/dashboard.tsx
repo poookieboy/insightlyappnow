@@ -34,6 +34,10 @@ function Dashboard() {
     const { next, newly } = evaluateBadges(state.badges, {
       tasks: state.tasks,
       revisionDone: state.revisionDone,
+      notes: state.notes,
+      examResults: state.examResults,
+      goals: state.goals,
+      tutorConversations: state.tutorConversations,
     });
     if (newly.length) {
       update((s) => ({ ...s, badges: next }));
