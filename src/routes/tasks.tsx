@@ -57,7 +57,7 @@ function Tasks() {
           ? { ...t, completed, completedAt: new Date().toISOString(), onTime: Date.now() <= new Date(t.deadline).getTime() }
           : { ...t, completed: false, completedAt: undefined, onTime: undefined };
       });
-      const { next, newly } = evaluateBadges(s.badges, { tasks, revisionDone: s.revisionDone });
+      const { next, newly } = evaluateBadges(s.badges, { tasks, revisionDone: s.revisionDone, notes: s.notes, examResults: s.examResults, goals: s.goals, tutorConversations: s.tutorConversations });
       if (newly.length) setTimeout(() => notifyBadges(newly), 100);
       const justCompleted = tasks.find((t) => t.id === id)?.completed;
       if (justCompleted) setTimeout(() => toast.success(motivation.onComplete()), 100);

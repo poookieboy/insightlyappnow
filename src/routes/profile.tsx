@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, BarChart3, Crown, Sparkles, ChevronRight, Flame } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { Award, BarChart3, Crown, Sparkles, ChevronRight, Flame, CalendarDays } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { useStore } from "@/lib/store";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { BADGES } from "@/lib/badges";
+import { ACHIEVEMENT_BADGES, MONTHLY_BADGES, BADGES, evaluateBadges, notifyBadges } from "@/lib/badges";
 import { computeStreak } from "@/lib/streak";
 
 export const Route = createFileRoute("/profile")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { state } = useStore();
+  const { state, update } = useStore();
   const { user } = useAuth();
   const { profile: dbProfile } = useProfile();
   const { info: subInfo } = useSubscription();
@@ -34,6 +35,39 @@ function ProfilePage() {
   const unlocked = new Set(state.badges.unlocked);
   const initials = (dbProfile?.display_name || profile.name || "?")
     .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+
+  const currentMonth = new Date().getMonth() + 1;
+
+  // Re-evaluate badges on profile visit so time-based/newly-eligible badges pop.
+  const evaluated = useRef(false);
+  useEffect(() => {
+    if (evaluated.current) return;
+    evaluated.current = true;
+    const { next, newly } = evaluateBadges(state.badges, {
+      tasks: state.tasks,
+      revisionDone: state.revisionDone,
+      notes: state.notes,
+      examResults: state.examResults,
+      goals: state.goals,
+      tutorConversations: state.tutorConversations,
+    });
+    if (newly.length) {
+      update((s) => ({ ...s, badges: next }));
+      notifyBadges(newly);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const monthlySorted = useMemo(() => {
+    // Show current month first, then chronological.
+    return [...MONTHLY_BADGES].sort((a, b) => {
+      const am = a.month === currentMonth ? -1 : 0;
+      const bm = b.month === currentMonth ? -1 : 0;
+      if (am !== bm) return am - bm;
+      return (a.month ?? 0) - (b.month ?? 0);
+    });
+  }, [currentMonth]);
+
 
   return (
     <AppShell>
@@ -145,18 +179,58 @@ function ProfilePage() {
         </Card>
       )}
 
-      {/* Badges grid */}
+      {/* Badges */}
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold">My Badges</h2>
         <span className="text-xs text-muted-foreground">{unlocked.size}/{BADGES.length} unlocked</span>
       </div>
-      <Card className="mb-4 p-4">
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
-          {BADGES.map((b, i) => (
-            <BadgeMedal key={b.id} badge={b} unlocked={unlocked.has(b.id)} index={i} />
-          ))}
+
+      {/* Achievements */}
+      <Card className="mb-4 overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Achievements</h3>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {ACHIEVEMENT_BADGES.filter((b) => unlocked.has(b.id)).length}/{ACHIEVEMENT_BADGES.length}
+          </span>
+        </div>
+        <div className="max-h-[26rem] overflow-y-auto p-4">
+          <div className="grid grid-cols-3 gap-y-5 gap-x-3 sm:grid-cols-4">
+            {ACHIEVEMENT_BADGES.map((b, i) => (
+              <BadgeMedal key={b.id} badge={b} unlocked={unlocked.has(b.id)} index={i} />
+            ))}
+          </div>
         </div>
       </Card>
+
+      {/* Monthly */}
+      <Card className="mb-4 overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Monthly Badges</h3>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {MONTHLY_BADGES.filter((b) => unlocked.has(b.id)).length}/{MONTHLY_BADGES.length}
+          </span>
+        </div>
+        <div className="max-h-[26rem] overflow-y-auto p-4">
+          <div className="grid grid-cols-3 gap-y-5 gap-x-3 sm:grid-cols-4">
+            {monthlySorted.map((b, i) => (
+              <BadgeMedal
+                key={b.id}
+                badge={b}
+                unlocked={unlocked.has(b.id)}
+                highlight={b.month === currentMonth}
+                index={i}
+              />
+            ))}
+          </div>
+        </div>
+      </Card>
+
 
       {/* Advanced analytics */}
       <Card className="mb-4 p-5">

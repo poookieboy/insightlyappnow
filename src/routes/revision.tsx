@@ -72,7 +72,7 @@ function Revision() {
           const qid = `${profile.curriculum}-${profile.grade}-${subject.subject}-${topic.name}-${sub.name}-ai-${Date.now()}`;
           update((s) => {
             const revisionDone = [...s.revisionDone, { questionId: qid, doneAt: new Date().toISOString() }];
-            const { next, newly } = evaluateBadges(s.badges, { tasks: s.tasks, revisionDone });
+            const { next, newly } = evaluateBadges(s.badges, { tasks: s.tasks, revisionDone, notes: s.notes, examResults: s.examResults, goals: s.goals, tutorConversations: s.tutorConversations });
             if (newly.length) setTimeout(() => notifyBadges(newly), 100);
             return { ...s, revisionDone, badges: next };
           });
