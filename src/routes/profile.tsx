@@ -179,18 +179,58 @@ function ProfilePage() {
         </Card>
       )}
 
-      {/* Badges grid */}
+      {/* Badges */}
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold">My Badges</h2>
         <span className="text-xs text-muted-foreground">{unlocked.size}/{BADGES.length} unlocked</span>
       </div>
-      <Card className="mb-4 p-4">
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
-          {BADGES.map((b, i) => (
-            <BadgeMedal key={b.id} badge={b} unlocked={unlocked.has(b.id)} index={i} />
-          ))}
+
+      {/* Achievements */}
+      <Card className="mb-4 overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Achievements</h3>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {ACHIEVEMENT_BADGES.filter((b) => unlocked.has(b.id)).length}/{ACHIEVEMENT_BADGES.length}
+          </span>
+        </div>
+        <div className="max-h-[26rem] overflow-y-auto p-4">
+          <div className="grid grid-cols-3 gap-y-5 gap-x-3 sm:grid-cols-4">
+            {ACHIEVEMENT_BADGES.map((b, i) => (
+              <BadgeMedal key={b.id} badge={b} unlocked={unlocked.has(b.id)} index={i} />
+            ))}
+          </div>
         </div>
       </Card>
+
+      {/* Monthly */}
+      <Card className="mb-4 overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Monthly Badges</h3>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {MONTHLY_BADGES.filter((b) => unlocked.has(b.id)).length}/{MONTHLY_BADGES.length}
+          </span>
+        </div>
+        <div className="max-h-[26rem] overflow-y-auto p-4">
+          <div className="grid grid-cols-3 gap-y-5 gap-x-3 sm:grid-cols-4">
+            {monthlySorted.map((b, i) => (
+              <BadgeMedal
+                key={b.id}
+                badge={b}
+                unlocked={unlocked.has(b.id)}
+                highlight={b.month === currentMonth}
+                index={i}
+              />
+            ))}
+          </div>
+        </div>
+      </Card>
+
 
       {/* Advanced analytics */}
       <Card className="mb-4 p-5">
