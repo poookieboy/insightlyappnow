@@ -101,6 +101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      note_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_locked: boolean
+          name: string
+          password_hash: string | null
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_locked?: boolean
+          name: string
+          password_hash?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_locked?: boolean
+          name?: string
+          password_hash?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -232,10 +268,18 @@ export type Database = {
       }
       user_notes: {
         Row: {
+          background_style: string | null
+          category_id: string | null
           content_html: string | null
+          cover_image: string | null
           created_at: string
+          encrypted_payload: string | null
+          icon: string | null
           id: string
+          is_encrypted: boolean
+          is_locked: boolean
           media: Json
+          password_hash: string | null
           pinned: boolean
           tags: string[]
           title: string
@@ -243,10 +287,18 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          background_style?: string | null
+          category_id?: string | null
           content_html?: string | null
+          cover_image?: string | null
           created_at?: string
+          encrypted_payload?: string | null
+          icon?: string | null
           id?: string
+          is_encrypted?: boolean
+          is_locked?: boolean
           media?: Json
+          password_hash?: string | null
           pinned?: boolean
           tags?: string[]
           title?: string
@@ -254,17 +306,33 @@ export type Database = {
           user_id: string
         }
         Update: {
+          background_style?: string | null
+          category_id?: string | null
           content_html?: string | null
+          cover_image?: string | null
           created_at?: string
+          encrypted_payload?: string | null
+          icon?: string | null
           id?: string
+          is_encrypted?: boolean
+          is_locked?: boolean
           media?: Json
+          password_hash?: string | null
           pinned?: boolean
           tags?: string[]
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_notes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "note_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
