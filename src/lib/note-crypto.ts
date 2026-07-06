@@ -46,8 +46,8 @@ export async function encryptContent(plaintext: string, pin: string): Promise<st
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(pin, salt);
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plaintext));
-  return `${b64(salt.buffer)}.${b64(iv.buffer)}.${b64(ct)}`;
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, enc.encode(plaintext) as BufferSource);
+  return `${b64(salt.buffer as ArrayBuffer)}.${b64(iv.buffer as ArrayBuffer)}.${b64(ct)}`;
 }
 
 export async function decryptContent(payload: string, pin: string): Promise<string> {
@@ -57,6 +57,6 @@ export async function decryptContent(payload: string, pin: string): Promise<stri
   const iv = unb64(ivB);
   const ct = unb64(ctB);
   const key = await deriveKey(pin, salt);
-  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, ct as BufferSource);
   return dec.decode(pt);
 }
