@@ -1,9 +1,10 @@
-// Notes hub — two categories:
-//   • My Notes: user-created rich notes (text, images, drawings, audio, tags) synced via Supabase.
-//   • For You: AI-generated, curriculum-aligned notes organized by subject & topic.
+// Notes hub — EasyNotes-style rebuild.
+//   • My Notes: user-created rich notes, cloud-synced (Supabase),
+//     with categories, background styles, covers, icons, lock/encrypt.
+//   • For You: AI-generated curriculum notes by subject & topic.
 
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef, type ChangeEvent } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Card } from "@/components/ui/card";
@@ -12,12 +13,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
-import { Plus, Trash2, Pin, Image as ImageIcon, PenTool, Mic, Square, X, Loader2, ChevronRight, BookOpen, Sparkles } from "lucide-react";
+import {
+  Plus, Trash2, Search, Lock, Unlock, ChevronLeft, MoreVertical, ChevronRight,
+  BookOpen, Sparkles, Loader2, Image as ImageIcon, Palette, Smile, X, Check,
+} from "lucide-react";
+import { RichEditor } from "@/components/RichEditor";
+import { DrawingModal } from "@/components/DrawingModal";
+import { NOTE_BACKGROUNDS, NOTE_ICONS, autoBackground, getBackground, type NoteBackground } from "@/lib/note-backgrounds";
+import { encryptContent, decryptContent, hashPin, verifyPin } from "@/lib/note-crypto";
+import { uploadAttachment, resolveMedia, removeAttachment } from "@/lib/note-storage";
 
 export const Route = createFileRoute("/notes")({
   component: () => (
@@ -27,14 +36,30 @@ export const Route = createFileRoute("/notes")({
   ),
 });
 
-interface Media { kind: "image" | "drawing" | "audio"; url: string; name?: string }
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+  is_locked: boolean;
+  password_hash: string | null;
+  sort_order: number;
+}
+
 interface UserNote {
   id: string;
   title: string;
   content_html: string | null;
   tags: string[];
-  media: Media[];
+  media: unknown[];
   pinned: boolean;
+  category_id: string | null;
+  background_style: string | null;
+  cover_image: string | null;
+  icon: string | null;
+  is_locked: boolean;
+  password_hash: string | null;
+  is_encrypted: boolean;
+  encrypted_payload: string | null;
   updated_at: string;
 }
 
@@ -42,13 +67,13 @@ function NotesHub() {
   const { state } = useStore();
   const profile = state.profile;
   return (
-    <AppShell>
+    <AppShell wide>
       <header className="mb-4">
-        <h1 className="text-2xl font-bold">Notes</h1>
-        <p className="text-sm text-muted-foreground">Your notes and curriculum-ready study material.</p>
+        <h1 className="font-display text-2xl font-bold sm:text-3xl">Notes</h1>
+        <p className="text-sm text-muted-foreground">Your personal notes and curriculum-ready study material.</p>
       </header>
       <Tabs defaultValue="mine">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="mine">My Notes</TabsTrigger>
           <TabsTrigger value="foryou">For You ✨</TabsTrigger>
         </TabsList>
@@ -63,245 +88,572 @@ function NotesHub() {
   );
 }
 
-/* --------------------------------- My Notes -------------------------------- */
+/* ============================== My Notes ============================== */
 
-const NOTE_COLORS = [
-  { bg: "bg-amber-100", ring: "ring-amber-200", accent: "text-amber-900" },
-  { bg: "bg-rose-100", ring: "ring-rose-200", accent: "text-rose-900" },
-  { bg: "bg-sky-100", ring: "ring-sky-200", accent: "text-sky-900" },
-  { bg: "bg-emerald-100", ring: "ring-emerald-200", accent: "text-emerald-900" },
-  { bg: "bg-violet-100", ring: "ring-violet-200", accent: "text-violet-900" },
-  { bg: "bg-orange-100", ring: "ring-orange-200", accent: "text-orange-900" },
-  { bg: "bg-teal-100", ring: "ring-teal-200", accent: "text-teal-900" },
-  { bg: "bg-pink-100", ring: "ring-pink-200", accent: "text-pink-900" },
+const CATEGORY_COLORS = [
+  "#fcd34d", "#f97316", "#ef4444", "#ec4899", "#a855f7",
+  "#6366f1", "#3b82f6", "#06b6d4", "#10b981", "#84cc16",
+  "#78716c", "#0f172a",
 ];
 
-function colorFor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return NOTE_COLORS[h % NOTE_COLORS.length];
-}
+const CATEGORY_ALL = "__all__";
+const CATEGORY_UNSORTED = "__unsorted__";
 
 function MyNotes() {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [notes, setNotes] = useState<UserNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCat, setActiveCat] = useState<string>(CATEGORY_ALL);
+  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<UserNote | null>(null);
-  const [category, setCategory] = useState<string>("all");
+  const [editCat, setEditCat] = useState<Category | null>(null);
+  const [showCatDialog, setShowCatDialog] = useState(false);
+  // Categories the user has already unlocked this session.
+  const [unlockedCats, setUnlockedCats] = useState<Set<string>>(new Set());
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("user_notes")
-      .select("*").order("pinned", { ascending: false }).order("updated_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setNotes(((data ?? []) as unknown) as UserNote[]);
+    const [{ data: notesData, error: e1 }, { data: catsData, error: e2 }] = await Promise.all([
+      supabase.from("user_notes").select("*").order("pinned", { ascending: false }).order("updated_at", { ascending: false }),
+      supabase.from("note_categories").select("*").order("sort_order").order("created_at"),
+    ]);
+    if (e1) toast.error(e1.message);
+    if (e2) toast.error(e2.message);
+    setNotes((notesData ?? []) as unknown as UserNote[]);
+    setCategories((catsData ?? []) as unknown as Category[]);
     setLoading(false);
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  async function createBlank() {
+  async function createNote(categoryId: string | null) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return toast.error("Please sign in");
+    const bg = autoBackground(crypto.randomUUID());
     const { data, error } = await supabase.from("user_notes").insert({
-      user_id: user.id, title: "Untitled", content_html: "", tags: [], media: [], pinned: false,
+      user_id: user.id,
+      title: "",
+      content_html: "",
+      tags: [],
+      media: [],
+      pinned: false,
+      category_id: categoryId,
+      background_style: bg.id,
+      cover_image: null,
+      icon: null,
     }).select("*").single();
     if (error) return toast.error(error.message);
-    setNotes((n) => [(data as unknown) as UserNote, ...n]);
-    setEditing((data as unknown) as UserNote);
+    const n = data as unknown as UserNote;
+    setNotes((all) => [n, ...all]);
+    setEditing(n);
   }
 
-  async function remove(id: string) {
-    const { error } = await supabase.from("user_notes").delete().eq("id", id);
+  async function saveCategory(cat: { id?: string; name: string; color: string; pin?: string | null; lock?: boolean }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const password_hash = cat.lock ? (cat.pin ? await hashPin(cat.pin) : null) : null;
+    if (cat.id) {
+      const { error } = await supabase.from("note_categories").update({
+        name: cat.name, color: cat.color,
+        ...(cat.lock !== undefined ? { is_locked: cat.lock, password_hash } : {}),
+      }).eq("id", cat.id);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const { error } = await supabase.from("note_categories").insert({
+        name: cat.name, color: cat.color,
+        is_locked: !!cat.lock, password_hash,
+        user_id: user.id, sort_order: categories.length,
+      });
+      if (error) { toast.error(error.message); return; }
+    }
+    await load();
+    setShowCatDialog(false);
+    setEditCat(null);
+  }
+
+  async function deleteCategory(id: string) {
+    if (!confirm("Delete this category? Notes inside will move to Unsorted.")) return;
+    const { error } = await supabase.from("note_categories").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    setNotes((n) => n.filter((x) => x.id !== id));
-    if (editing?.id === id) setEditing(null);
+    setUnlockedCats((s) => { const n = new Set(s); n.delete(id); return n; });
+    if (activeCat === id) setActiveCat(CATEGORY_ALL);
+    await load();
   }
 
-  async function togglePin(n: UserNote) {
-    const next = !n.pinned;
-    const { error } = await supabase.from("user_notes").update({ pinned: next }).eq("id", n.id);
-    if (error) return toast.error(error.message);
-    setNotes((all) => [...all.map((x) => (x.id === n.id ? { ...x, pinned: next } : x))].sort((a, b) => Number(b.pinned) - Number(a.pinned)));
+  async function tryUnlockCategory(cat: Category) {
+    const pin = prompt(`Enter PIN for "${cat.name}"`);
+    if (!pin) return;
+    if (!cat.password_hash) { setUnlockedCats((s) => new Set(s).add(cat.id)); setActiveCat(cat.id); return; }
+    if (await verifyPin(pin, cat.password_hash)) {
+      setUnlockedCats((s) => new Set(s).add(cat.id));
+      setActiveCat(cat.id);
+    } else {
+      toast.error("Wrong PIN");
+    }
   }
 
-  const allTags = useMemo(() => {
-    const s = new Set<string>();
-    notes.forEach((n) => n.tags?.forEach((t) => s.add(t)));
-    return Array.from(s);
-  }, [notes]);
+  const filteredNotes = useMemo(() => {
+    let arr = notes;
+    if (activeCat === CATEGORY_UNSORTED) arr = arr.filter((n) => !n.category_id);
+    else if (activeCat !== CATEGORY_ALL) arr = arr.filter((n) => n.category_id === activeCat);
+    // Hide notes in locked (still-locked) categories from "All"
+    if (activeCat === CATEGORY_ALL) {
+      const lockedCats = new Set(categories.filter((c) => c.is_locked && !unlockedCats.has(c.id)).map((c) => c.id));
+      arr = arr.filter((n) => !n.category_id || !lockedCats.has(n.category_id));
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      arr = arr.filter((n) => {
+        const title = (n.title || "").toLowerCase();
+        const preview = n.is_encrypted ? "" : stripHtml(n.content_html || "").toLowerCase();
+        return title.includes(q) || preview.includes(q);
+      });
+    }
+    return arr;
+  }, [notes, activeCat, search, categories, unlockedCats]);
 
-  const filtered = useMemo(() => {
-    if (category === "all") return notes;
-    return notes.filter((n) => n.tags?.includes(category));
-  }, [notes, category]);
+  const activeCategoryObj = categories.find((c) => c.id === activeCat) ?? null;
 
   if (editing) {
-    return <NoteEditor note={editing} onClose={() => { setEditing(null); load(); }} onDelete={() => remove(editing.id)} />;
+    return (
+      <NoteEditor
+        note={editing}
+        categories={categories}
+        onClose={() => { setEditing(null); load(); }}
+        onDelete={async () => {
+          await supabase.from("user_notes").delete().eq("id", editing.id);
+          setEditing(null); load();
+        }}
+      />
+    );
   }
 
   return (
-    <div className="relative min-h-[70vh] pb-20">
-      {/* Category chips */}
-      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {["all", ...allTags].map((t) => {
-          const active = category === t;
-          return (
-            <button
-              key={t}
-              onClick={() => setCategory(t)}
-              className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-semibold transition-all ${
-                active
-                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {t === "all" ? "All" : `# ${t}`}
-            </button>
-          );
-        })}
+    <div className="relative min-h-[70vh] pb-24">
+      {/* Search bar */}
+      <div className="relative mb-3">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search notes…"
+          className="h-11 pl-10"
+        />
       </div>
 
-      {loading ? (
-        <div className="flex justify-center p-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="mt-10 flex flex-col items-center gap-2 px-6 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-3xl">📝</div>
-          <p className="font-semibold">No notes yet</p>
-          <p className="text-xs text-muted-foreground">Tap the + button to create your first colorful note.</p>
-        </div>
-      ) : (
-        <div className="columns-2 gap-3 [column-fill:_balance]">
-          {filtered.map((n) => {
-            const c = colorFor(n.id);
-            const preview = n.content_html ? stripHtml(n.content_html) : "";
-            return (
-              <div key={n.id} className="mb-3 break-inside-avoid">
-                <button
-                  onClick={() => setEditing(n)}
-                  className={`group block w-full rounded-2xl p-3 text-left shadow-sm ring-1 transition-all hover:-translate-y-0.5 hover:shadow-lg ${c.bg} ${c.ring}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={`line-clamp-2 text-sm font-bold leading-snug ${c.accent}`}>
-                      {n.title || "Untitled"}
-                    </p>
-                    {n.pinned && <Pin className={`h-3.5 w-3.5 shrink-0 ${c.accent}`} />}
-                  </div>
+      {/* Category chips */}
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+        <CatChip
+          label="All"
+          color="var(--primary)"
+          active={activeCat === CATEGORY_ALL}
+          onClick={() => setActiveCat(CATEGORY_ALL)}
+        />
+        <CatChip
+          label="Unsorted"
+          color="#94a3b8"
+          active={activeCat === CATEGORY_UNSORTED}
+          onClick={() => setActiveCat(CATEGORY_UNSORTED)}
+        />
+        {categories.map((c) => {
+          const locked = c.is_locked && !unlockedCats.has(c.id);
+          return (
+            <CatChip
+              key={c.id}
+              label={c.name}
+              color={c.color}
+              active={activeCat === c.id}
+              locked={locked}
+              onClick={() => {
+                if (locked) tryUnlockCategory(c);
+                else setActiveCat(c.id);
+              }}
+              onLongPress={() => { setEditCat(c); setShowCatDialog(true); }}
+            />
+          );
+        })}
+        <button
+          onClick={() => { setEditCat(null); setShowCatDialog(true); }}
+          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-4 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted"
+        >
+          <Plus className="h-3.5 w-3.5" /> New tab
+        </button>
+      </div>
 
-                  {preview && (
-                    <p className="mt-1.5 line-clamp-5 text-[11px] leading-relaxed text-neutral-700">
-                      {preview}
-                    </p>
-                  )}
-
-                  {n.media?.some((m) => m.kind === "image" || m.kind === "drawing") && (
-                    <div className="mt-2 grid grid-cols-2 gap-1">
-                      {n.media.filter((m) => m.kind === "image" || m.kind === "drawing").slice(0, 2).map((m, i) => (
-                        <img key={i} src={m.url} alt="" className="h-16 w-full rounded-md object-cover" />
-                      ))}
-                    </div>
-                  )}
-
-                  {n.media?.some((m) => m.kind === "audio") && (
-                    <div className="mt-2 flex items-center gap-1 text-[10px] text-neutral-700">
-                      <Mic className="h-3 w-3" /> Voice note
-                    </div>
-                  )}
-
-                  {n.tags?.length ? (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {n.tags.slice(0, 3).map((t) => (
-                        <span key={t} className="rounded-full bg-white/60 px-2 py-0.5 text-[10px] font-medium text-neutral-700">
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  <p className="mt-2 text-[10px] text-neutral-500">
-                    {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                  </p>
-                </button>
-                <div className="mt-1 flex justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => togglePin(n)}>
-                    <Pin className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => remove(n.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+      {activeCategoryObj && (
+        <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full" style={{ background: activeCategoryObj.color }} />
+            <p className="text-sm font-semibold">{activeCategoryObj.name}</p>
+            {activeCategoryObj.is_locked && <Lock className="h-3 w-3 text-muted-foreground" />}
+          </div>
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" onClick={() => { setEditCat(activeCategoryObj); setShowCatDialog(true); }}>Edit</Button>
+            <Button size="sm" variant="ghost" onClick={() => deleteCategory(activeCategoryObj.id)}>
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Floating action button */}
+      {/* Notes grid */}
+      {loading ? (
+        <div className="flex justify-center p-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : filteredNotes.length === 0 ? (
+        <EmptyState onNew={() => createNote(activeCat === CATEGORY_ALL || activeCat === CATEGORY_UNSORTED ? null : activeCat)} />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {filteredNotes.map((n) => (
+            <NoteCard
+              key={n.id}
+              note={n}
+              category={categories.find((c) => c.id === n.category_id) ?? null}
+              onOpen={() => setEditing(n)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* FAB */}
       <button
-        onClick={createBlank}
+        onClick={() => createNote(activeCat === CATEGORY_ALL || activeCat === CATEGORY_UNSORTED ? null : activeCat)}
         aria-label="New note"
-        className="fixed bottom-24 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-24 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95 sm:h-16 sm:w-16"
       >
         <Plus className="h-6 w-6" />
       </button>
+
+      {showCatDialog && (
+        <CategoryDialog
+          category={editCat}
+          onClose={() => { setShowCatDialog(false); setEditCat(null); }}
+          onSave={saveCategory}
+        />
+      )}
     </div>
+  );
+}
+
+function CatChip({
+  label, color, active, locked, onClick, onLongPress,
+}: {
+  label: string; color: string; active: boolean; locked?: boolean;
+  onClick: () => void; onLongPress?: () => void;
+}) {
+  const timerRef = useRef<number | null>(null);
+  const start = () => {
+    if (!onLongPress) return;
+    timerRef.current = window.setTimeout(onLongPress, 500);
+  };
+  const clear = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={start}
+      onPointerUp={clear}
+      onPointerLeave={clear}
+      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-semibold transition-all ${
+        active
+          ? "border-transparent text-white shadow-sm"
+          : "border-border bg-background text-foreground hover:bg-muted"
+      }`}
+      style={active ? { background: color } : undefined}
+    >
+      <span className={`h-2 w-2 rounded-full ${active ? "bg-white/80" : ""}`} style={!active ? { background: color } : undefined} />
+      {label}
+      {locked && <Lock className="h-3 w-3" />}
+    </button>
+  );
+}
+
+function EmptyState({ onNew }: { onNew: () => void }) {
+  return (
+    <div className="mt-10 flex flex-col items-center gap-3 px-6 text-center">
+      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-primary text-4xl shadow-glow">
+        📝
+      </div>
+      <p className="font-display text-lg font-bold">Your notes will bloom here</p>
+      <p className="max-w-xs text-xs text-muted-foreground">Tap + to create a colorful note. Everything autosaves and syncs to your account.</p>
+      <Button onClick={onNew} className="bg-gradient-primary text-primary-foreground">
+        <Plus className="mr-1.5 h-4 w-4" /> Create your first note
+      </Button>
+    </div>
+  );
+}
+
+function NoteCard({
+  note, category, onOpen,
+}: { note: UserNote; category: Category | null; onOpen: () => void }) {
+  const bg = getBackground(note.background_style ?? autoBackground(note.id).id);
+  const preview = note.is_encrypted ? "🔒 Locked note" : stripHtml(note.content_html || "");
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancel = false;
+    if (note.cover_image) {
+      resolveMedia(note.cover_image).then((u) => { if (!cancel) setCoverUrl(u); });
+    } else {
+      setCoverUrl(null);
+    }
+    return () => { cancel = true; };
+  }, [note.cover_image]);
+
+  return (
+    <button
+      onClick={onOpen}
+      className="group relative flex aspect-[3/4] flex-col overflow-hidden rounded-2xl text-left shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-1 hover:shadow-lg animate-fade-in"
+      style={{
+        background: coverUrl ? `linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%), url(${coverUrl}) center/cover` : bg.css,
+        color: coverUrl || bg.text === "light" ? "#fff" : "#111827",
+      }}
+    >
+      {/* Category tag */}
+      {category && (
+        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: category.color }} />
+          {category.name}
+        </div>
+      )}
+      {note.is_locked && (
+        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-sm">
+          <Lock className="h-3 w-3" />
+        </div>
+      )}
+
+      <div className="flex flex-1 flex-col justify-end p-3">
+        {note.icon && <span className="mb-1 text-2xl">{note.icon}</span>}
+        <p className="line-clamp-2 text-sm font-bold leading-snug">
+          {note.title || "Untitled"}
+        </p>
+        {preview && !coverUrl && (
+          <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed opacity-80">
+            {preview}
+          </p>
+        )}
+        <p className="mt-1.5 text-[10px] opacity-70">
+          {new Date(note.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        </p>
+      </div>
+    </button>
   );
 }
 
 function stripHtml(html: string) {
   if (typeof document === "undefined") return html.replace(/<[^>]+>/g, "").slice(0, 200);
-  const tmp = document.createElement("div"); tmp.innerHTML = html;
-  return (tmp.textContent || "").slice(0, 200);
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || "").replace(/\s+/g, " ").trim().slice(0, 200);
 }
 
-/* -------------------------------- Editor --------------------------------- */
+/* ============================== Category dialog ============================== */
 
-function NoteEditor({ note, onClose, onDelete }: { note: UserNote; onClose: () => void; onDelete: () => void }) {
+function CategoryDialog({
+  category, onClose, onSave,
+}: {
+  category: Category | null;
+  onClose: () => void;
+  onSave: (c: { id?: string; name: string; color: string; lock?: boolean; pin?: string | null }) => Promise<void>;
+}) {
+  const [name, setName] = useState(category?.name ?? "");
+  const [color, setColor] = useState(category?.color ?? CATEGORY_COLORS[0]);
+  const [lock, setLock] = useState(category?.is_locked ?? false);
+  const [pin, setPin] = useState("");
+
+  const submit = async () => {
+    if (!name.trim()) return toast.error("Name required");
+    if (lock && !category?.password_hash && !pin.trim()) return toast.error("Set a PIN to lock");
+    await onSave({ id: category?.id, name: name.trim(), color, lock, pin: pin || null });
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{category ? "Edit tab" : "New tab"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Math, Personal, Goals…" autoFocus />
+          </div>
+          <div>
+            <Label>Color</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATEGORY_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`h-8 w-8 rounded-full border-2 transition-transform ${color === c ? "scale-110 border-foreground" : "border-transparent"}`}
+                  style={{ background: c }}
+                  aria-label={`color ${c}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border p-3">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} />
+              <span className="text-sm font-medium">Lock this tab with a PIN</span>
+            </label>
+            {lock && !category?.password_hash && (
+              <Input
+                type="password"
+                placeholder="Choose a PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                className="mt-2"
+              />
+            )}
+            {lock && category?.password_hash && (
+              <p className="mt-2 text-[11px] text-muted-foreground">Already protected. Uncheck to remove lock.</p>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} className="bg-gradient-primary text-primary-foreground">Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ============================== Editor ============================== */
+
+function NoteEditor({
+  note, categories, onClose, onDelete,
+}: {
+  note: UserNote;
+  categories: Category[];
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  // Unlock flow for encrypted notes.
+  const [unlocked, setUnlocked] = useState(!note.is_encrypted);
+  const [pinAttempt, setPinAttempt] = useState("");
+  const [pinInSession, setPinInSession] = useState<string | null>(null);
+
   const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content_html ?? "");
-  const [tags, setTags] = useState<string[]>(note.tags ?? []);
-  const [media, setMedia] = useState<Media[]>(note.media ?? []);
-  const [tagInput, setTagInput] = useState("");
+  const [content, setContent] = useState<string>(note.content_html ?? "");
+  const [bgId, setBgId] = useState<string>(note.background_style ?? autoBackground(note.id).id);
+  const [icon, setIcon] = useState<string | null>(note.icon);
+  const [coverPath, setCoverPath] = useState<string | null>(note.cover_image);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(note.category_id);
+  const [showBg, setShowBg] = useState(false);
+  const [showIcon, setShowIcon] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [saving, setSaving] = useState<"idle" | "saving" | "saved">("saved");
+  const [decryptError, setDecryptError] = useState<string | null>(null);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const editorRef = useRef<HTMLDivElement | null>(null);
-  const [saving, setSaving] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<number | null>(null);
+  const firstRenderRef = useRef(true);
+
+  const bg = getBackground(bgId);
+
+  // Load cover signed URL
+  useEffect(() => {
+    let cancel = false;
+    if (coverPath) resolveMedia(coverPath).then((u) => { if (!cancel) setCoverUrl(u); });
+    else setCoverUrl(null);
+    return () => { cancel = true; };
+  }, [coverPath]);
+
+  // Decrypt on unlock.
+  async function tryUnlock() {
+    if (!note.encrypted_payload || !note.password_hash) return;
+    if (!(await verifyPin(pinAttempt, note.password_hash))) {
+      setDecryptError("Wrong PIN"); return;
+    }
+    try {
+      const html = await decryptContent(note.encrypted_payload, pinAttempt);
+      setContent(html);
+      setPinInSession(pinAttempt);
+      setUnlocked(true);
+      setDecryptError(null);
+    } catch {
+      setDecryptError("Failed to decrypt");
+    }
+  }
+
+  // Autosave (debounced ~1s)
+  const schedule = useCallback(() => {
+    if (!unlocked) return;
+    setSaving("saving");
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(async () => {
+      const encPayload = note.is_encrypted && pinInSession
+        ? await encryptContent(content, pinInSession) : null;
+      const { error } = await supabase.from("user_notes").update({
+        title: title.trim(),
+        tags: [],
+        background_style: bgId,
+        cover_image: coverPath,
+        icon,
+        category_id: categoryId,
+        updated_at: new Date().toISOString(),
+        content_html: encPayload ? "" : content,
+        encrypted_payload: encPayload,
+      }).eq("id", note.id);
+      setSaving(error ? "idle" : "saved");
+      if (error) toast.error(error.message);
+    }, 900);
+  }, [title, content, bgId, coverPath, icon, categoryId, unlocked, note.id, note.is_encrypted, pinInSession]);
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== content) {
-      editorRef.current.innerHTML = content;
-    }
+    if (firstRenderRef.current) { firstRenderRef.current = false; return; }
+    schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [title, content, bgId, coverPath, icon, categoryId]);
 
-  function exec(cmd: string, val?: string) {
-    document.execCommand(cmd, false, val);
-    if (editorRef.current) setContent(editorRef.current.innerHTML);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  async function onPickPhoto(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) return toast.error("Image must be under 5MB");
+    const t = toast.loading("Uploading photo…");
+    try {
+      const { url } = await uploadAttachment(f, { folder: note.id });
+      setContent((c) => c + `<p><img src="${url}" alt="" /></p>`);
+      toast.success("Photo added", { id: t });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Upload failed", { id: t });
+    }
   }
 
-  function addTag() {
-    const t = tagInput.trim().toLowerCase();
-    if (!t) return;
-    if (!tags.includes(t)) setTags([...tags, t]);
-    setTagInput("");
+  async function onPickCover(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) return toast.error("Image must be under 5MB");
+    const t = toast.loading("Uploading cover…");
+    try {
+      if (coverPath && !coverPath.startsWith("http")) await removeAttachment(coverPath);
+      const { path } = await uploadAttachment(f, { folder: "covers" });
+      setCoverPath(path);
+      toast.success("Cover set", { id: t });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Upload failed", { id: t });
+    }
   }
 
-  function fileToDataUrl(f: File): Promise<string> {
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(f);
-    });
+  async function onSaveDrawing(blob: Blob) {
+    const t = toast.loading("Saving drawing…");
+    try {
+      const { url } = await uploadAttachment(blob, { folder: note.id, ext: "png" });
+      setContent((c) => c + `<p><img src="${url}" alt="drawing" /></p>`);
+      toast.success("Drawing added", { id: t });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Upload failed", { id: t });
+    }
+    setDrawing(false);
   }
 
-  async function onImage(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]; if (!f) return;
-    if (f.size > 3 * 1024 * 1024) return toast.error("Image must be under 3MB");
-    const url = await fileToDataUrl(f);
-    setMedia((m) => [...m, { kind: "image", url, name: f.name }]);
-  }
-
-  async function startRec() {
+  async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
@@ -309,160 +661,275 @@ function NoteEditor({ note, onClose, onDelete }: { note: UserNote; onClose: () =
       rec.ondataavailable = (e) => chunksRef.current.push(e.data);
       rec.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const url = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(blob); });
-        setMedia((m) => [...m, { kind: "audio", url }]);
         stream.getTracks().forEach((t) => t.stop());
+        const t = toast.loading("Uploading audio…");
+        try {
+          const { url } = await uploadAttachment(blob, { folder: note.id, ext: "webm" });
+          setContent((c) => c + `<p><audio controls src="${url}"></audio></p>`);
+          toast.success("Audio saved", { id: t });
+        } catch (e: unknown) {
+          toast.error(e instanceof Error ? e.message : "Upload failed", { id: t });
+        }
       };
-      rec.start(); mediaRecRef.current = rec; setRecording(true);
-    } catch { toast.error("Microphone permission needed"); }
+      rec.start();
+      mediaRecRef.current = rec;
+      setRecording(true);
+    } catch {
+      toast.error("Microphone permission needed");
+    }
   }
-  function stopRec() { mediaRecRef.current?.stop(); setRecording(false); }
+  function stopRecording() { mediaRecRef.current?.stop(); setRecording(false); }
 
-  async function save() {
-    setSaving(true);
-    const html = editorRef.current?.innerHTML ?? content;
-    const { error } = await supabase.from("user_notes").update({
-      title: title.trim() || "Untitled", content_html: html, tags, media: media as any, updated_at: new Date().toISOString(),
-    }).eq("id", note.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    onClose();
+  async function toggleLock() {
+    if (note.is_locked) {
+      if (!confirm("Remove PIN from this note? Content will be readable without a password.")) return;
+      const { error } = await supabase.from("user_notes").update({
+        is_locked: false, password_hash: null,
+        is_encrypted: false, encrypted_payload: null,
+        content_html: content,
+      }).eq("id", note.id);
+      if (error) return toast.error(error.message);
+      toast.success("Unlocked");
+      onClose();
+    } else {
+      const pin = prompt("Set a PIN for this note (keep it safe — content is encrypted with it and cannot be recovered)");
+      if (!pin) return;
+      const confirm2 = prompt("Confirm PIN");
+      if (pin !== confirm2) return toast.error("PINs do not match");
+      const payload = await encryptContent(content, pin);
+      const hash = await hashPin(pin);
+      const { error } = await supabase.from("user_notes").update({
+        is_locked: true, password_hash: hash,
+        is_encrypted: true, encrypted_payload: payload,
+        content_html: "",
+      }).eq("id", note.id);
+      if (error) return toast.error(error.message);
+      toast.success("Note locked & encrypted");
+      onClose();
+    }
+  }
+
+  // Locked view: prompt for PIN before showing content.
+  if (!unlocked) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background p-6">
+        <Button variant="ghost" size="sm" onClick={onClose} className="absolute left-4 top-4">
+          <ChevronLeft className="h-4 w-4" /> Back
+        </Button>
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-primary text-primary-foreground shadow-glow">
+          <Lock className="h-10 w-10" />
+        </div>
+        <h2 className="font-display text-xl font-bold">Note is locked</h2>
+        <p className="text-sm text-muted-foreground">Enter PIN to unlock</p>
+        <Input
+          type="password"
+          value={pinAttempt}
+          onChange={(e) => setPinAttempt(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && tryUnlock()}
+          className="max-w-xs text-center text-lg tracking-widest"
+          autoFocus
+        />
+        {decryptError && <p className="text-xs text-destructive">{decryptError}</p>}
+        <Button onClick={tryUnlock} className="bg-gradient-primary text-primary-foreground">Unlock</Button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="flex-1 text-lg font-semibold" />
-        <Button size="sm" onClick={save} disabled={saving} className="bg-gradient-primary text-primary-foreground">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+    <div
+      className="fixed inset-0 z-40 flex flex-col animate-fade-in"
+      style={{ background: bg.css, color: bg.text === "light" ? "#fff" : "#111827" }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-black/10 bg-white/40 px-3 py-2 backdrop-blur-md dark:bg-black/20">
+        <Button size="icon" variant="ghost" onClick={onClose}>
+          <ChevronLeft className="h-5 w-5" />
         </Button>
+        <span className="text-xs font-medium opacity-70">
+          {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
+        </span>
+        <div className="flex-1" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="ghost"><MoreVertical className="h-5 w-5" /></Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-56 p-1">
+            <MenuItem icon={<Palette className="h-4 w-4" />} label="Background" onClick={() => setShowBg(true)} />
+            <MenuItem icon={<ImageIcon className="h-4 w-4" />} label="Cover image" onClick={() => coverInputRef.current?.click()} />
+            {coverPath && (
+              <MenuItem icon={<X className="h-4 w-4" />} label="Remove cover" onClick={() => setCoverPath(null)} />
+            )}
+            <MenuItem icon={<Smile className="h-4 w-4" />} label="Icon" onClick={() => setShowIcon(true)} />
+            <MenuItem
+              icon={note.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+              label={note.is_locked ? "Remove lock" : "Lock with PIN"}
+              onClick={toggleLock}
+            />
+            <div className="my-1 h-px bg-border" />
+            <MenuItem
+              icon={<Trash2 className="h-4 w-4 text-destructive" />}
+              label="Delete note"
+              onClick={() => { if (confirm("Delete this note?")) onDelete(); }}
+              danger
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
-      <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-2">
-        <Button size="sm" variant="ghost" onClick={() => exec("bold")} className="font-bold">B</Button>
-        <Button size="sm" variant="ghost" onClick={() => exec("italic")} className="italic">I</Button>
-        <Button size="sm" variant="ghost" onClick={() => exec("underline")} className="underline">U</Button>
-        <Button size="sm" variant="ghost" onClick={() => exec("insertUnorderedList")}>• List</Button>
-        <Button size="sm" variant="ghost" onClick={() => exec("insertOrderedList")}>1. List</Button>
-        <Button size="sm" variant="ghost" onClick={() => exec("formatBlock", "h2")}>H2</Button>
-        <label className="inline-flex cursor-pointer items-center gap-1 rounded px-2 text-sm hover:bg-muted">
-          <ImageIcon className="h-4 w-4" /> Image
-          <input type="file" accept="image/*" className="hidden" onChange={onImage} />
-        </label>
-        <Button size="sm" variant="ghost" onClick={() => setDrawing(true)}><PenTool className="mr-1 h-4 w-4" />Draw</Button>
-        {recording ? (
-          <Button size="sm" variant="ghost" onClick={stopRec} className="text-rose-600"><Square className="mr-1 h-4 w-4" />Stop</Button>
-        ) : (
-          <Button size="sm" variant="ghost" onClick={startRec}><Mic className="mr-1 h-4 w-4" />Record</Button>
-        )}
+      {/* Category selector */}
+      <div className="flex items-center gap-2 border-b border-black/10 bg-white/30 px-3 py-1.5 backdrop-blur-md dark:bg-black/10">
+        <Label className="text-[11px] font-semibold uppercase tracking-wider opacity-70">Tab</Label>
+        <Select value={categoryId ?? "none"} onValueChange={(v) => setCategoryId(v === "none" ? null : v)}>
+          <SelectTrigger className="h-7 w-auto min-w-[8rem] border-none bg-white/60 text-xs dark:bg-black/30">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Unsorted</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={(e) => setContent((e.target as HTMLDivElement).innerHTML)}
-        className="min-h-[240px] rounded-xl border border-border bg-background p-4 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-      />
-
-      {media.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {media.map((m, i) => (
-            <div key={i} className="relative overflow-hidden rounded-lg border border-border">
-              <button onClick={() => setMedia((ms) => ms.filter((_, j) => j !== i))} className="absolute right-1 top-1 z-10 rounded-full bg-background/80 p-1">
-                <X className="h-3 w-3" />
-              </button>
-              {m.kind === "audio" ? (
-                <audio controls src={m.url} className="w-full" />
-              ) : (
-                <img src={m.url} alt="" className="h-32 w-full object-contain" />
-              )}
-            </div>
-          ))}
+      {/* Cover */}
+      {coverUrl && (
+        <div className="relative h-32 shrink-0 sm:h-48" style={{ background: `url(${coverUrl}) center/cover` }}>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label>Tags</Label>
-        <div className="flex gap-2">
-          <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-            placeholder="Add a tag and press Enter" />
-          <Button onClick={addTag} variant="outline">Add</Button>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {tags.map((t) => (
-            <Badge key={t} variant="secondary" className="cursor-pointer" onClick={() => setTags(tags.filter((x) => x !== t))}>
-              {t} <X className="ml-1 h-3 w-3" />
-            </Badge>
+      {/* Title + icon */}
+      <div className="flex items-center gap-2 px-4 pt-4">
+        <button
+          onClick={() => setShowIcon(true)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 text-2xl backdrop-blur-md dark:bg-black/20"
+        >
+          {icon ?? "＋"}
+        </button>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="min-w-0 flex-1 border-none bg-transparent text-2xl font-bold placeholder:opacity-50 focus:outline-none"
+          style={{ color: "inherit" }}
+        />
+      </div>
+
+      {/* Editor */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <RichEditor
+          content={content}
+          onChange={setContent}
+          onInsertPhoto={() => photoInputRef.current?.click()}
+          onOpenDrawing={() => setDrawing(true)}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          recording={recording}
+          textClass={bg.text === "light" ? "prose-invert" : ""}
+          placeholder="Start writing your thoughts…"
+        />
+      </div>
+
+      <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPickPhoto} />
+      <input ref={coverInputRef} type="file" accept="image/*" hidden onChange={onPickCover} />
+
+      {drawing && <DrawingModal onClose={() => setDrawing(false)} onSave={onSaveDrawing} />}
+      {showBg && <BackgroundPicker current={bgId} onPick={(id) => { setBgId(id); setShowBg(false); }} onClose={() => setShowBg(false)} />}
+      {showIcon && <IconPicker onPick={(i) => { setIcon(i); setShowIcon(false); }} onClose={() => setShowIcon(false)} />}
+    </div>
+  );
+}
+
+function MenuItem({
+  icon, label, onClick, danger,
+}: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted ${danger ? "text-destructive" : ""}`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+/* ============================== Pickers ============================== */
+
+function BackgroundPicker({
+  current, onPick, onClose,
+}: { current: string; onPick: (id: string) => void; onClose: () => void }) {
+  const groups: { key: NoteBackground["group"]; label: string }[] = [
+    { key: "solid", label: "Colors" },
+    { key: "gradient", label: "Gradients" },
+    { key: "pattern", label: "Patterns" },
+    { key: "paper", label: "Paper" },
+  ];
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogHeader><DialogTitle>Choose a background</DialogTitle></DialogHeader>
+        <div className="space-y-5">
+          {groups.map((g) => (
+            <div key={g.key}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</p>
+              <div className="grid grid-cols-5 gap-2 sm:grid-cols-8">
+                {NOTE_BACKGROUNDS.filter((b) => b.group === g.key).map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => onPick(b.id)}
+                    aria-label={b.label}
+                    title={b.label}
+                    className={`relative aspect-square rounded-lg border-2 transition-transform hover:scale-105 ${current === b.id ? "border-primary" : "border-transparent"}`}
+                    style={{ background: b.css }}
+                  >
+                    {current === b.id && (
+                      <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/30">
+                        <Check className="h-4 w-4 text-white" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={onDelete} className="text-rose-600">
-          <Trash2 className="mr-1 h-4 w-4" /> Delete
-        </Button>
-      </div>
-
-      {drawing && <DrawingModal onClose={() => setDrawing(false)} onSave={(url) => { setMedia((m) => [...m, { kind: "drawing", url }]); setDrawing(false); }} />}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function DrawingModal({ onClose, onSave }: { onClose: () => void; onSave: (url: string) => void }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawingRef = useRef(false);
-  const [color, setColor] = useState("#0f172a");
-
-  useEffect(() => {
-    const c = canvasRef.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
-  }, []);
-
-  function pos(e: React.PointerEvent) {
-    const r = canvasRef.current!.getBoundingClientRect();
-    return { x: (e.clientX - r.left) * (canvasRef.current!.width / r.width), y: (e.clientY - r.top) * (canvasRef.current!.height / r.height) };
-  }
-  function down(e: React.PointerEvent) { drawingRef.current = true; const ctx = canvasRef.current!.getContext("2d")!; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
-  function move(e: React.PointerEvent) {
-    if (!drawingRef.current) return;
-    const ctx = canvasRef.current!.getContext("2d")!; const p = pos(e);
-    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineTo(p.x, p.y); ctx.stroke();
-  }
-  function up() { drawingRef.current = false; }
-  function clear() {
-    const c = canvasRef.current!; const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
-  }
-  function save() { onSave(canvasRef.current!.toDataURL("image/png")); }
-
+function IconPicker({
+  onPick, onClose,
+}: { onPick: (icon: string | null) => void; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <Card className="w-full max-w-lg space-y-3 p-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs">Color</Label>
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-8 w-10 rounded" />
-          <Button size="sm" variant="outline" onClick={clear}>Clear</Button>
-          <div className="flex-1" />
-          <Button size="sm" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button size="sm" onClick={save} className="bg-gradient-primary text-primary-foreground">Insert</Button>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Choose an icon</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+          <button
+            onClick={() => onPick(null)}
+            className="flex aspect-square items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:bg-muted"
+          >
+            None
+          </button>
+          {NOTE_ICONS.map((i) => (
+            <button
+              key={i}
+              onClick={() => onPick(i)}
+              className="flex aspect-square items-center justify-center rounded-lg text-2xl hover:bg-muted"
+            >
+              {i}
+            </button>
+          ))}
         </div>
-        <canvas
-          ref={canvasRef}
-          width={640} height={400}
-          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}
-          className="w-full touch-none rounded-lg border border-border bg-white"
-        />
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-/* --------------------------------- For You -------------------------------- */
+/* ============================== For You ============================== */
 
 const SUBJECT_TOPICS: Record<string, Record<string, string[]>> = {
   primary: {
@@ -515,7 +982,7 @@ function ForYou({ grade, curriculum }: { grade: string; curriculum: string }) {
   const [subject, setSubject] = useState<string>(subjects[0] ?? "");
   const [topic, setTopic] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [body, setBody] = useState<any | null>(null);
+  const [body, setBody] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => { setTopic(""); setBody(null); }, [subject]);
 
@@ -527,8 +994,8 @@ function ForYou({ grade, curriculum }: { grade: string; curriculum: string }) {
       });
       if (error) throw error;
       setBody(data.body);
-    } catch (e: any) {
-      toast.error(e.message || "Failed to load notes");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to load notes");
     } finally { setLoading(false); }
   }
 
@@ -556,15 +1023,20 @@ function ForYou({ grade, curriculum }: { grade: string; curriculum: string }) {
           </SelectContent>
         </Select>
       </Card>
-      <div className="grid grid-cols-1 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {(pack[subject] ?? []).map((t) => (
-          <button key={t} onClick={() => open(t)}
-            className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-glow">
+          <button
+            key={t}
+            onClick={() => open(t)}
+            className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-glow"
+          >
             <div className="flex items-center gap-2">
               <div className="rounded-lg bg-primary/10 p-2"><BookOpen className="h-4 w-4 text-primary" /></div>
               <div>
                 <p className="font-semibold">{t}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI curriculum notes</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" /> AI curriculum notes
+                </p>
               </div>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -575,72 +1047,53 @@ function ForYou({ grade, curriculum }: { grade: string; curriculum: string }) {
   );
 }
 
-function CurriculumNoteView({ body }: { body: any }) {
+function CurriculumNoteView({ body }: { body: Record<string, unknown> }) {
   const [openIdx, setOpenIdx] = useState<Record<string, boolean>>({ overview: true, sections: true, summary: true });
   const T = (k: string) => setOpenIdx((o) => ({ ...o, [k]: !o[k] }));
+  const b = body as Record<string, unknown>;
+  const arr = (k: string) => (b[k] as unknown[]) ?? [];
 
   return (
     <div className="space-y-2">
-      {body.overview && (
+      {typeof b.overview === "string" && (
         <Section title="Overview" open={openIdx.overview} onToggle={() => T("overview")}>
-          <p className="text-sm leading-relaxed">{body.overview}</p>
+          <p className="text-sm leading-relaxed">{b.overview}</p>
         </Section>
       )}
-      {body.learningOutcomes?.length > 0 && (
+      {arr("learningOutcomes").length > 0 && (
         <Section title="Learning outcomes" open={!!openIdx.outcomes} onToggle={() => T("outcomes")}>
-          <ul className="list-disc pl-5 text-sm space-y-1">{body.learningOutcomes.map((o: string, i: number) => <li key={i}>{o}</li>)}</ul>
+          <ul className="list-disc space-y-1 pl-5 text-sm">
+            {(arr("learningOutcomes") as string[]).map((o, i) => <li key={i}>{o}</li>)}
+          </ul>
         </Section>
       )}
-      {body.keyTerms?.length > 0 && (
+      {arr("keyTerms").length > 0 && (
         <Section title="Key terms" open={!!openIdx.terms} onToggle={() => T("terms")}>
-          <div className="space-y-2">{body.keyTerms.map((k: any, i: number) => (
-            <div key={i} className="rounded-lg bg-muted/30 p-2 text-sm"><strong>{k.term}:</strong> {k.definition}</div>
-          ))}</div>
+          <div className="space-y-2">
+            {(arr("keyTerms") as { term: string; definition: string }[]).map((k, i) => (
+              <div key={i} className="rounded-lg bg-muted/30 p-2 text-sm"><strong>{k.term}:</strong> {k.definition}</div>
+            ))}
+          </div>
         </Section>
       )}
-      {body.sections?.length > 0 && (
+      {arr("sections").length > 0 && (
         <Section title="Explanation" open={openIdx.sections} onToggle={() => T("sections")}>
           <div className="space-y-3">
-            {body.sections.map((s: any, i: number) => (
+            {(arr("sections") as { heading: string; body: string; example?: string }[]).map((s, i) => (
               <div key={i}>
                 <p className="font-semibold">{s.heading}</p>
-                <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap">{s.body}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{s.body}</p>
                 {s.example && <p className="mt-1 rounded bg-primary/5 p-2 text-sm"><em>Example:</em> {s.example}</p>}
               </div>
             ))}
           </div>
         </Section>
       )}
-      {body.diagramDescription && (
-        <Section title="Diagram" open={!!openIdx.diagram} onToggle={() => T("diagram")}>
-          <p className="text-sm italic text-muted-foreground">{body.diagramDescription}</p>
-        </Section>
-      )}
-      {body.practicalActivity && (
-        <Section title="Practical activity" open={!!openIdx.activity} onToggle={() => T("activity")}>
-          <p className="text-sm">{body.practicalActivity}</p>
-        </Section>
-      )}
-      {body.keyPointsSummary?.length > 0 && (
+      {arr("keyPointsSummary").length > 0 && (
         <Section title="Key points summary" open={openIdx.summary} onToggle={() => T("summary")}>
-          <ul className="list-disc pl-5 text-sm space-y-1">{body.keyPointsSummary.map((k: string, i: number) => <li key={i}>{k}</li>)}</ul>
-        </Section>
-      )}
-      {body.flashcards?.length > 0 && (
-        <Section title={`Flashcards (${body.flashcards.length})`} open={!!openIdx.cards} onToggle={() => T("cards")}>
-          <Flashcards cards={body.flashcards} />
-        </Section>
-      )}
-      {body.revisionQuestions?.length > 0 && (
-        <Section title="Revision questions" open={!!openIdx.rev} onToggle={() => T("rev")}>
-          <ol className="list-decimal pl-5 text-sm space-y-2">
-            {body.revisionQuestions.map((r: any, i: number) => (
-              <li key={i}>
-                <p>{r.q}</p>
-                <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer">Show answer</summary><p className="mt-1">{r.a}</p></details>
-              </li>
-            ))}
-          </ol>
+          <ul className="list-disc space-y-1 pl-5 text-sm">
+            {(arr("keyPointsSummary") as string[]).map((k, i) => <li key={i}>{k}</li>)}
+          </ul>
         </Section>
       )}
     </div>
@@ -655,25 +1108,6 @@ function Section({ title, open, onToggle, children }: { title: string; open: boo
         {title}
       </button>
       {open && <div className="border-t border-border/60 px-3 py-3 animate-fade-in">{children}</div>}
-    </div>
-  );
-}
-
-function Flashcards({ cards }: { cards: { front: string; back: string }[] }) {
-  const [i, setI] = useState(0);
-  const [flip, setFlip] = useState(false);
-  const c = cards[i];
-  return (
-    <div className="space-y-2">
-      <button onClick={() => setFlip((f) => !f)} className="block min-h-[120px] w-full rounded-xl bg-gradient-primary/10 p-4 text-left text-sm">
-        <p className="text-xs uppercase text-muted-foreground">{flip ? "Answer" : "Question"} • {i + 1}/{cards.length}</p>
-        <p className="mt-2 font-medium">{flip ? c.back : c.front}</p>
-        <p className="mt-3 text-xs text-muted-foreground">(tap to flip)</p>
-      </button>
-      <div className="flex justify-between">
-        <Button size="sm" variant="outline" disabled={i === 0} onClick={() => { setI(i - 1); setFlip(false); }}>Prev</Button>
-        <Button size="sm" variant="outline" disabled={i >= cards.length - 1} onClick={() => { setI(i + 1); setFlip(false); }}>Next</Button>
-      </div>
     </div>
   );
 }
