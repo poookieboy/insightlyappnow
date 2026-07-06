@@ -20,10 +20,10 @@ function unb64(str: string): Uint8Array {
 
 async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey(
-    "raw", enc.encode(pin), { name: "PBKDF2" }, false, ["deriveKey"],
+    "raw", enc.encode(pin) as BufferSource, { name: "PBKDF2" }, false, ["deriveKey"],
   );
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: 100_000, hash: "SHA-256" },
     base,
     { name: "AES-GCM", length: 256 },
     false,
