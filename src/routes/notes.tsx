@@ -148,22 +148,23 @@ function MyNotes() {
     setEditing(n);
   }
 
-  async function saveCategory(cat: Partial<Category> & { name: string; color: string; pin?: string | null; lock?: boolean }) {
+  async function saveCategory(cat: { id?: string; name: string; color: string; pin?: string | null; lock?: boolean }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const patch: Record<string, unknown> = { name: cat.name, color: cat.color };
-    if (cat.lock !== undefined) {
-      patch.is_locked = cat.lock;
-      patch.password_hash = cat.lock && cat.pin ? await hashPin(cat.pin) : null;
-    }
+    const password_hash = cat.lock ? (cat.pin ? await hashPin(cat.pin) : null) : null;
     if (cat.id) {
-      const { error } = await supabase.from("note_categories").update(patch).eq("id", cat.id);
-      if (error) return toast.error(error.message);
+      const { error } = await supabase.from("note_categories").update({
+        name: cat.name, color: cat.color,
+        ...(cat.lock !== undefined ? { is_locked: cat.lock, password_hash } : {}),
+      }).eq("id", cat.id);
+      if (error) { toast.error(error.message); return; }
     } else {
       const { error } = await supabase.from("note_categories").insert({
-        ...patch, user_id: user.id, sort_order: categories.length,
+        name: cat.name, color: cat.color,
+        is_locked: !!cat.lock, password_hash,
+        user_id: user.id, sort_order: categories.length,
       });
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
     }
     await load();
     setShowCatDialog(false);
