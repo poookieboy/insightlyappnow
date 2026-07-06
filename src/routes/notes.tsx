@@ -586,7 +586,9 @@ function NoteEditor({
     setSaving("saving");
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(async () => {
-      const patch: Record<string, unknown> = {
+      const encPayload = note.is_encrypted && pinInSession
+        ? await encryptContent(content, pinInSession) : null;
+      const { error } = await supabase.from("user_notes").update({
         title: title.trim(),
         tags: [],
         background_style: bgId,
@@ -594,15 +596,9 @@ function NoteEditor({
         icon,
         category_id: categoryId,
         updated_at: new Date().toISOString(),
-      };
-      if (note.is_encrypted && pinInSession) {
-        patch.encrypted_payload = await encryptContent(content, pinInSession);
-        patch.content_html = "";
-      } else {
-        patch.content_html = content;
-        patch.encrypted_payload = null;
-      }
-      const { error } = await supabase.from("user_notes").update(patch).eq("id", note.id);
+        content_html: encPayload ? "" : content,
+        encrypted_payload: encPayload,
+      }).eq("id", note.id);
       setSaving(error ? "idle" : "saved");
       if (error) toast.error(error.message);
     }, 900);
