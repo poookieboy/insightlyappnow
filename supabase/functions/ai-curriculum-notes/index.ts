@@ -86,16 +86,31 @@ Return JSON with this exact shape:
   "revisionQuestions": [{"q": "...", "a": "..."}]
 }
 Aim for: 4-6 sections, 6-10 key terms, 8-12 flashcards, 8-12 revision questions. Age-appropriate for ${grade}.`;
+    const resp = await fetch(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: `${system}\n\n${user}`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    }),
+  }
+);
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        response_format: { type: "json_object" },
-      }),
-    });
+    
 
     if (!resp.ok) {
       const t = await resp.text();
@@ -104,8 +119,8 @@ Aim for: 4-6 sections, 6-10 key terms, 8-12 flashcards, 8-12 revision questions.
     }
 
     const data = await resp.json();
-    const content = data?.choices?.[0]?.message?.content ?? "{}";
-    let body: any = {};
+const content =
+  data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
     try { 
       body = JSON.parse(content); 
     } catch (parseErr) { 
