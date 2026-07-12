@@ -989,11 +989,19 @@ function ForYou({ grade, curriculum }: { grade: string; curriculum: string }) {
   async function open(t: string) {
     setTopic(t); setLoading(true); setBody(null);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-curriculum-notes", {
-        body: { curriculum, grade, subject, topic: t },
-      });
-      if (error) throw error;
-      setBody(data.body);
+    const { data, error } = await supabase.functions.invoke("ai-curriculum-notes", {
+  body: { curriculum, grade, subject, topic: t },
+});
+
+console.log("AI Function Data:", data);
+console.log("AI Function Error:", error);
+
+if (error) {
+  toast.error(JSON.stringify(error));
+  throw error;
+}
+
+setBody(data.body);  
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to load notes");
     } finally { setLoading(false); }
