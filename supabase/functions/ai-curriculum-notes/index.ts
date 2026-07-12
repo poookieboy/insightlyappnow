@@ -60,8 +60,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const key = Deno.env.get("LOVABLE_API_KEY");
-    if (!key) throw new Error("LOVABLE_API_KEY not configured");
+    const key = Deno.env.get("GEMINI_API_KEY");
+    if (!key) throw new Error("GEMINI_API_KEY not configured");
 
     const system = `You are Iris, the study companion inside Insightly. Write clear, curriculum-aligned notes for a ${grade} student following the ${curriculum} curriculum. Return STRICT JSON only.`;
 
