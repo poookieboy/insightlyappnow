@@ -1,7 +1,7 @@
 // AI Curriculum Notes — generates grade-aligned study notes with structured sections.
 // Cached in public.ai_curriculum_notes so repeat requests are instant.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
