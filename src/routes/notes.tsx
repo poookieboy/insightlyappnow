@@ -870,12 +870,21 @@ function NoteEditor({
               <MenuItem icon={<X className="h-4 w-4" />} label="Remove cover" onClick={() => setCoverPath(null)} />
             )}
             <MenuItem icon={<Smile className="h-4 w-4" />} label="Icon" onClick={() => setShowIcon(true)} />
+            <MenuItem icon={<Paperclip className="h-4 w-4" />} label="Attach file" onClick={() => attachInputRef.current?.click()} />
+            <div className="my-1 h-px bg-border" />
+            <MenuItem icon={<History className="h-4 w-4" />} label="Version history" onClick={openHistory} />
+            <MenuItem icon={<Share2 className="h-4 w-4" />} label="Share note" onClick={shareNote} />
+            <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as HTML" onClick={exportHtml} />
+            <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as text" onClick={exportText} />
+            <MenuItem icon={<Printer className="h-4 w-4" />} label="Print / save as PDF" onClick={printNote} />
+            <div className="my-1 h-px bg-border" />
             <MenuItem
               icon={note.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
               label={note.is_locked ? "Remove lock" : "Lock with PIN"}
               onClick={toggleLock}
             />
             <div className="my-1 h-px bg-border" />
+
             <MenuItem
               icon={<Trash2 className="h-4 w-4 text-destructive" />}
               label="Delete note"
