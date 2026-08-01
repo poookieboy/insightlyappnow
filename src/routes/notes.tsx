@@ -21,12 +21,18 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Search, Lock, Unlock, ChevronLeft, MoreVertical, ChevronRight,
   BookOpen, Sparkles, Loader2, Image as ImageIcon, Palette, Smile, X, Check,
+  History, Share2, FileDown, Printer, Paperclip, WifiOff, RotateCcw,
 } from "lucide-react";
 import { RichEditor } from "@/components/RichEditor";
 import { DrawingModal } from "@/components/DrawingModal";
 import { NOTE_BACKGROUNDS, NOTE_ICONS, autoBackground, getBackground, type NoteBackground } from "@/lib/note-backgrounds";
 import { encryptContent, decryptContent, hashPin, verifyPin } from "@/lib/note-crypto";
 import { uploadAttachment, resolveMedia, removeAttachment } from "@/lib/note-storage";
+import {
+  getVersions, pushVersion, cacheNote, readCachedNote, buildExportHtml, htmlToPlainText,
+  type NoteVersion,
+} from "@/lib/note-history";
+
 
 export const Route = createFileRoute("/notes")({
   component: () => (
@@ -546,12 +552,37 @@ function NoteEditor({
   const [recording, setRecording] = useState(false);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("saved");
   const [decryptError, setDecryptError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [versions, setVersions] = useState<NoteVersion[]>([]);
+  const [offline, setOffline] = useState(false);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
   const firstRenderRef = useRef(true);
+
+  // Offline awareness — fall back to the cached copy when there's no network.
+  useEffect(() => {
+    const sync = () => setOffline(!navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.onLine && !note.is_encrypted) {
+      const cached = readCachedNote(note.id);
+      if (cached && !note.content_html) setContent(cached.html);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note.id]);
+
 
   const bg = getBackground(bgId);
 
@@ -601,7 +632,12 @@ function NoteEditor({
       }).eq("id", note.id);
       setSaving(error ? "idle" : "saved");
       if (error) toast.error(error.message);
+      else {
+        pushVersion(note.id, title.trim() || "Untitled", content);
+        if (!note.is_encrypted) cacheNote(note.id, title.trim() || "Untitled", content);
+      }
     }, 900);
+
   }, [title, content, bgId, coverPath, icon, categoryId, unlocked, note.id, note.is_encrypted, pinInSession]);
 
   useEffect(() => {
@@ -680,7 +716,79 @@ function NoteEditor({
   }
   function stopRecording() { mediaRecRef.current?.stop(); setRecording(false); }
 
+  async function onPickAttachment(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    if (f.size > 15 * 1024 * 1024) return toast.error("File must be under 15MB");
+    const t = toast.loading("Uploading file…");
+    try {
+      const ext = f.name.includes(".") ? f.name.split(".").pop()!.toLowerCase() : undefined;
+      const { url } = await uploadAttachment(f, { folder: note.id, ext });
+      const label = f.name.replace(/[<>]/g, "");
+      setContent((c) => c + `<p>📎 <a href="${url}" target="_blank" rel="noreferrer">${label}</a></p>`);
+      toast.success("File attached", { id: t });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Upload failed", { id: t });
+    }
+  }
+
+  function download(filename: string, data: string, type: string) {
+    const blob = new Blob([data], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const safeName = () => (title.trim() || "note").replace(/[^a-z0-9-_ ]/gi, "").trim() || "note";
+
+  function exportHtml() {
+    download(`${safeName()}.html`, buildExportHtml(title.trim() || "Untitled", content), "text/html");
+    toast.success("Exported as HTML");
+  }
+
+  function exportText() {
+    download(`${safeName()}.txt`, `${title}\n\n${htmlToPlainText(content)}`, "text/plain");
+    toast.success("Exported as text");
+  }
+
+  function printNote() {
+    const w = window.open("", "_blank");
+    if (!w) return toast.error("Allow pop-ups to print");
+    w.document.write(buildExportHtml(title.trim() || "Untitled", content));
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }
+
+  async function shareNote() {
+    const text = `${title}\n\n${htmlToPlainText(content)}`.slice(0, 4000);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: title || "Note", text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success("Note copied to clipboard");
+      }
+    } catch { /* user cancelled */ }
+  }
+
+  function openHistory() {
+    setVersions(getVersions(note.id));
+    setShowHistory(true);
+  }
+
+  function restoreVersion(v: NoteVersion) {
+    pushVersion(note.id, title.trim() || "Untitled", content);
+    setTitle(v.title);
+    setContent(v.html);
+    setShowHistory(false);
+    toast.success("Version restored");
+  }
+
   async function toggleLock() {
+
     if (note.is_locked) {
       if (!confirm("Remove PIN from this note? Content will be readable without a password.")) return;
       const { error } = await supabase.from("user_notes").update({
@@ -745,9 +853,11 @@ function NoteEditor({
         <Button size="icon" variant="ghost" onClick={onClose}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="text-xs font-medium opacity-70">
-          {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
+        <span className="flex items-center gap-1 text-xs font-medium opacity-70">
+          {offline && <WifiOff className="h-3.5 w-3.5" />}
+          {offline ? "Offline — changes save when you reconnect" : saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
         </span>
+
         <div className="flex-1" />
         <Popover>
           <PopoverTrigger asChild>
@@ -760,12 +870,21 @@ function NoteEditor({
               <MenuItem icon={<X className="h-4 w-4" />} label="Remove cover" onClick={() => setCoverPath(null)} />
             )}
             <MenuItem icon={<Smile className="h-4 w-4" />} label="Icon" onClick={() => setShowIcon(true)} />
+            <MenuItem icon={<Paperclip className="h-4 w-4" />} label="Attach file" onClick={() => attachInputRef.current?.click()} />
+            <div className="my-1 h-px bg-border" />
+            <MenuItem icon={<History className="h-4 w-4" />} label="Version history" onClick={openHistory} />
+            <MenuItem icon={<Share2 className="h-4 w-4" />} label="Share note" onClick={shareNote} />
+            <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as HTML" onClick={exportHtml} />
+            <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as text" onClick={exportText} />
+            <MenuItem icon={<Printer className="h-4 w-4" />} label="Print / save as PDF" onClick={printNote} />
+            <div className="my-1 h-px bg-border" />
             <MenuItem
               icon={note.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
               label={note.is_locked ? "Remove lock" : "Lock with PIN"}
               onClick={toggleLock}
             />
             <div className="my-1 h-px bg-border" />
+
             <MenuItem
               icon={<Trash2 className="h-4 w-4 text-destructive" />}
               label="Delete note"
@@ -826,6 +945,7 @@ function NoteEditor({
           onStartRecording={startRecording}
           onStopRecording={stopRecording}
           recording={recording}
+          onAttachFile={() => attachInputRef.current?.click()}
           textClass={bg.text === "light" ? "prose-invert" : ""}
           placeholder="Start writing your thoughts…"
         />
@@ -833,10 +953,40 @@ function NoteEditor({
 
       <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPickPhoto} />
       <input ref={coverInputRef} type="file" accept="image/*" hidden onChange={onPickCover} />
+      <input ref={attachInputRef} type="file" hidden onChange={onPickAttachment} />
 
       {drawing && <DrawingModal onClose={() => setDrawing(false)} onSave={onSaveDrawing} />}
       {showBg && <BackgroundPicker current={bgId} onPick={(id) => { setBgId(id); setShowBg(false); }} onClose={() => setShowBg(false)} />}
       {showIcon && <IconPicker onPick={(i) => { setIcon(i); setShowIcon(false); }} onClose={() => setShowIcon(false)} />}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Version history</DialogTitle></DialogHeader>
+          {versions.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No earlier versions yet — they're saved automatically as you write.
+            </p>
+          ) : (
+            <div className="max-h-80 space-y-1 overflow-y-auto">
+              {versions.map((v, i) => (
+                <button
+                  key={v.at}
+                  onClick={() => restoreVersion(v)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left hover:bg-muted"
+                >
+                  <RotateCcw className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{v.title || "Untitled"}</span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {new Date(v.at).toLocaleString()}{i === 0 ? " · latest" : ""}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
