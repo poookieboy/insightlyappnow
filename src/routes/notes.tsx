@@ -21,12 +21,18 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Search, Lock, Unlock, ChevronLeft, MoreVertical, ChevronRight,
   BookOpen, Sparkles, Loader2, Image as ImageIcon, Palette, Smile, X, Check,
+  History, Share2, FileDown, Printer, Paperclip, WifiOff, RotateCcw,
 } from "lucide-react";
 import { RichEditor } from "@/components/RichEditor";
 import { DrawingModal } from "@/components/DrawingModal";
 import { NOTE_BACKGROUNDS, NOTE_ICONS, autoBackground, getBackground, type NoteBackground } from "@/lib/note-backgrounds";
 import { encryptContent, decryptContent, hashPin, verifyPin } from "@/lib/note-crypto";
 import { uploadAttachment, resolveMedia, removeAttachment } from "@/lib/note-storage";
+import {
+  getVersions, pushVersion, cacheNote, readCachedNote, buildExportHtml, htmlToPlainText,
+  type NoteVersion,
+} from "@/lib/note-history";
+
 
 export const Route = createFileRoute("/notes")({
   component: () => (
