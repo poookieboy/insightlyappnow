@@ -945,6 +945,7 @@ function NoteEditor({
           onStartRecording={startRecording}
           onStopRecording={stopRecording}
           recording={recording}
+          onAttachFile={() => attachInputRef.current?.click()}
           textClass={bg.text === "light" ? "prose-invert" : ""}
           placeholder="Start writing your thoughts…"
         />
@@ -952,10 +953,40 @@ function NoteEditor({
 
       <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPickPhoto} />
       <input ref={coverInputRef} type="file" accept="image/*" hidden onChange={onPickCover} />
+      <input ref={attachInputRef} type="file" hidden onChange={onPickAttachment} />
 
       {drawing && <DrawingModal onClose={() => setDrawing(false)} onSave={onSaveDrawing} />}
       {showBg && <BackgroundPicker current={bgId} onPick={(id) => { setBgId(id); setShowBg(false); }} onClose={() => setShowBg(false)} />}
       {showIcon && <IconPicker onPick={(i) => { setIcon(i); setShowIcon(false); }} onClose={() => setShowIcon(false)} />}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Version history</DialogTitle></DialogHeader>
+          {versions.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No earlier versions yet — they're saved automatically as you write.
+            </p>
+          ) : (
+            <div className="max-h-80 space-y-1 overflow-y-auto">
+              {versions.map((v, i) => (
+                <button
+                  key={v.at}
+                  onClick={() => restoreVersion(v)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left hover:bg-muted"
+                >
+                  <RotateCcw className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{v.title || "Untitled"}</span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {new Date(v.at).toLocaleString()}{i === 0 ? " · latest" : ""}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
