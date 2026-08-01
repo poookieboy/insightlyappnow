@@ -716,7 +716,79 @@ function NoteEditor({
   }
   function stopRecording() { mediaRecRef.current?.stop(); setRecording(false); }
 
+  async function onPickAttachment(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    if (f.size > 15 * 1024 * 1024) return toast.error("File must be under 15MB");
+    const t = toast.loading("Uploading file…");
+    try {
+      const ext = f.name.includes(".") ? f.name.split(".").pop()!.toLowerCase() : undefined;
+      const { url } = await uploadAttachment(f, { folder: note.id, ext });
+      const label = f.name.replace(/[<>]/g, "");
+      setContent((c) => c + `<p>📎 <a href="${url}" target="_blank" rel="noreferrer">${label}</a></p>`);
+      toast.success("File attached", { id: t });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Upload failed", { id: t });
+    }
+  }
+
+  function download(filename: string, data: string, type: string) {
+    const blob = new Blob([data], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const safeName = () => (title.trim() || "note").replace(/[^a-z0-9-_ ]/gi, "").trim() || "note";
+
+  function exportHtml() {
+    download(`${safeName()}.html`, buildExportHtml(title.trim() || "Untitled", content), "text/html");
+    toast.success("Exported as HTML");
+  }
+
+  function exportText() {
+    download(`${safeName()}.txt`, `${title}\n\n${htmlToPlainText(content)}`, "text/plain");
+    toast.success("Exported as text");
+  }
+
+  function printNote() {
+    const w = window.open("", "_blank");
+    if (!w) return toast.error("Allow pop-ups to print");
+    w.document.write(buildExportHtml(title.trim() || "Untitled", content));
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }
+
+  async function shareNote() {
+    const text = `${title}\n\n${htmlToPlainText(content)}`.slice(0, 4000);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: title || "Note", text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success("Note copied to clipboard");
+      }
+    } catch { /* user cancelled */ }
+  }
+
+  function openHistory() {
+    setVersions(getVersions(note.id));
+    setShowHistory(true);
+  }
+
+  function restoreVersion(v: NoteVersion) {
+    pushVersion(note.id, title.trim() || "Untitled", content);
+    setTitle(v.title);
+    setContent(v.html);
+    setShowHistory(false);
+    toast.success("Version restored");
+  }
+
   async function toggleLock() {
+
     if (note.is_locked) {
       if (!confirm("Remove PIN from this note? Content will be readable without a password.")) return;
       const { error } = await supabase.from("user_notes").update({
