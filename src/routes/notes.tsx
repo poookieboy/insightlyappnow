@@ -853,9 +853,11 @@ function NoteEditor({
         <Button size="icon" variant="ghost" onClick={onClose}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="text-xs font-medium opacity-70">
-          {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
+        <span className="flex items-center gap-1 text-xs font-medium opacity-70">
+          {offline && <WifiOff className="h-3.5 w-3.5" />}
+          {offline ? "Offline — changes save when you reconnect" : saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
         </span>
+
         <div className="flex-1" />
         <Popover>
           <PopoverTrigger asChild>
