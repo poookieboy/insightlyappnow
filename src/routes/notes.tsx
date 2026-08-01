@@ -552,12 +552,37 @@ function NoteEditor({
   const [recording, setRecording] = useState(false);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("saved");
   const [decryptError, setDecryptError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [versions, setVersions] = useState<NoteVersion[]>([]);
+  const [offline, setOffline] = useState(false);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
   const firstRenderRef = useRef(true);
+
+  // Offline awareness — fall back to the cached copy when there's no network.
+  useEffect(() => {
+    const sync = () => setOffline(!navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.onLine && !note.is_encrypted) {
+      const cached = readCachedNote(note.id);
+      if (cached && !note.content_html) setContent(cached.html);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note.id]);
+
 
   const bg = getBackground(bgId);
 
