@@ -632,7 +632,12 @@ function NoteEditor({
       }).eq("id", note.id);
       setSaving(error ? "idle" : "saved");
       if (error) toast.error(error.message);
+      else {
+        pushVersion(note.id, title.trim() || "Untitled", content);
+        if (!note.is_encrypted) cacheNote(note.id, title.trim() || "Untitled", content);
+      }
     }, 900);
+
   }, [title, content, bgId, coverPath, icon, categoryId, unlocked, note.id, note.is_encrypted, pinInSession]);
 
   useEffect(() => {
