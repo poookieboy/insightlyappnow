@@ -36,6 +36,7 @@ import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
 import { Route as ApiPaymentsInitiateRouteImport } from './routes/api/payments/initiate'
+import { Route as ApiPublicWebhooksLipalinkRouteImport } from './routes/api/public/webhooks/lipalink'
 
 const TutorRoute = TutorRouteImport.update({
   id: '/tutor',
@@ -172,6 +173,12 @@ const ApiPaymentsInitiateRoute = ApiPaymentsInitiateRouteImport.update({
   path: '/api/payments/initiate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksLipalinkRoute =
+  ApiPublicWebhooksLipalinkRouteImport.update({
+    id: '/api/public/webhooks/lipalink',
+    path: '/api/public/webhooks/lipalink',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
   '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
+  '/api/public/webhooks/lipalink': typeof ApiPublicWebhooksLipalinkRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
   '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
+  '/api/public/webhooks/lipalink': typeof ApiPublicWebhooksLipalinkRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
   '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
+  '/api/public/webhooks/lipalink': typeof ApiPublicWebhooksLipalinkRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/api/payments/initiate'
     | '/api/payments/status'
     | '/tests/$paperId/preview'
+    | '/api/public/webhooks/lipalink'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/api/payments/initiate'
     | '/api/payments/status'
     | '/tests/$paperId/preview'
+    | '/api/public/webhooks/lipalink'
   id:
     | '__root__'
     | '/'
@@ -349,6 +361,7 @@ export interface FileRouteTypes {
     | '/api/payments/initiate'
     | '/api/payments/status'
     | '/tests/$paperId/preview'
+    | '/api/public/webhooks/lipalink'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -376,6 +389,7 @@ export interface RootRouteChildren {
   TutorRoute: typeof TutorRoute
   ApiPaymentsInitiateRoute: typeof ApiPaymentsInitiateRoute
   ApiPaymentsStatusRoute: typeof ApiPaymentsStatusRoute
+  ApiPublicWebhooksLipalinkRoute: typeof ApiPublicWebhooksLipalinkRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -569,6 +583,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentsInitiateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/lipalink': {
+      id: '/api/public/webhooks/lipalink'
+      path: '/api/public/webhooks/lipalink'
+      fullPath: '/api/public/webhooks/lipalink'
+      preLoaderRoute: typeof ApiPublicWebhooksLipalinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -629,6 +650,7 @@ const rootRouteChildren: RootRouteChildren = {
   TutorRoute: TutorRoute,
   ApiPaymentsInitiateRoute: ApiPaymentsInitiateRoute,
   ApiPaymentsStatusRoute: ApiPaymentsStatusRoute,
+  ApiPublicWebhooksLipalinkRoute: ApiPublicWebhooksLipalinkRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
