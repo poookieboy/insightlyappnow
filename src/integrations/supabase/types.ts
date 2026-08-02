@@ -137,6 +137,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          failure_reason: string | null
+          id: string
+          metadata: Json
+          phone: string | null
+          plan: string | null
+          provider: string
+          provider_reference: string | null
+          sponsor_level: string | null
+          status: string
+          transaction_id: string | null
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          metadata?: Json
+          phone?: string | null
+          plan?: string | null
+          provider?: string
+          provider_reference?: string | null
+          sponsor_level?: string | null
+          status?: string
+          transaction_id?: string | null
+          type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          metadata?: Json
+          phone?: string | null
+          plan?: string | null
+          provider?: string
+          provider_reference?: string | null
+          sponsor_level?: string | null
+          status?: string
+          transaction_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -224,17 +278,68 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsors: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          message: string | null
+          payment_id: string | null
+          payment_status: string
+          sponsor_level: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          message?: string | null
+          payment_id?: string | null
+          payment_status?: string
+          sponsor_level?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          message?: string | null
+          payment_id?: string | null
+          payment_status?: string
+          sponsor_level?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsors_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number
           created_at: string
           expires_at: string | null
           id: string
-          mpesa_code: string
+          mpesa_code: string | null
+          payment_id: string | null
+          payment_provider: string
+          payment_status: string
           plan: string
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
+          transaction_id: string | null
           updated_at: string
           user_id: string
         }
@@ -243,11 +348,15 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          mpesa_code: string
+          mpesa_code?: string | null
+          payment_id?: string | null
+          payment_provider?: string
+          payment_status?: string
           plan: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          transaction_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -256,15 +365,27 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          mpesa_code?: string
+          mpesa_code?: string | null
+          payment_id?: string | null
+          payment_provider?: string
+          payment_status?: string
           plan?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          transaction_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_notes: {
         Row: {
@@ -416,11 +537,15 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
-          mpesa_code: string
+          mpesa_code: string | null
+          payment_id: string | null
+          payment_provider: string
+          payment_status: string
           plan: string
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
+          transaction_id: string | null
           updated_at: string
           user_id: string
         }
