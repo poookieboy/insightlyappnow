@@ -80,16 +80,37 @@ function AuthPage() {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
+        // The popup may have closed after the session was already set — verify before failing.
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          navigate({ to: "/" });
+          return;
+        }
         setBusy(false);
-        return toast.error(friendlyError(result.error.message || "Google sign-in failed"));
+        const raw = result.error.message || "";
+        if (/cancel|closed|popup/i.test(raw)) {
+          return toast.error("Sign-in window closed before finishing. Allow pop-ups for this site and try again.");
+        }
+        return toast.error(friendlyError(raw || "Google sign-in failed"));
       }
       if (result.redirected) return;
       navigate({ to: "/" });
     } catch (err) {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate({ to: "/" });
+        return;
+      }
       setBusy(false);
-      toast.error(friendlyError(err instanceof Error ? err.message : "Google sign-in failed"));
+      const raw = err instanceof Error ? err.message : "Google sign-in failed";
+      toast.error(
+        /cancel|closed|popup/i.test(raw)
+          ? "Sign-in window closed before finishing. Allow pop-ups for this site and try again."
+          : friendlyError(raw),
+      );
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-5 py-10">
