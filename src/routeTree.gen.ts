@@ -34,6 +34,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
+import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
 import { Route as ApiPaymentsInitiateRouteImport } from './routes/api/payments/initiate'
 
 const TutorRoute = TutorRouteImport.update({
@@ -161,6 +162,11 @@ const TestsPaperIdPreviewRoute = TestsPaperIdPreviewRouteImport.update({
   path: '/preview',
   getParentRoute: () => TestsPaperIdRoute,
 } as any)
+const ApiPaymentsStatusRoute = ApiPaymentsStatusRouteImport.update({
+  id: '/api/payments/status',
+  path: '/api/payments/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPaymentsInitiateRoute = ApiPaymentsInitiateRouteImport.update({
   id: '/api/payments/initiate',
   path: '/api/payments/initiate',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
+  '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
+  '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
 }
 export interface FileRoutesById {
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
+  '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/tests/$paperId/preview': typeof TestsPaperIdPreviewRoute
 }
 export interface FileRouteTypes {
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
+    | '/api/payments/status'
     | '/tests/$paperId/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
+    | '/api/payments/status'
     | '/tests/$paperId/preview'
   id:
     | '__root__'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
+    | '/api/payments/status'
     | '/tests/$paperId/preview'
   fileRoutesById: FileRoutesById
 }
@@ -363,6 +375,7 @@ export interface RootRouteChildren {
   TimetableRoute: typeof TimetableRoute
   TutorRoute: typeof TutorRoute
   ApiPaymentsInitiateRoute: typeof ApiPaymentsInitiateRoute
+  ApiPaymentsStatusRoute: typeof ApiPaymentsStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TestsPaperIdPreviewRouteImport
       parentRoute: typeof TestsPaperIdRoute
     }
+    '/api/payments/status': {
+      id: '/api/payments/status'
+      path: '/api/payments/status'
+      fullPath: '/api/payments/status'
+      preLoaderRoute: typeof ApiPaymentsStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/payments/initiate': {
       id: '/api/payments/initiate'
       path: '/api/payments/initiate'
@@ -608,6 +628,7 @@ const rootRouteChildren: RootRouteChildren = {
   TimetableRoute: TimetableRoute,
   TutorRoute: TutorRoute,
   ApiPaymentsInitiateRoute: ApiPaymentsInitiateRoute,
+  ApiPaymentsStatusRoute: ApiPaymentsStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
