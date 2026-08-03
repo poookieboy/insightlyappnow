@@ -9,11 +9,19 @@ import { Badge } from "@/components/ui/badge";
 import { StreakFlame } from "@/components/StreakFlame";
 import { BadgeMedal } from "@/components/BadgeMedal";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
+import { ReferralCard } from "@/components/ReferralCard";
+import { AchievementBadges } from "@/components/AchievementBadges";
 import { useStore } from "@/lib/store";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { ACHIEVEMENT_BADGES, MONTHLY_BADGES, BADGES, evaluateBadges, notifyBadges } from "@/lib/badges";
+import {
+  ACHIEVEMENT_BADGES,
+  MONTHLY_BADGES,
+  BADGES,
+  evaluateBadges,
+  notifyBadges,
+} from "@/lib/badges";
 import { computeStreak } from "@/lib/streak";
 
 export const Route = createFileRoute("/profile")({
@@ -34,7 +42,11 @@ function ProfilePage() {
   const streak = computeStreak(state.tasks, state.revisionDone, state.streakSettings);
   const unlocked = new Set(state.badges.unlocked);
   const initials = (dbProfile?.display_name || profile.name || "?")
-    .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+    .split(" ")
+    .map((s) => s[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const currentMonth = new Date().getMonth() + 1;
 
@@ -68,7 +80,6 @@ function ProfilePage() {
     });
   }, [currentMonth]);
 
-
   return (
     <AppShell>
       <header className="mb-5">
@@ -87,7 +98,9 @@ function ProfilePage() {
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{dbProfile?.display_name || profile.name}</p>
           <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">{profile.curriculum} · {profile.grade}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {profile.curriculum} · {profile.grade}
+          </p>
         </div>
       </Card>
 
@@ -123,8 +136,8 @@ function ProfilePage() {
             subInfo.isPro
               ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-400/5 to-orange-500/10"
               : subInfo.isActive
-              ? "border-primary/30 bg-gradient-to-br from-primary/8 to-primary/3"
-              : "border-red-500/40 bg-gradient-to-br from-red-500/10 to-red-600/5"
+                ? "border-primary/30 bg-gradient-to-br from-primary/8 to-primary/3"
+                : "border-red-500/40 bg-gradient-to-br from-red-500/10 to-red-600/5"
           }`}
         >
           <div className="p-5">
@@ -134,8 +147,8 @@ function ProfilePage() {
                   subInfo.isPro
                     ? "bg-amber-500/20 text-amber-600"
                     : subInfo.isActive
-                    ? "bg-primary/15 text-primary"
-                    : "bg-red-500/15 text-red-600"
+                      ? "bg-primary/15 text-primary"
+                      : "bg-red-500/15 text-red-600"
                 }`}
               >
                 {subInfo.isPro ? <Crown className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
@@ -143,7 +156,11 @@ function ProfilePage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold">
-                    {subInfo.isPro ? "Insightly Pro" : subInfo.isActive ? "Free Trial" : "Trial Expired"}
+                    {subInfo.isPro
+                      ? "Insightly Pro"
+                      : subInfo.isActive
+                        ? "Free Trial"
+                        : "Trial Expired"}
                   </h2>
                   <Badge
                     variant="secondary"
@@ -151,8 +168,8 @@ function ProfilePage() {
                       subInfo.isPro
                         ? "bg-amber-500/20 text-amber-700 dark:text-amber-300"
                         : subInfo.isActive
-                        ? "bg-primary/15 text-primary"
-                        : "bg-red-500/15 text-red-700"
+                          ? "bg-primary/15 text-primary"
+                          : "bg-red-500/15 text-red-700"
                     }
                   >
                     {subInfo.isPro ? "ACTIVE" : subInfo.isActive ? "TRIAL" : "LOCKED"}
@@ -162,8 +179,8 @@ function ProfilePage() {
                   {subInfo.isPro
                     ? `Renews ${subInfo.expiresAt.toLocaleDateString()}`
                     : subInfo.isActive
-                    ? `${subInfo.daysLeft} day${subInfo.daysLeft === 1 ? "" : "s"} left · ends ${subInfo.expiresAt.toLocaleDateString()}`
-                    : `Ended ${subInfo.expiresAt.toLocaleDateString()}`}
+                      ? `${subInfo.daysLeft} day${subInfo.daysLeft === 1 ? "" : "s"} left · ends ${subInfo.expiresAt.toLocaleDateString()}`
+                      : `Ended ${subInfo.expiresAt.toLocaleDateString()}`}
                 </p>
               </div>
             </div>
@@ -179,10 +196,16 @@ function ProfilePage() {
         </Card>
       )}
 
+      <ReferralCard />
+
+      <AchievementBadges />
+
       {/* Badges */}
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold">My Badges</h2>
-        <span className="text-xs text-muted-foreground">{unlocked.size}/{BADGES.length} unlocked</span>
+        <span className="text-xs text-muted-foreground">
+          {unlocked.size}/{BADGES.length} unlocked
+        </span>
       </div>
 
       {/* Achievements */}
@@ -193,7 +216,8 @@ function ProfilePage() {
             <h3 className="text-sm font-semibold">Achievements</h3>
           </div>
           <span className="text-[11px] text-muted-foreground">
-            {ACHIEVEMENT_BADGES.filter((b) => unlocked.has(b.id)).length}/{ACHIEVEMENT_BADGES.length}
+            {ACHIEVEMENT_BADGES.filter((b) => unlocked.has(b.id)).length}/
+            {ACHIEVEMENT_BADGES.length}
           </span>
         </div>
         <div className="max-h-[26rem] overflow-y-auto p-4">
@@ -230,7 +254,6 @@ function ProfilePage() {
           </div>
         </div>
       </Card>
-
 
       {/* Advanced analytics */}
       <Card className="mb-4 p-5">

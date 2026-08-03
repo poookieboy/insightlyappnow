@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as TestsRouteImport } from './routes/tests'
@@ -38,6 +39,11 @@ import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/sta
 import { Route as ApiPaymentsInitiateRouteImport } from './routes/api/payments/initiate'
 import { Route as ApiPublicWebhooksLipalinkRouteImport } from './routes/api/public/webhooks/lipalink'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TutorRoute = TutorRouteImport.update({
   id: '/tutor',
   path: '/tutor',
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -264,6 +272,7 @@ export interface FileRoutesById {
   '/tests': typeof TestsRouteWithChildren
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
+    | '/verify-email'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
+    | '/verify-email'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/tests'
     | '/timetable'
     | '/tutor'
+    | '/verify-email'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -387,6 +399,7 @@ export interface RootRouteChildren {
   TestsRoute: typeof TestsRouteWithChildren
   TimetableRoute: typeof TimetableRoute
   TutorRoute: typeof TutorRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiPaymentsInitiateRoute: typeof ApiPaymentsInitiateRoute
   ApiPaymentsStatusRoute: typeof ApiPaymentsStatusRoute
   ApiPublicWebhooksLipalinkRoute: typeof ApiPublicWebhooksLipalinkRoute
@@ -394,6 +407,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tutor': {
       id: '/tutor'
       path: '/tutor'
@@ -648,6 +668,7 @@ const rootRouteChildren: RootRouteChildren = {
   TestsRoute: TestsRouteWithChildren,
   TimetableRoute: TimetableRoute,
   TutorRoute: TutorRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   ApiPaymentsInitiateRoute: ApiPaymentsInitiateRoute,
   ApiPaymentsStatusRoute: ApiPaymentsStatusRoute,
   ApiPublicWebhooksLipalinkRoute: ApiPublicWebhooksLipalinkRoute,

@@ -197,6 +197,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string
           user_id: string
         }
@@ -205,6 +207,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id: string
         }
@@ -213,6 +217,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -275,6 +281,57 @@ export type Database = {
           updated_at?: string
           user_id?: string
           written_scores?: Json | null
+        }
+        Relationships: []
+      }
+      referral_rewards: {
+        Row: {
+          created_at: string
+          hours: number
+          id: string
+          milestone: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hours?: number
+          id?: string
+          milestone: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hours?: number
+          id?: string
+          milestone?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          code_used: string
+          confirmed_at: string
+          created_at: string
+          id: string
+          referred_user_id: string
+          referrer_id: string
+        }
+        Insert: {
+          code_used: string
+          confirmed_at?: string
+          created_at?: string
+          id?: string
+          referred_user_id: string
+          referrer_id: string
+        }
+        Update: {
+          code_used?: string
+          confirmed_at?: string
+          created_at?: string
+          id?: string
+          referred_user_id?: string
+          referrer_id?: string
         }
         Relationships: []
       }
@@ -523,6 +580,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_referral: { Args: { p_code: string }; Returns: Json }
+      gen_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -530,6 +589,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      referral_code_valid: { Args: { p_code: string }; Returns: boolean }
       submit_mpesa_payment: {
         Args: { p_code: string; p_plan: string }
         Returns: {

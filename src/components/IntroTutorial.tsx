@@ -1,7 +1,19 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, LayoutGrid, BookOpen, Trophy, Mic } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  LayoutGrid,
+  BookOpen,
+  Trophy,
+  Mic,
+  NotebookPen,
+  CloudDownload,
+  ShieldCheck,
+  ListChecks,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import irisAvatar from "@/assets/iris-avatar.png";
@@ -13,42 +25,66 @@ const slides = [
   {
     icon: <img src={insightlyIcon} alt="Insightly" className={cn(ICON, "object-contain")} />,
     title: "Welcome to Insightly",
-    body: "Your all-in-one study companion — notes, tasks, revision, mock papers, exam tracking, and more.",
+    body: "Your all-in-one study companion — notes, tasks, revision, quizzes, exam tracking, and more.",
     accent: "from-indigo-500 to-violet-500",
   },
   {
-    icon: <img src={irisAvatar} alt="Iris" className={cn(ICON, "object-contain")} />,
-    title: "Meet Iris",
-    body: "Your personal AI tutor. Ask questions, get step-by-step explanations, take quizzes, or chat by voice.",
-    accent: "from-violet-500 to-fuchsia-500",
-  },
-  {
-    icon: <LayoutGrid className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Dashboard at a glance",
-    body: "Track your streak, badges, timetable, and AI-generated content all from one beautiful dashboard.",
-    accent: "from-blue-500 to-cyan-500",
+    icon: <NotebookPen className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Smart Notes",
+    body: "Rich text, drawings, images and voice notes — organised into colourful categories you control.",
+    accent: "from-sky-500 to-blue-600",
   },
   {
     icon: <BookOpen className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Smart revision & papers",
-    body: "Practice with curriculum-matched questions and AI-generated mock papers tailored to your grade.",
+    title: "Revision tools",
+    body: "Practice with curriculum-matched questions and mock papers tailored to your grade.",
     accent: "from-emerald-500 to-teal-500",
   },
   {
-    icon: <Mic className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Talk to Iris",
-    body: "Tap the mic in the tutor to speak your question — Iris will read the answer back to you.",
-    accent: "from-orange-500 to-pink-500",
+    icon: <ListChecks className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Subject quizzes",
+    body: "Short, focused quizzes per subject with instant marking so you know exactly what to revise.",
+    accent: "from-lime-500 to-emerald-600",
+  },
+  {
+    icon: <CloudDownload className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Offline learning",
+    body: "Notes, timetable and saved revision keep working without data. Everything syncs when you're back online.",
+    accent: "from-cyan-500 to-sky-600",
+  },
+  {
+    icon: <LayoutGrid className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Student progress",
+    body: "Streaks, badges and beautiful charts that show exactly how your study habits are improving.",
+    accent: "from-blue-500 to-cyan-500",
+  },
+  {
+    icon: <img src={irisAvatar} alt="Iris" className={cn(ICON, "object-contain")} />,
+    title: "Meet Iris, your AI tutor",
+    body: "Ask questions, get step-by-step explanations, or tap the mic and talk it through by voice.",
+    accent: "from-violet-500 to-fuchsia-500",
+  },
+  {
+    icon: <ShieldCheck className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Secure cloud sync",
+    body: "Your work is encrypted in transit and backed up to your private account — only you can see it.",
+    accent: "from-slate-600 to-slate-900",
   },
   {
     icon: <Trophy className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Earn badges, build streaks",
-    body: "Stay consistent. Unlock achievements as you study, and watch your progress in beautiful charts.",
+    title: "Let's get started",
+    body: "Sign in or create a free account and begin your 7-day trial — no card needed.",
     accent: "from-amber-500 to-rose-500",
   },
 ];
 
-export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onClose?: () => void }) {
+export function IntroTutorial({
+  forceOpen,
+  onClose,
+}: {
+  forceOpen?: boolean;
+  onClose?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
 
@@ -71,11 +107,32 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
   const slide = slides[i];
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) finish();
+      }}
+    >
       <DialogContent className="max-w-md overflow-hidden p-0 border-0">
-        <div className={cn("relative bg-gradient-to-br p-10 text-center transition-colors duration-500", slide.accent)}>
-          <div className="mx-auto flex items-center justify-center animate-scale-in" key={i}>
-            {slide.icon}
+        <div
+          className={cn(
+            "relative overflow-hidden bg-gradient-to-br p-10 text-center transition-colors duration-500",
+            slide.accent,
+          )}
+        >
+          <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+          <span className="pointer-events-none absolute -bottom-12 -right-8 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
+          <div
+            className="relative mx-auto flex animate-scale-in items-center justify-center"
+            key={i}
+          >
+            <div className="animate-badge-float">{slide.icon}</div>
+          </div>
+          <div className="relative mt-6 h-1 w-full overflow-hidden rounded-full bg-white/25">
+            <div
+              className="h-full rounded-full bg-white transition-all duration-500"
+              style={{ width: `${((i + 1) / slides.length) * 100}%` }}
+            />
           </div>
         </div>
         <div className="space-y-4 p-6 animate-fade-in" key={`t-${i}`}>
@@ -106,7 +163,9 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
             </Button>
             {i < slides.length - 1 ? (
               <>
-                <Button variant="ghost" size="sm" onClick={finish}>Skip</Button>
+                <Button variant="ghost" size="sm" onClick={finish}>
+                  Skip
+                </Button>
                 <Button
                   size="sm"
                   onClick={() => setI((v) => v + 1)}
@@ -121,7 +180,7 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
                 onClick={finish}
                 className="bg-gradient-primary text-primary-foreground"
               >
-                Get started ✨
+                Let's get started ✨
               </Button>
             )}
           </div>
