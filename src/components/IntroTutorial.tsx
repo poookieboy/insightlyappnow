@@ -104,9 +104,17 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
       <DialogContent className="max-w-md overflow-hidden p-0 border-0">
-        <div className={cn("relative bg-gradient-to-br p-10 text-center transition-colors duration-500", slide.accent)}>
-          <div className="mx-auto flex items-center justify-center animate-scale-in" key={i}>
-            {slide.icon}
+        <div className={cn("relative overflow-hidden bg-gradient-to-br p-10 text-center transition-colors duration-500", slide.accent)}>
+          <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+          <span className="pointer-events-none absolute -bottom-12 -right-8 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
+          <div className="relative mx-auto flex animate-scale-in items-center justify-center" key={i}>
+            <div className="animate-badge-float">{slide.icon}</div>
+          </div>
+          <div className="relative mt-6 h-1 w-full overflow-hidden rounded-full bg-white/25">
+            <div
+              className="h-full rounded-full bg-white transition-all duration-500"
+              style={{ width: `${((i + 1) / slides.length) * 100}%` }}
+            />
           </div>
         </div>
         <div className="space-y-4 p-6 animate-fade-in" key={`t-${i}`}>
@@ -152,7 +160,7 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
                 onClick={finish}
                 className="bg-gradient-primary text-primary-foreground"
               >
-                Get started ✨
+                Let's get started ✨
               </Button>
             )}
           </div>
