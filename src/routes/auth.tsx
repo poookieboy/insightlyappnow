@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Mail, Lock, Loader2, User as UserIcon, Sparkles, ShieldCheck } from "lucide-react";
+import { Mail, Lock, Loader2, User as UserIcon, Sparkles, ShieldCheck, Gift } from "lucide-react";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
+import { PENDING_REFERRAL_KEY } from "@/hooks/useReferrals";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -21,10 +22,19 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [referral, setReferral] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Pre-fill an invite code arriving via /auth?ref=CODE
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/" });
+    if (typeof window === "undefined") return;
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) setReferral(ref.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12));
+  }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    navigate({ to: user.email_confirmed_at ? "/" : "/verify-email" });
   }, [loading, user, navigate]);
 
   const friendlyError = (msg: string) => {
@@ -38,9 +48,13 @@ function AuthPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(friendlyError(error.message));
+    if (!data.user?.email_confirmed_at) {
+      toast.info("Please verify your email to finish setting up your account.");
+      return navigate({ to: "/verify-email" });
+    }
     toast.success("Welcome back!");
     navigate({ to: "/" });
   };
@@ -49,6 +63,20 @@ function AuthPage() {
     e.preventDefault();
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     setBusy(true);
+
+    const code = referral.trim().toUpperCase();
+    if (code) {
+      if (!/^[A-Z0-9]{5,12}$/.test(code)) {
+        setBusy(false);
+        return toast.error("That referral code doesn't look right. Check it and try again.");
+      }
+      const { data: valid, error: refErr } = await supabase.rpc("referral_code_valid", { p_code: code });
+      if (refErr || !valid) {
+        setBusy(false);
+        return toast.error("We couldn't find that referral code. Remove it or enter a valid one.");
+      }
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -59,8 +87,13 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) return toast.error(friendlyError(error.message));
+
+    // Redeemed only after the account is email-verified (server-enforced).
+    if (code) window.localStorage.setItem(PENDING_REFERRAL_KEY, code);
     toast.success("Account created — check your email to verify ✉️");
+    navigate({ to: "/verify-email" });
   };
+
 
   const handleForgot = async () => {
     if (!email) return toast.error("Enter your email above first");
@@ -213,6 +246,26 @@ function AuthPage() {
                     <Input id="su-pass" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="pl-9 h-11" placeholder="At least 6 characters" />
                   </div>
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-ref" className="flex items-center gap-1.5">
+                    Referral code <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <div className="relative">
+                    <Gift className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="su-ref"
+                      value={referral}
+                      onChange={(e) => setReferral(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))}
+                      className="pl-9 h-11 tracking-[0.2em] uppercase"
+                      placeholder="ABC1234"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Applied once you verify your email — your friend earns Premium time.
+                  </p>
+                </div>
+
                 <Button type="submit" className="w-full h-11 font-medium" disabled={busy}>
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
                 </Button>

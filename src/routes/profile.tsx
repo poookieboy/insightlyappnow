@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { StreakFlame } from "@/components/StreakFlame";
 import { BadgeMedal } from "@/components/BadgeMedal";
 import { StudyAnalytics } from "@/components/StudyAnalytics";
+import { ReferralCard } from "@/components/ReferralCard";
+import { AchievementBadges } from "@/components/AchievementBadges";
 import { useStore } from "@/lib/store";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -178,6 +180,10 @@ function ProfilePage() {
           </div>
         </Card>
       )}
+
+      <ReferralCard />
+
+      <AchievementBadges />
 
       {/* Badges */}
       <div className="mb-3 flex items-center justify-between">

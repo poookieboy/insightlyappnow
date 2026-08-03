@@ -1,7 +1,19 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, LayoutGrid, BookOpen, Trophy, Mic } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  LayoutGrid,
+  BookOpen,
+  Trophy,
+  Mic,
+  NotebookPen,
+  CloudDownload,
+  ShieldCheck,
+  ListChecks,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import irisAvatar from "@/assets/iris-avatar.png";
@@ -13,40 +25,59 @@ const slides = [
   {
     icon: <img src={insightlyIcon} alt="Insightly" className={cn(ICON, "object-contain")} />,
     title: "Welcome to Insightly",
-    body: "Your all-in-one study companion — notes, tasks, revision, mock papers, exam tracking, and more.",
+    body: "Your all-in-one study companion — notes, tasks, revision, quizzes, exam tracking, and more.",
     accent: "from-indigo-500 to-violet-500",
   },
   {
-    icon: <img src={irisAvatar} alt="Iris" className={cn(ICON, "object-contain")} />,
-    title: "Meet Iris",
-    body: "Your personal AI tutor. Ask questions, get step-by-step explanations, take quizzes, or chat by voice.",
-    accent: "from-violet-500 to-fuchsia-500",
-  },
-  {
-    icon: <LayoutGrid className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Dashboard at a glance",
-    body: "Track your streak, badges, timetable, and AI-generated content all from one beautiful dashboard.",
-    accent: "from-blue-500 to-cyan-500",
+    icon: <NotebookPen className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Smart Notes",
+    body: "Rich text, drawings, images and voice notes — organised into colourful categories you control.",
+    accent: "from-sky-500 to-blue-600",
   },
   {
     icon: <BookOpen className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Smart revision & papers",
-    body: "Practice with curriculum-matched questions and AI-generated mock papers tailored to your grade.",
+    title: "Revision tools",
+    body: "Practice with curriculum-matched questions and mock papers tailored to your grade.",
     accent: "from-emerald-500 to-teal-500",
   },
   {
-    icon: <Mic className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Talk to Iris",
-    body: "Tap the mic in the tutor to speak your question — Iris will read the answer back to you.",
-    accent: "from-orange-500 to-pink-500",
+    icon: <ListChecks className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Subject quizzes",
+    body: "Short, focused quizzes per subject with instant marking so you know exactly what to revise.",
+    accent: "from-lime-500 to-emerald-600",
+  },
+  {
+    icon: <CloudDownload className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Offline learning",
+    body: "Notes, timetable and saved revision keep working without data. Everything syncs when you're back online.",
+    accent: "from-cyan-500 to-sky-600",
+  },
+  {
+    icon: <LayoutGrid className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Student progress",
+    body: "Streaks, badges and beautiful charts that show exactly how your study habits are improving.",
+    accent: "from-blue-500 to-cyan-500",
+  },
+  {
+    icon: <img src={irisAvatar} alt="Iris" className={cn(ICON, "object-contain")} />,
+    title: "Meet Iris, your AI tutor",
+    body: "Ask questions, get step-by-step explanations, or tap the mic and talk it through by voice.",
+    accent: "from-violet-500 to-fuchsia-500",
+  },
+  {
+    icon: <ShieldCheck className={cn(ICON, "text-white")} strokeWidth={1.5} />,
+    title: "Secure cloud sync",
+    body: "Your work is encrypted in transit and backed up to your private account — only you can see it.",
+    accent: "from-slate-600 to-slate-900",
   },
   {
     icon: <Trophy className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Earn badges, build streaks",
-    body: "Stay consistent. Unlock achievements as you study, and watch your progress in beautiful charts.",
+    title: "Let's get started",
+    body: "Sign in or create a free account and begin your 7-day trial — no card needed.",
     accent: "from-amber-500 to-rose-500",
   },
 ];
+
 
 export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onClose?: () => void }) {
   const [open, setOpen] = useState(false);
