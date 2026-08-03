@@ -38,7 +38,11 @@ export function useReferrals() {
     }
     setLoading(true);
     const [{ data: profile }, { data: refs }, { data: rews }] = await Promise.all([
-      supabase.from("profiles").select("referral_code, created_at").eq("user_id", user.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("referral_code, created_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
       supabase
         .from("referrals")
         .select("id, referred_user_id, code_used, confirmed_at")

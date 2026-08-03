@@ -93,7 +93,7 @@ export function AchievementBadges() {
   const items = ACHIEVEMENTS.map((a) => {
     if (a.threshold) {
       const unlocked = count >= a.threshold;
-      const at = unlocked ? sorted[a.threshold - 1]?.confirmed_at ?? null : null;
+      const at = unlocked ? (sorted[a.threshold - 1]?.confirmed_at ?? null) : null;
       return { def: a, unlocked, at, progress: Math.min(1, count / a.threshold) };
     }
     const unlocked = isEarlySupporter(joinedAt);
@@ -135,7 +135,9 @@ export function AchievementBadges() {
                 className={cn(
                   "relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white",
                   def.gradient,
-                  unlocked ? cn("ring-2 ring-offset-2 ring-offset-background", def.ring) : "grayscale",
+                  unlocked
+                    ? cn("ring-2 ring-offset-2 ring-offset-background", def.ring)
+                    : "grayscale",
                 )}
               >
                 <Icon className="h-7 w-7" strokeWidth={1.6} />
@@ -164,7 +166,9 @@ export function AchievementBadges() {
                     />
                   </div>
                 ) : (
-                  <p className="mt-1 text-[10px] text-muted-foreground">Awarded to our earliest members</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Awarded to our earliest members
+                  </p>
                 )}
               </div>
             </div>

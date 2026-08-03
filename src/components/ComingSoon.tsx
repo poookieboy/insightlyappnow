@@ -20,12 +20,7 @@ export function ComingSoon({
   className,
 }: Props) {
   return (
-    <Card
-      className={cn(
-        "relative overflow-hidden border-dashed p-8 text-center",
-        className,
-      )}
-    >
+    <Card className={cn("relative overflow-hidden border-dashed p-8 text-center", className)}>
       <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
       <span className="pointer-events-none absolute -bottom-12 -right-8 h-32 w-32 rounded-full bg-accent/20 blur-3xl" />
 

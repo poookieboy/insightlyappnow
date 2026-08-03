@@ -32,9 +32,7 @@ export function OfflineIndicator() {
       <div
         className={cn(
           "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium shadow-lg backdrop-blur transition-all",
-          online
-            ? "bg-emerald-500/90 text-white"
-            : "bg-foreground/90 text-background",
+          online ? "bg-emerald-500/90 text-white" : "bg-foreground/90 text-background",
         )}
       >
         {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}

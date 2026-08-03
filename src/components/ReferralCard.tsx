@@ -57,8 +57,8 @@ export function ReferralCard() {
       <div className="p-5">
         <p className="mb-3 text-xs text-muted-foreground">
           Every {REFERRALS_PER_REWARD} friends who join and verify their email give you{" "}
-          <span className="font-semibold text-foreground">24 hours of Premium</span>, stacked on your
-          current time.
+          <span className="font-semibold text-foreground">24 hours of Premium</span>, stacked on
+          your current time.
         </p>
 
         <div className="mb-4 flex items-center gap-2">
@@ -97,7 +97,9 @@ export function ReferralCard() {
           <div className="rounded-2xl border bg-card p-3">
             <div className="flex items-center gap-1.5 text-amber-500">
               <Sparkles className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-medium uppercase tracking-wide">Premium earned</span>
+              <span className="text-[10px] font-medium uppercase tracking-wide">
+                Premium earned
+              </span>
             </div>
             <p className="mt-1 font-display text-2xl font-bold">{hoursEarned}h</p>
           </div>
@@ -127,7 +129,11 @@ export function ReferralCard() {
         {rewards.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {rewards.map((r) => (
-              <Badge key={r.id} variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
+              <Badge
+                key={r.id}
+                variant="secondary"
+                className="bg-amber-500/15 text-amber-700 dark:text-amber-300"
+              >
                 +{r.hours}h at {r.milestone} referrals
               </Badge>
             ))}

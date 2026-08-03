@@ -12,9 +12,16 @@ export const Route = createFileRoute("/verify-email")({
   head: () => ({
     meta: [
       { title: "Verify your email — Insightly" },
-      { name: "description", content: "Confirm your email address to activate your Insightly account and start studying." },
+      {
+        name: "description",
+        content:
+          "Confirm your email address to activate your Insightly account and start studying.",
+      },
       { property: "og:title", content: "Verify your email — Insightly" },
-      { property: "og:description", content: "Confirm your email address to activate your Insightly account." },
+      {
+        property: "og:description",
+        content: "Confirm your email address to activate your Insightly account.",
+      },
     ],
   }),
   component: VerifyEmailPage,
@@ -95,17 +102,30 @@ function VerifyEmailPage() {
           <div className="flex items-start gap-3 rounded-2xl bg-muted/60 p-3 text-xs text-muted-foreground">
             <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p>
-              Open the email and tap <strong className="text-foreground">Confirm your email</strong>.
-              Your account — and any referral code you entered — activates the moment you do.
+              Open the email and tap <strong className="text-foreground">Confirm your email</strong>
+              . Your account — and any referral code you entered — activates the moment you do.
             </p>
           </div>
 
-          <Button onClick={recheck} disabled={checking} className="w-full bg-gradient-primary text-primary-foreground">
-            {checking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+          <Button
+            onClick={recheck}
+            disabled={checking}
+            className="w-full bg-gradient-primary text-primary-foreground"
+          >
+            {checking ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
             I've verified — continue
           </Button>
 
-          <Button variant="outline" onClick={resend} disabled={busy || cooldown > 0} className="w-full">
+          <Button
+            variant="outline"
+            onClick={resend}
+            disabled={busy || cooldown > 0}
+            className="w-full"
+          >
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend verification email"}
           </Button>
@@ -114,7 +134,10 @@ function VerifyEmailPage() {
             <Link to="/auth" className="text-muted-foreground underline-offset-2 hover:underline">
               Use a different email
             </Link>
-            <button onClick={signOut} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground">
+            <button
+              onClick={signOut}
+              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            >
               <LogOut className="h-3.5 w-3.5" /> Sign out
             </button>
           </div>

@@ -78,8 +78,13 @@ const slides = [
   },
 ];
 
-
-export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onClose?: () => void }) {
+export function IntroTutorial({
+  forceOpen,
+  onClose,
+}: {
+  forceOpen?: boolean;
+  onClose?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
 
@@ -102,12 +107,25 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
   const slide = slides[i];
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) finish();
+      }}
+    >
       <DialogContent className="max-w-md overflow-hidden p-0 border-0">
-        <div className={cn("relative overflow-hidden bg-gradient-to-br p-10 text-center transition-colors duration-500", slide.accent)}>
+        <div
+          className={cn(
+            "relative overflow-hidden bg-gradient-to-br p-10 text-center transition-colors duration-500",
+            slide.accent,
+          )}
+        >
           <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
           <span className="pointer-events-none absolute -bottom-12 -right-8 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
-          <div className="relative mx-auto flex animate-scale-in items-center justify-center" key={i}>
+          <div
+            className="relative mx-auto flex animate-scale-in items-center justify-center"
+            key={i}
+          >
             <div className="animate-badge-float">{slide.icon}</div>
           </div>
           <div className="relative mt-6 h-1 w-full overflow-hidden rounded-full bg-white/25">
@@ -145,7 +163,9 @@ export function IntroTutorial({ forceOpen, onClose }: { forceOpen?: boolean; onC
             </Button>
             {i < slides.length - 1 ? (
               <>
-                <Button variant="ghost" size="sm" onClick={finish}>Skip</Button>
+                <Button variant="ghost" size="sm" onClick={finish}>
+                  Skip
+                </Button>
                 <Button
                   size="sm"
                   onClick={() => setI((v) => v + 1)}
