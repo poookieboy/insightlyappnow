@@ -100,7 +100,7 @@ export interface StreakSettings {
   graceDays: number;
 }
 
-interface AppState {
+export interface AppState {
   profile: Profile | null;
   tasks: Task[];
   timetable: TimetableEntry[];
@@ -113,6 +113,8 @@ interface AppState {
   examResults: ExamResult[];
   goals: Goal[];
   streakSettings: StreakSettings;
+  /** Monotonic local revision (ms) — bumped on every local write. Used for sync. */
+  rev: number;
   hydrated: boolean;
 }
 
