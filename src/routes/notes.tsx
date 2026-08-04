@@ -70,8 +70,6 @@ interface UserNote {
 }
 
 function NotesHub() {
-  const { state } = useStore();
-  const profile = state.profile;
   return (
     <AppShell wide>
       <header className="mb-4">
@@ -87,7 +85,11 @@ function NotesHub() {
           <MyNotes />
         </TabsContent>
         <TabsContent value="foryou" className="mt-4">
-          {profile ? <ForYou grade={profile.grade} curriculum={profile.curriculum} /> : <p className="text-sm">Complete your profile first.</p>}
+          <ComingSoon
+            title="Notes For You"
+            emoji="📘"
+            message="This feature is currently under development and will be available in a future update. Thank you for your patience as we continue improving Insightly."
+          />
         </TabsContent>
       </Tabs>
     </AppShell>
@@ -1076,196 +1078,5 @@ function IconPicker({
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/* ============================== For You ============================== */
-
-const SUBJECT_TOPICS: Record<string, Record<string, string[]>> = {
-  primary: {
-    Mathematics: ["Whole Numbers", "Fractions", "Measurement", "Shapes & Geometry", "Time & Money"],
-    English: ["Nouns & Pronouns", "Verbs & Tenses", "Comprehension", "Composition Writing"],
-    "Science & Technology": ["Living Things", "Weather", "Matter", "Environment"],
-    "Social Studies": ["My Community", "Kenya's History", "Map Reading"],
-    CRE: ["Creation Story", "The Ten Commandments", "Life of Jesus"],
-    "Creative Arts": ["Colour & Design", "Music Basics", "Dance & Drama"],
-  },
-  lower: {
-    Mathematics: ["Integers", "Fractions & Decimals", "Algebra Basics", "Geometry", "Statistics & Probability"],
-    English: ["Grammar", "Poetry", "Oral Skills", "Composition & Essays"],
-    "Integrated Science": ["Human Body", "Matter & Energy", "Earth & Space", "Ecology"],
-    "Social Studies": ["Government", "African History", "Physical Geography"],
-    CRE: ["Old Testament Stories", "New Testament", "Christian Values"],
-    "Pre-Technical Studies": ["Materials", "Simple Tools", "Communication Technology"],
-    Agriculture: ["Soil", "Crops", "Livestock"],
-  },
-  upper: {
-    Mathematics: ["Algebra", "Trigonometry", "Coordinate Geometry", "Statistics", "Vectors"],
-    English: ["Advanced Grammar", "Literature (Prose)", "Literature (Poetry)", "Functional Writing"],
-    "Integrated Science": ["Cells & Reproduction", "Forces & Motion", "Acids & Bases", "Environmental Science"],
-    "Social Studies": ["Kenyan History", "African Geography", "Governance"],
-    Agriculture: ["Crop Production", "Livestock Management", "Farm Records"],
-    "Business Studies": ["Business Environment", "Money & Banking", "Entrepreneurship"],
-  },
-  senior: {
-    Mathematics: ["Functions", "Calculus", "Probability", "Matrices", "Sequences & Series"],
-    Biology: ["Cell Biology", "Genetics", "Ecology", "Human Physiology"],
-    Chemistry: ["Atomic Structure", "Chemical Bonding", "Acids Bases & Salts", "Organic Chemistry"],
-    Physics: ["Mechanics", "Waves", "Electricity", "Modern Physics"],
-    Geography: ["Climatology", "Human Geography", "Fieldwork"],
-    History: ["World Wars", "Kenyan Independence", "Cold War"],
-    "Business Studies": ["Marketing", "Finance", "Management"],
-  },
-};
-
-function subjectPack(grade: string) {
-  const n = parseInt(grade.replace(/\D/g, ""), 10) || 0;
-  if (n <= 5) return SUBJECT_TOPICS.primary;
-  if (n <= 8) return SUBJECT_TOPICS.lower;
-  if (n <= 10) return SUBJECT_TOPICS.upper;
-  return SUBJECT_TOPICS.senior;
-}
-
-function ForYou({ grade, curriculum }: { grade: string; curriculum: string }) {
-  const pack = useMemo(() => subjectPack(grade), [grade]);
-  const subjects = Object.keys(pack);
-  const [subject, setSubject] = useState<string>(subjects[0] ?? "");
-  const [topic, setTopic] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [body, setBody] = useState<Record<string, unknown> | null>(null);
-
-  useEffect(() => { setTopic(""); setBody(null); }, [subject]);
-
-  async function open(t: string) {
-    setTopic(t); setLoading(true); setBody(null);
-    try {
-    const { data, error } = await supabase.functions.invoke("ai-curriculum-notes", {
-  body: { curriculum, grade, subject, topic: t },
-});
-
-console.log("AI Function Data:", data);
-console.log("AI Function Error:", error);
-
-if (error) {
-  toast.error(JSON.stringify(error));
-  throw error;
-}
-
-setBody(data.body);  
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to load notes");
-    } finally { setLoading(false); }
-  }
-
-  if (topic && (loading || body)) {
-    return (
-      <div className="space-y-3">
-        <Button size="sm" variant="outline" onClick={() => { setTopic(""); setBody(null); }}>← All Topics</Button>
-        <h2 className="text-xl font-bold">{topic}</h2>
-        <p className="text-xs text-muted-foreground">{subject} • {grade} • {curriculum}</p>
-        {loading ? (
-          <Card className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></Card>
-        ) : body ? <CurriculumNoteView body={body} /> : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <Card className="p-3">
-        <Label className="text-xs">Subject</Label>
-        <Select value={subject} onValueChange={setSubject}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {subjects.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </Card>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {(pack[subject] ?? []).map((t) => (
-          <button
-            key={t}
-            onClick={() => open(t)}
-            className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-glow"
-          >
-            <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-primary/10 p-2"><BookOpen className="h-4 w-4 text-primary" /></div>
-              <div>
-                <p className="font-semibold">{t}</p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" /> AI curriculum notes
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CurriculumNoteView({ body }: { body: Record<string, unknown> }) {
-  const [openIdx, setOpenIdx] = useState<Record<string, boolean>>({ overview: true, sections: true, summary: true });
-  const T = (k: string) => setOpenIdx((o) => ({ ...o, [k]: !o[k] }));
-  const b = body as Record<string, unknown>;
-  const arr = (k: string) => (b[k] as unknown[]) ?? [];
-
-  return (
-    <div className="space-y-2">
-      {typeof b.overview === "string" && (
-        <Section title="Overview" open={openIdx.overview} onToggle={() => T("overview")}>
-          <p className="text-sm leading-relaxed">{b.overview}</p>
-        </Section>
-      )}
-      {arr("learningOutcomes").length > 0 && (
-        <Section title="Learning outcomes" open={!!openIdx.outcomes} onToggle={() => T("outcomes")}>
-          <ul className="list-disc space-y-1 pl-5 text-sm">
-            {(arr("learningOutcomes") as string[]).map((o, i) => <li key={i}>{o}</li>)}
-          </ul>
-        </Section>
-      )}
-      {arr("keyTerms").length > 0 && (
-        <Section title="Key terms" open={!!openIdx.terms} onToggle={() => T("terms")}>
-          <div className="space-y-2">
-            {(arr("keyTerms") as { term: string; definition: string }[]).map((k, i) => (
-              <div key={i} className="rounded-lg bg-muted/30 p-2 text-sm"><strong>{k.term}:</strong> {k.definition}</div>
-            ))}
-          </div>
-        </Section>
-      )}
-      {arr("sections").length > 0 && (
-        <Section title="Explanation" open={openIdx.sections} onToggle={() => T("sections")}>
-          <div className="space-y-3">
-            {(arr("sections") as { heading: string; body: string; example?: string }[]).map((s, i) => (
-              <div key={i}>
-                <p className="font-semibold">{s.heading}</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{s.body}</p>
-                {s.example && <p className="mt-1 rounded bg-primary/5 p-2 text-sm"><em>Example:</em> {s.example}</p>}
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-      {arr("keyPointsSummary").length > 0 && (
-        <Section title="Key points summary" open={openIdx.summary} onToggle={() => T("summary")}>
-          <ul className="list-disc space-y-1 pl-5 text-sm">
-            {(arr("keyPointsSummary") as string[]).map((k, i) => <li key={i}>{k}</li>)}
-          </ul>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-function Section({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card/50">
-      <button onClick={onToggle} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-semibold hover:bg-muted/50">
-        <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
-        {title}
-      </button>
-      {open && <div className="border-t border-border/60 px-3 py-3 animate-fade-in">{children}</div>}
-    </div>
   );
 }
