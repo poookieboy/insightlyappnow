@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Heart, ChevronRight, LogOut, Camera, Loader2, PlayCircle, Shield, Info,
-  FileText, ShieldCheck, KeyRound, User, GraduationCap, RefreshCw, Crown,
+  FileText, ShieldCheck, KeyRound, User, GraduationCap, Crown,
   Trash2, Check, CloudOff, Cloud, BellRing, Sparkles,
 } from "lucide-react";
 import { DevicePermissions } from "@/components/DevicePermissions";
@@ -122,18 +122,6 @@ function Row({ tile, icon, label, value, to, onClick, danger }: RowProps) {
       ) : (
         <button type="button" onClick={onClick} className="block w-full">{inner}</button>
       )}
-    </li>
-  );
-}
-
-function PanelRow({ tile, icon, label, children }: { tile: Tile; icon: typeof User; label: string; children: React.ReactNode }) {
-  return (
-    <li className="px-4 py-3">
-      <div className="mb-3 flex items-center gap-3">
-        <TileIcon tile={tile} icon={icon} />
-        <span className="text-[15px] font-medium">{label}</span>
-      </div>
-      {children}
     </li>
   );
 }
@@ -386,5 +374,3 @@ function Settings() {
     </AppShell>
   );
 }
-
-export { PanelRow, RefreshCw };
