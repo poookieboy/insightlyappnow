@@ -47,7 +47,7 @@ function Dashboard() {
   }, []);
 
   const cards = [
-    { to: "/external-quiz" as const, icon: "🎯", title: "Quiz Bank", subtitle: "From question bank", Icon: FileText },
+    { to: "/external-quiz" as const, icon: "🎯", title: "Quiz Bank", subtitle: "Coming soon", Icon: FileText, disabled: true },
     { to: "/revision" as const, icon: "📚", title: "Revision", subtitle: "By topic & subject", Icon: BookOpen },
     { to: "/tests" as const, icon: "📄", title: "Mock Papers", subtitle: "Coming soon", Icon: FileText, disabled: true },
     { to: "/tasks" as const, icon: "✅", title: "Tasks", subtitle: `${pending} pending`, Icon: ListTodo },

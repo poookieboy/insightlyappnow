@@ -40,6 +40,16 @@
   --color-ring: var(--ring);
   --color-streak-from: var(--streak-from);
   --color-streak-to: var(--streak-to);
+  --color-tile-blue: var(--tile-blue);
+  --color-tile-teal: var(--tile-teal);
+  --color-tile-green: var(--tile-green);
+  --color-tile-amber: var(--tile-amber);
+  --color-tile-orange: var(--tile-orange);
+  --color-tile-red: var(--tile-red);
+  --color-tile-violet: var(--tile-violet);
+  --color-tile-pink: var(--tile-pink);
+  --color-tile-slate: var(--tile-slate);
+  --color-tile-foreground: var(--tile-foreground);
 }
 
 /* Ocean Deep palette — deep navy, slate teal, bright aqua accents.
@@ -82,6 +92,18 @@
   --shadow-card: 0 4px 20px -8px oklch(0.32 0.07 250 / 0.18);
   --shadow-glow: 0 10px 40px -10px oklch(0.45 0.09 240 / 0.4);
   --shadow-streak: 0 8px 30px -6px oklch(0.65 0.23 35 / 0.45);
+
+  /* Settings tile accents — flat, saturated squares (Telegram-style rows) */
+  --tile-blue: oklch(0.6 0.17 250);
+  --tile-teal: oklch(0.65 0.12 205);
+  --tile-green: oklch(0.66 0.16 150);
+  --tile-amber: oklch(0.75 0.15 80);
+  --tile-orange: oklch(0.68 0.17 55);
+  --tile-red: oklch(0.62 0.2 25);
+  --tile-violet: oklch(0.58 0.19 295);
+  --tile-pink: oklch(0.66 0.18 350);
+  --tile-slate: oklch(0.55 0.03 250);
+  --tile-foreground: oklch(0.99 0 0);
 }
 
 .dark {
@@ -109,31 +131,44 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.7 0.13 215);
+
+  /* Settings tile accents — flat, saturated squares (Telegram-style rows) */
+  --tile-blue: oklch(0.6 0.17 250);
+  --tile-teal: oklch(0.65 0.12 205);
+  --tile-green: oklch(0.66 0.16 150);
+  --tile-amber: oklch(0.75 0.15 80);
+  --tile-orange: oklch(0.68 0.17 55);
+  --tile-red: oklch(0.62 0.2 25);
+  --tile-violet: oklch(0.58 0.19 295);
+  --tile-pink: oklch(0.66 0.18 350);
+  --tile-slate: oklch(0.55 0.03 250);
+  --tile-foreground: oklch(0.99 0 0);
 }
 
 /* Tutor (Iris) page tokens — graphite + warm coffee-brown,
  * intentionally distinct from the cool ocean app palette. */
 .theme-iris {
-  --background: oklch(0.18 0.005 60);
-  --foreground: oklch(0.96 0.005 60);
-  --card: oklch(0.24 0.008 60);
-  --card-foreground: oklch(0.96 0.005 60);
-  --popover: oklch(0.24 0.008 60);
-  --popover-foreground: oklch(0.96 0.005 60);
-  --primary: oklch(0.55 0.06 50);           /* warm brown */
-  --primary-foreground: oklch(0.98 0 0);
-  --primary-glow: oklch(0.65 0.08 55);
-  --secondary: oklch(0.28 0.008 60);
-  --secondary-foreground: oklch(0.96 0.005 60);
-  --muted: oklch(0.3 0.006 60);
-  --muted-foreground: oklch(0.72 0.01 60);
-  --accent: oklch(0.6 0.07 45);
-  --accent-foreground: oklch(0.98 0 0);
-  --border: oklch(1 0 0 / 10%);
+  --background: oklch(0.13 0 0);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.72 0.1 205);
+  --primary-foreground: oklch(0.13 0 0);
+  --primary-glow: oklch(0.8 0.09 205);
+  --secondary: oklch(0.22 0 0);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.24 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.28 0 0);
+  --accent-foreground: oklch(0.97 0 0);
+  --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.6 0.07 45);
-  --gradient-primary: linear-gradient(135deg, oklch(0.4 0.04 55), oklch(0.55 0.07 50));
-  --shadow-glow: 0 10px 40px -10px oklch(0.55 0.06 50 / 0.35);
+  --ring: oklch(0.72 0.1 205);
+  --gradient-primary: linear-gradient(135deg, oklch(0.3 0 0), oklch(0.42 0.02 205));
+  --gradient-soft: linear-gradient(180deg, oklch(0.13 0 0) 0%, oklch(0.11 0 0) 100%);
+  --shadow-glow: 0 10px 40px -10px oklch(0 0 0 / 0.7);
 }
 
 @layer base {
@@ -305,3 +340,68 @@
 .ds-doc ul { list-style: disc; padding-left: 1.5rem; margin: 0 0 0.6em; }
 .ds-doc ol { list-style: decimal; padding-left: 1.5rem; margin: 0 0 0.6em; }
 .ds-doc a { color: #2563eb; text-decoration: underline; }
+
+
+/* ============================ Native app feel ============================ */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    overscroll-behavior-y: none;
+    text-rendering: optimizeLegibility;
+  }
+  /* Native-style momentum scrolling inside scroll areas */
+  [data-scroll], main, .scroll-area {
+    -webkit-overflow-scrolling: touch;
+  }
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Press feedback that mimics native touch targets */
+  .press {
+    transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 140ms ease;
+  }
+  .press:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+  .page-enter {
+    animation: page-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .msg-enter {
+    animation: msg-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes msg-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -16,6 +16,8 @@ export interface Profile {
   grade: Grade;
   createdAt: string;
   lastActive: string;
+  /** Academic year (calendar year) in which this grade was set — drives auto-progression. */
+  gradeYear?: number;
 }
 
 export interface Task {
@@ -100,7 +102,7 @@ export interface StreakSettings {
   graceDays: number;
 }
 
-interface AppState {
+export interface AppState {
   profile: Profile | null;
   tasks: Task[];
   timetable: TimetableEntry[];
@@ -113,6 +115,8 @@ interface AppState {
   examResults: ExamResult[];
   goals: Goal[];
   streakSettings: StreakSettings;
+  /** Monotonic local revision (ms) — bumped on every local write. Used for sync. */
+  rev: number;
   hydrated: boolean;
 }
 
@@ -136,6 +140,7 @@ const defaultState: AppState = {
   examResults: [],
   goals: [],
   streakSettings: defaultStreakSettings,
+  rev: 0,
   hydrated: false,
 };
 
@@ -202,20 +207,41 @@ function getServerSnapshot() {
 export function useStore() {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const update = useCallback((updater: (s: AppState) => AppState) => {
-    const next = updater(memoryState);
-    if (next === memoryState) return;
-    memoryState = next;
-    persist(memoryState);
-    emit();
-  }, []);
+  const update = useCallback(commit, []);
 
   return { state, update };
 }
 
+/** Apply a local mutation. Bumps the revision counter so cloud sync can order writes. */
+export function commit(updater: (s: AppState) => AppState) {
+  const next = updater(memoryState);
+  if (next === memoryState) return;
+  memoryState = { ...next, rev: Date.now() };
+  persist(memoryState);
+  emit();
+}
+
+/** Read the current state outside React (sync engine). */
+export function getState(): AppState {
+  ensureInit();
+  return memoryState;
+}
+
+/** Replace state from a remote/merged snapshot without bumping the local revision. */
+export function replaceState(next: AppState) {
+  memoryState = { ...next, hydrated: true };
+  persist(memoryState);
+  emit();
+}
+
+/** Subscribe to store changes outside React. */
+export function subscribeStore(listener: () => void) {
+  return subscribe(listener);
+}
+
 export function resetAll() {
   if (typeof window !== "undefined") localStorage.removeItem(KEY);
-  memoryState = { ...defaultState, hydrated: true };
+  memoryState = { ...defaultState, rev: Date.now(), hydrated: true };
   emit();
 }
 
