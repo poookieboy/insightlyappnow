@@ -57,6 +57,8 @@ export interface BadgeState {
 export interface TutorMessage {
   role: "user" | "assistant";
   content: string;
+  /** Optional image attachments (data URLs) sent with a user message. */
+  images?: string[];
 }
 
 export interface TutorConversation {
