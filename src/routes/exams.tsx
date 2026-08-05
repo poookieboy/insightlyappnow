@@ -53,10 +53,21 @@ function ExamsPage() {
   );
 }
 
+export const EXAM_CATEGORIES = [
+  "CAT 1",
+  "CAT 2",
+  "CAT 3",
+  "Midterm",
+  "End Term",
+  "Mock Exam",
+  "Other",
+] as const;
+
 function AddExam() {
   const { state, update } = useStore();
   const profile = state.profile!;
   const [label, setLabel] = useState("");
+  const [category, setCategory] = useState<string>("CAT 1");
   const [rows, setRows] = useState<{ subject: string; score: string; outOf: string }[]>([
     { subject: "Mathematics", score: "", outOf: "100" },
   ]);
@@ -103,14 +114,15 @@ function AddExam() {
     const result: ExamResult = {
       id: uid(),
       date: new Date().toISOString(),
-      label: label.trim() || "Exam " + new Date().toLocaleDateString(),
+      label: label.trim() || `${category} — ${new Date().toLocaleDateString()}`,
+      category,
       subjects: cleaned,
       feedback,
     };
     update((s) => ({ ...s, examResults: [result, ...s.examResults] }));
     setLoading(false);
     setLabel(""); setRows([{ subject: "", score: "", outOf: "100" }]); setNotes("");
-    toast.success("Exam saved & analysed ✨");
+    toast.success(`Saved to ${category} ✨`);
   };
 
   return (
@@ -118,7 +130,25 @@ function AddExam() {
       <Card className="p-4">
         <label className="mb-1 block text-xs font-medium">Exam name</label>
         <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Mid-term 2, Mock Paper 1" />
+        <label className="mb-1 mt-3 block text-xs font-medium">Folder</label>
+        <div className="flex flex-wrap gap-1.5">
+          {EXAM_CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-all active:scale-95 ${
+                category === c
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/50"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </Card>
+
 
       <Card className="space-y-2 p-4">
         <div className="mb-1 grid grid-cols-[1fr_60px_60px_auto] gap-2 text-[10px] font-semibold uppercase text-muted-foreground">
