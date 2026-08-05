@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
-  Send, Sparkles, Trash2, User, Bot, RefreshCw, Plus, MessageSquare,
+  Send, Sparkles, Trash2, User, RefreshCw, Plus, MessageSquare,
   FolderPlus, Folder, Menu, X, Pencil, Mic, MicOff, Volume2, VolumeX,
+  ImagePlus, Copy, Check, Square,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -74,6 +75,22 @@ function Tutor() {
   const voice = useVoiceChat();
   const [voiceMode, setVoiceMode] = useState(false);
   const lastSpokenRef = useRef<string>("");
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickImages = (files: FileList | null) => {
+    if (!files?.length) return;
+    const room = 4 - attachments.length;
+    if (room <= 0) { toast.error("Up to 4 images per message."); return; }
+    Array.from(files).slice(0, room).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 4 * 1024 * 1024) { toast.error(`${file.name} is larger than 4MB.`); return; }
+      const reader = new FileReader();
+      reader.onload = () => setAttachments((a) => [...a, String(reader.result)]);
+      reader.readAsDataURL(file);
+    });
+  };
+
 
   const active = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
@@ -126,18 +143,25 @@ function Tutor() {
     }));
   };
 
-  const send = async (textArg?: string) => {
+  const send = async (textArg?: string, imagesArg?: string[]) => {
     const text = (textArg ?? input).trim();
-    if (!text || loading) return;
+    const images = imagesArg ?? attachments;
+    if ((!text && images.length === 0) || loading) return;
     setInput("");
+    setAttachments([]);
     setLastFailed(null);
 
-    const conv = ensureConversation(text);
+    const conv = ensureConversation(text || "Image question");
     const isFirstMessage = conv.messages.length === 0;
-    const userMsg: TutorMessage = { role: "user", content: text };
+    const userMsg: TutorMessage = {
+      role: "user",
+      content: text || "Please look at this image and help me.",
+      ...(images.length ? { images } : {}),
+    };
     const next = [...conv.messages, userMsg];
-    writeMessages(conv.id, next, text);
+    writeMessages(conv.id, next, text || "Image question");
     setLoading(true);
+
 
     // Auto-classify subject + title from the first user message
     if (isFirstMessage) {
@@ -314,7 +338,7 @@ function Tutor() {
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 truncate text-lg font-bold">
             <Sparkles className="h-5 w-5 text-primary" />
-            {active?.title ?? "AI Tutor"}
+            {active?.title ?? "Iris"}
           </h1>
           <p className="truncate text-[11px] text-muted-foreground">
             {MODES.find((m) => m.id === mode)?.hint}
@@ -355,7 +379,7 @@ function Tutor() {
               <div>
                 <p className="font-display text-base font-semibold">Iris</p>
                 <p className="text-xs text-muted-foreground">
-                  Ask anything, type or tap the mic to talk.
+                  Ask anything — type, attach a photo of your work, or tap the mic to talk.
                 </p>
               </div>
             </div>
@@ -373,24 +397,90 @@ function Tutor() {
           </Card>
         )}
 
-        {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
+        {messages.map((m, i) => (
+          <MessageBubble
+            key={i}
+            msg={m}
+            streaming={loading && i === messages.length - 1 && m.role === "assistant"}
+            onSpeak={voice.supported ? () => (voice.speaking ? voice.stopSpeaking() : voice.speak(m.content)) : undefined}
+            speaking={voice.speaking}
+            onRegenerate={
+              !loading && m.role === "assistant" && i === messages.length - 1
+                ? () => {
+                    const lastUser = [...messages].reverse().find((x) => x.role === "user");
+                    if (!lastUser) return;
+                    writeMessages(active!.id, messages.slice(0, -1));
+                    send(lastUser.content, lastUser.images);
+                  }
+                : undefined
+            }
+          />
+        ))}
 
         {loading && messages[messages.length - 1]?.role === "user" && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Bot className="h-4 w-4 animate-pulse" /> thinking…
+          <div className="flex items-center gap-2 animate-fade-in">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
+              <Sparkles className="h-3.5 w-3.5" />
+            </div>
+            <div className="flex items-center gap-1 rounded-2xl border bg-card px-3 py-2.5">
+              {[0, 1, 2].map((d) => (
+                <span
+                  key={d}
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60"
+                  style={{ animationDelay: `${d * 150}ms` }}
+                />
+              ))}
+            </div>
           </div>
         )}
         <div ref={scrollRef} />
       </div>
 
       <form onSubmit={onSubmit} className="fixed bottom-20 left-0 right-0 z-30 mx-auto max-w-md px-4">
-        <div className="flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-lg">
+        {attachments.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto rounded-2xl border bg-card/95 p-2 shadow-lg backdrop-blur">
+            {attachments.map((src, i) => (
+              <div key={i} className="relative shrink-0">
+                <img src={src} alt={`Attachment ${i + 1}`} className="h-16 w-16 rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setAttachments((a) => a.filter((_, idx) => idx !== i))}
+                  className="absolute -right-1.5 -top-1.5 rounded-full bg-foreground p-0.5 text-background"
+                  aria-label="Remove image"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-end gap-1.5 rounded-2xl border bg-card p-2 shadow-lg">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => { pickImages(e.target.files); e.target.value = ""; }}
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 shrink-0"
+            onClick={() => fileRef.current?.click()}
+            title="Attach an image"
+          >
+            <ImagePlus className="h-4 w-4" />
+          </Button>
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Message your tutor…"
+            placeholder="Ask Iris anything…"
             rows={1}
-            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground"
+            className="max-h-32 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
@@ -399,7 +489,7 @@ function Tutor() {
             <Button
               type="button"
               size="icon"
-              variant={voice.listening ? "default" : "outline"}
+              variant={voice.listening ? "default" : "ghost"}
               onClick={() => {
                 if (voice.listening) {
                   voice.stop();
@@ -423,7 +513,7 @@ function Tutor() {
             <Button
               type="button"
               size="icon"
-              variant="outline"
+              variant="ghost"
               onClick={() => {
                 if (voice.speaking) voice.stopSpeaking();
                 setVoiceMode((v) => !v);
@@ -434,14 +524,27 @@ function Tutor() {
               {voiceMode ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}
             </Button>
           )}
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || loading}
-            className="h-9 w-9 shrink-0 bg-gradient-primary text-primary-foreground"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {voice.speaking ? (
+            <Button
+              type="button"
+              size="icon"
+              onClick={voice.stopSpeaking}
+              title="Stop speaking"
+              className="h-9 w-9 shrink-0"
+              variant="secondary"
+            >
+              <Square className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              disabled={(!input.trim() && attachments.length === 0) || loading}
+              className="h-9 w-9 shrink-0 bg-gradient-primary text-primary-foreground"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         {voice.listening && (
           <p className="mt-1 text-center text-[11px] text-muted-foreground animate-fade-in">
@@ -449,6 +552,7 @@ function Tutor() {
           </p>
         )}
       </form>
+
       <div className="h-20" />
 
       <ProjectDialog
@@ -685,38 +789,107 @@ function ProjectDialog({
   );
 }
 
-function MessageBubble({ msg }: { msg: TutorMessage }) {
+function MessageBubble({
+  msg, streaming, onSpeak, speaking, onRegenerate,
+}: {
+  msg: TutorMessage;
+  streaming?: boolean;
+  onSpeak?: () => void;
+  speaking?: boolean;
+  onRegenerate?: () => void;
+}) {
   const isUser = msg.role === "user";
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy");
+    }
+  };
+
   return (
     <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground">
-          <Bot className="h-4 w-4" />
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
+          <Sparkles className="h-3.5 w-3.5" />
         </div>
       )}
-      <div
-        className={cn(
-          "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed animate-fade-in",
-          isUser ? "bg-gradient-primary text-primary-foreground" : "border bg-card",
-        )}
-      >
-        {isUser ? (
-          <p className="whitespace-pre-wrap">{msg.content}</p>
-        ) : (
-          <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                code({ className, children, ...props }) {
-                  const lang = /language-(\w+)/.exec(className || "")?.[1];
-                  const text = String(children).replace(/\n$/, "");
-                  if (lang === "mermaid") return <Mermaid chart={text} />;
-                  return <code className={className} {...props}>{children}</code>;
-                },
-              }}
+      <div className={cn("max-w-[85%] min-w-0", isUser ? "items-end" : "items-start")}>
+        <div
+          className={cn(
+            "rounded-2xl px-3 py-2 text-sm leading-relaxed animate-fade-in",
+            isUser ? "bg-gradient-primary text-primary-foreground" : "border bg-card",
+          )}
+        >
+          {msg.images && msg.images.length > 0 && (
+            <div className={cn("mb-2 grid gap-1.5", msg.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+              {msg.images.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt={`Attached image ${i + 1}`}
+                  loading="lazy"
+                  className="max-h-48 w-full rounded-lg object-cover"
+                />
+              ))}
+            </div>
+          )}
+
+          {isUser ? (
+            <p className="whitespace-pre-wrap">{msg.content}</p>
+          ) : (
+            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ className, children, ...props }) {
+                    const lang = /language-(\w+)/.exec(className || "")?.[1];
+                    const text = String(children).replace(/\n$/, "");
+                    if (lang === "mermaid") return <Mermaid chart={text} />;
+                    return <code className={className} {...props}>{children}</code>;
+                  },
+                }}
+              >
+                {msg.content || "…"}
+              </ReactMarkdown>
+              {streaming && (
+                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
+              )}
+            </div>
+          )}
+        </div>
+
+        {!isUser && !streaming && msg.content && (
+          <div className="mt-1 flex items-center gap-1 pl-1">
+            <button
+              onClick={copy}
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Copy reply"
             >
-              {msg.content || "…"}
-            </ReactMarkdown>
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+            {onSpeak && (
+              <button
+                onClick={onSpeak}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={speaking ? "Stop reading" : "Read aloud"}
+              >
+                {speaking ? <Square className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Regenerate reply"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -728,6 +901,7 @@ function MessageBubble({ msg }: { msg: TutorMessage }) {
     </div>
   );
 }
+
 
 function Mermaid({ chart }: { chart: string }) {
   const id = useId().replace(/:/g, "");

@@ -10,6 +10,27 @@ const corsHeaders = {
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  /** Optional image attachments (data URLs) for multimodal questions. */
+  images?: string[];
+}
+
+/** Convert our simple message shape into the gateway's multimodal format. */
+function toGatewayMessages(messages: ChatMessage[]) {
+  return messages.map((m) => {
+    if (m.role !== "user" || !m.images || m.images.length === 0) {
+      return { role: m.role, content: m.content };
+    }
+    return {
+      role: m.role,
+      content: [
+        { type: "text", text: m.content || "Please look at this image and help me." },
+        ...m.images.slice(0, 4).map((url) => ({
+          type: "image_url",
+          image_url: { url },
+        })),
+      ],
+    };
+  });
 }
 
 interface RequestBody {
@@ -65,6 +86,7 @@ How you help:
 DIAGRAMS — when a visual would help (cycles, processes, structures, flows, comparisons), include a Mermaid diagram inside a fenced code block tagged \`mermaid\`. Use simple, valid Mermaid syntax.
 
 - Never invent facts. If unsure, say so and suggest where to look.
+- When the student attaches an image (a photo of homework, a diagram, or handwritten working), read it carefully, describe what you see briefly, then answer or correct their working step by step.
 - Be encouraging — celebrate effort with short, genuine notes (no excessive emoji).`;
 
     const response = await fetch(
@@ -77,7 +99,7 @@ DIAGRAMS — when a visual would help (cycles, processes, structures, flows, com
         },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
-          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          messages: [{ role: "system", content: systemPrompt }, ...toGatewayMessages(messages)],
           stream: true,
         }),
       },

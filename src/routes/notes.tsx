@@ -89,8 +89,10 @@ function NotesHub() {
           <ComingSoon
             title="Notes For You"
             emoji="📘"
-            message="This feature is currently under development and will be available in a future update. Thank you for your patience as we continue improving Insightly."
+            hideBack
+            message="Curriculum notes written for your exact grade and subjects are on the way. This feature is under development and will arrive in a future update."
           />
+
         </TabsContent>
       </Tabs>
     </AppShell>

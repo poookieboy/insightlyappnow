@@ -36,14 +36,14 @@ const slides = [
   },
   {
     icon: <BookOpen className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Revision tools",
-    body: "Practice with curriculum-matched questions and mock papers tailored to your grade.",
+    title: "Revision that fits your syllabus",
+    body: "Practice curriculum-matched questions for your grade, answer in your own words, and get instant marking.",
     accent: "from-emerald-500 to-teal-500",
   },
   {
     icon: <ListChecks className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Subject quizzes",
-    body: "Short, focused quizzes per subject with instant marking so you know exactly what to revise.",
+    title: "Tasks & timetable",
+    body: "Plan your week, track deadlines in a clean month view, and never miss an assignment again.",
     accent: "from-lime-500 to-emerald-600",
   },
   {
@@ -54,14 +54,14 @@ const slides = [
   },
   {
     icon: <LayoutGrid className={cn(ICON, "text-white")} strokeWidth={1.5} />,
-    title: "Student progress",
-    body: "Streaks, badges and beautiful charts that show exactly how your study habits are improving.",
+    title: "Exam analysis & progress",
+    body: "Log results into folders like CAT, Midterm and End Term, then watch streaks, badges and charts track your growth.",
     accent: "from-blue-500 to-cyan-500",
   },
   {
     icon: <img src={irisAvatar} alt="Iris" className={cn(ICON, "object-contain")} />,
     title: "Meet Iris, your AI tutor",
-    body: "Ask questions, get step-by-step explanations, or tap the mic and talk it through by voice.",
+    body: "Ask anything, snap a photo of your homework, or tap the mic and talk it through — Iris even reads answers back aloud.",
     accent: "from-violet-500 to-fuchsia-500",
   },
   {

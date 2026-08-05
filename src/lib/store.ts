@@ -57,6 +57,8 @@ export interface BadgeState {
 export interface TutorMessage {
   role: "user" | "assistant";
   content: string;
+  /** Optional image attachments (data URLs) sent with a user message. */
+  images?: string[];
 }
 
 export interface TutorConversation {
@@ -80,6 +82,8 @@ export interface ExamResult {
   id: string;
   date: string;
   label: string;
+  /** Folder this result belongs to — e.g. "CAT 1", "Midterm", "End Term". */
+  category?: string;
   subjects: { subject: string; score: number; outOf: number }[];
   feedback?: string;
 }
