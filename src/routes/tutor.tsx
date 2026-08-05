@@ -75,6 +75,22 @@ function Tutor() {
   const voice = useVoiceChat();
   const [voiceMode, setVoiceMode] = useState(false);
   const lastSpokenRef = useRef<string>("");
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickImages = (files: FileList | null) => {
+    if (!files?.length) return;
+    const room = 4 - attachments.length;
+    if (room <= 0) { toast.error("Up to 4 images per message."); return; }
+    Array.from(files).slice(0, room).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 4 * 1024 * 1024) { toast.error(`${file.name} is larger than 4MB.`); return; }
+      const reader = new FileReader();
+      reader.onload = () => setAttachments((a) => [...a, String(reader.result)]);
+      reader.readAsDataURL(file);
+    });
+  };
+
 
   const active = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
