@@ -82,6 +82,8 @@ export interface ExamResult {
   id: string;
   date: string;
   label: string;
+  /** Folder this result belongs to — e.g. "CAT 1", "Midterm", "End Term". */
+  category?: string;
   subjects: { subject: string; score: number; outOf: number }[];
   feedback?: string;
 }
