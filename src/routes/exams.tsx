@@ -181,9 +181,16 @@ function AddExam() {
   );
 }
 
+function pctOf(r: ExamResult) {
+  const total = r.subjects.reduce((a, b) => a + b.score, 0);
+  const outOf = r.subjects.reduce((a, b) => a + b.outOf, 0);
+  return { total, outOf, pct: Math.round((total / Math.max(1, outOf)) * 100) };
+}
+
 function History() {
   const { state, update } = useStore();
   const items = state.examResults;
+  const [folder, setFolder] = useState<string | null>(null);
 
   const remove = (id: string) => {
     if (!confirm("Delete this exam result?")) return;
@@ -194,48 +201,85 @@ function History() {
     return <p className="mt-6 text-center text-sm text-muted-foreground">No exam results yet. Add one on the first tab.</p>;
   }
 
-  // Trend per subject
-  const perSubject = new Map<string, { date: string; pct: number }[]>();
-  for (const r of [...items].reverse()) {
-    for (const s of r.subjects) {
-      const pct = Math.round((s.score / Math.max(1, s.outOf)) * 100);
-      if (!perSubject.has(s.subject)) perSubject.set(s.subject, []);
-      perSubject.get(s.subject)!.push({ date: r.date, pct });
-    }
+  // Group into folders
+  const folders = new Map<string, ExamResult[]>();
+  for (const r of items) {
+    const key = r.category || "Other";
+    if (!folders.has(key)) folders.set(key, []);
+    folders.get(key)!.push(r);
   }
+  const ordered = Array.from(folders.entries()).sort((a, b) => {
+    const ia = EXAM_CATEGORIES.indexOf(a[0] as never);
+    const ib = EXAM_CATEGORIES.indexOf(b[0] as never);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+
+  // ---- Folder list view ----
+  if (!folder) {
+    return (
+      <div className="mt-3 space-y-3">
+        <SubjectTrends items={items} />
+        {ordered.map(([name, list]) => {
+          const avg = Math.round(list.reduce((a, r) => a + pctOf(r).pct, 0) / list.length);
+          const best = [...list].sort((a, b) => pctOf(b).pct - pctOf(a).pct)[0];
+          const tone = avg >= 70 ? "text-emerald-600" : avg >= 50 ? "text-amber-600" : "text-rose-600";
+          return (
+            <button
+              key={name}
+              onClick={() => setFolder(name)}
+              className="w-full text-left transition-transform active:scale-[0.99]"
+            >
+              <Card className="flex items-center gap-3 p-4 hover:border-primary/50">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground">
+                  <FolderOpen className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{name}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {list.length} {list.length === 1 ? "record" : "records"} · best {pctOf(best).pct}% ({best.label})
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-bold ${tone}`}>{avg}%</p>
+                  <p className="text-[10px] text-muted-foreground">average</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Card>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ---- Inside a folder ----
+  const list = folders.get(folder) ?? [];
+  const avg = list.length ? Math.round(list.reduce((a, r) => a + pctOf(r).pct, 0) / list.length) : 0;
 
   return (
     <div className="mt-3 space-y-3">
-      {perSubject.size > 1 && (
-        <Card className="p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject trends</p>
-          <div className="space-y-1.5">
-            {Array.from(perSubject.entries()).map(([subject, pts]) => {
-              const first = pts[0].pct, last = pts[pts.length - 1].pct;
-              const delta = last - first;
-              return (
-                <div key={subject} className="flex items-center gap-2 text-xs">
-                  <span className="w-28 truncate">{subject}</span>
-                  <div className="flex-1 flex gap-0.5 h-4">
-                    {pts.map((p, i) => (
-                      <div key={i} className="flex-1 rounded bg-primary/20" style={{ height: `${Math.max(10, p.pct)}%`, alignSelf: "flex-end" }} title={`${p.pct}%`} />
-                    ))}
-                  </div>
-                  <span className="w-10 text-right font-semibold">{last}%</span>
-                  <span className={`w-10 text-right text-[10px] ${delta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                    {delta >= 0 ? "+" : ""}{delta}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+      <button
+        onClick={() => setFolder(null)}
+        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" /> All folders
+      </button>
 
-      {items.map((r) => {
-        const total = r.subjects.reduce((a, b) => a + b.score, 0);
-        const outOf = r.subjects.reduce((a, b) => a + b.outOf, 0);
-        const pct = Math.round((total / Math.max(1, outOf)) * 100);
+      <Card className="flex items-center justify-between p-4">
+        <div>
+          <p className="font-display text-lg font-bold">{folder}</p>
+          <p className="text-[11px] text-muted-foreground">{list.length} records logged</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-primary">{avg}%</p>
+          <p className="text-[10px] text-muted-foreground">folder average</p>
+        </div>
+      </Card>
+
+      <SubjectTrends items={list} />
+
+      {list.map((r) => {
+        const { total, outOf, pct } = pctOf(r);
         return (
           <Card key={r.id} className="p-4">
             <div className="mb-2 flex items-start justify-between gap-2">
@@ -273,6 +317,45 @@ function History() {
     </div>
   );
 }
+
+function SubjectTrends({ items }: { items: ExamResult[] }) {
+  const perSubject = new Map<string, { date: string; pct: number }[]>();
+  for (const r of [...items].reverse()) {
+    for (const s of r.subjects) {
+      const pct = Math.round((s.score / Math.max(1, s.outOf)) * 100);
+      if (!perSubject.has(s.subject)) perSubject.set(s.subject, []);
+      perSubject.get(s.subject)!.push({ date: r.date, pct });
+    }
+  }
+  if (perSubject.size < 2) return null;
+
+  return (
+    <Card className="p-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject trends</p>
+      <div className="space-y-1.5">
+        {Array.from(perSubject.entries()).map(([subject, pts]) => {
+          const first = pts[0].pct, last = pts[pts.length - 1].pct;
+          const delta = last - first;
+          return (
+            <div key={subject} className="flex items-center gap-2 text-xs">
+              <span className="w-28 truncate">{subject}</span>
+              <div className="flex h-4 flex-1 gap-0.5">
+                {pts.map((p, i) => (
+                  <div key={i} className="flex-1 rounded bg-primary/20" style={{ height: `${Math.max(10, p.pct)}%`, alignSelf: "flex-end" }} title={`${p.pct}%`} />
+                ))}
+              </div>
+              <span className="w-10 text-right font-semibold">{last}%</span>
+              <span className={`w-10 text-right text-[10px] ${delta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {delta >= 0 ? "+" : ""}{delta}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 
 function Goals() {
   const { state, update } = useStore();
