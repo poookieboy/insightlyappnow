@@ -338,7 +338,7 @@ function Tutor() {
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 truncate text-lg font-bold">
             <Sparkles className="h-5 w-5 text-primary" />
-            {active?.title ?? "AI Tutor"}
+            {active?.title ?? "Iris"}
           </h1>
           <p className="truncate text-[11px] text-muted-foreground">
             {MODES.find((m) => m.id === mode)?.hint}
@@ -379,7 +379,7 @@ function Tutor() {
               <div>
                 <p className="font-display text-base font-semibold">Iris</p>
                 <p className="text-xs text-muted-foreground">
-                  Ask anything, type or tap the mic to talk.
+                  Ask anything — type, attach a photo of your work, or tap the mic to talk.
                 </p>
               </div>
             </div>
