@@ -397,24 +397,90 @@ function Tutor() {
           </Card>
         )}
 
-        {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
+        {messages.map((m, i) => (
+          <MessageBubble
+            key={i}
+            msg={m}
+            streaming={loading && i === messages.length - 1 && m.role === "assistant"}
+            onSpeak={voice.supported ? () => (voice.speaking ? voice.stopSpeaking() : voice.speak(m.content)) : undefined}
+            speaking={voice.speaking}
+            onRegenerate={
+              !loading && m.role === "assistant" && i === messages.length - 1
+                ? () => {
+                    const lastUser = [...messages].reverse().find((x) => x.role === "user");
+                    if (!lastUser) return;
+                    writeMessages(active!.id, messages.slice(0, -1));
+                    send(lastUser.content, lastUser.images);
+                  }
+                : undefined
+            }
+          />
+        ))}
 
         {loading && messages[messages.length - 1]?.role === "user" && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Bot className="h-4 w-4 animate-pulse" /> thinking…
+          <div className="flex items-center gap-2 animate-fade-in">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
+              <Sparkles className="h-3.5 w-3.5" />
+            </div>
+            <div className="flex items-center gap-1 rounded-2xl border bg-card px-3 py-2.5">
+              {[0, 1, 2].map((d) => (
+                <span
+                  key={d}
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60"
+                  style={{ animationDelay: `${d * 150}ms` }}
+                />
+              ))}
+            </div>
           </div>
         )}
         <div ref={scrollRef} />
       </div>
 
       <form onSubmit={onSubmit} className="fixed bottom-20 left-0 right-0 z-30 mx-auto max-w-md px-4">
-        <div className="flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-lg">
+        {attachments.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto rounded-2xl border bg-card/95 p-2 shadow-lg backdrop-blur">
+            {attachments.map((src, i) => (
+              <div key={i} className="relative shrink-0">
+                <img src={src} alt={`Attachment ${i + 1}`} className="h-16 w-16 rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setAttachments((a) => a.filter((_, idx) => idx !== i))}
+                  className="absolute -right-1.5 -top-1.5 rounded-full bg-foreground p-0.5 text-background"
+                  aria-label="Remove image"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-end gap-1.5 rounded-2xl border bg-card p-2 shadow-lg">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => { pickImages(e.target.files); e.target.value = ""; }}
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 shrink-0"
+            onClick={() => fileRef.current?.click()}
+            title="Attach an image"
+          >
+            <ImagePlus className="h-4 w-4" />
+          </Button>
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Message your tutor…"
+            placeholder="Ask Iris anything…"
             rows={1}
-            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground"
+            className="max-h-32 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
@@ -423,7 +489,7 @@ function Tutor() {
             <Button
               type="button"
               size="icon"
-              variant={voice.listening ? "default" : "outline"}
+              variant={voice.listening ? "default" : "ghost"}
               onClick={() => {
                 if (voice.listening) {
                   voice.stop();
@@ -447,7 +513,7 @@ function Tutor() {
             <Button
               type="button"
               size="icon"
-              variant="outline"
+              variant="ghost"
               onClick={() => {
                 if (voice.speaking) voice.stopSpeaking();
                 setVoiceMode((v) => !v);
@@ -458,14 +524,27 @@ function Tutor() {
               {voiceMode ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}
             </Button>
           )}
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || loading}
-            className="h-9 w-9 shrink-0 bg-gradient-primary text-primary-foreground"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {voice.speaking ? (
+            <Button
+              type="button"
+              size="icon"
+              onClick={voice.stopSpeaking}
+              title="Stop speaking"
+              className="h-9 w-9 shrink-0"
+              variant="secondary"
+            >
+              <Square className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              disabled={(!input.trim() && attachments.length === 0) || loading}
+              className="h-9 w-9 shrink-0 bg-gradient-primary text-primary-foreground"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         {voice.listening && (
           <p className="mt-1 text-center text-[11px] text-muted-foreground animate-fade-in">
@@ -473,6 +552,7 @@ function Tutor() {
           </p>
         )}
       </form>
+
       <div className="h-20" />
 
       <ProjectDialog
