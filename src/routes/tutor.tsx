@@ -143,18 +143,25 @@ function Tutor() {
     }));
   };
 
-  const send = async (textArg?: string) => {
+  const send = async (textArg?: string, imagesArg?: string[]) => {
     const text = (textArg ?? input).trim();
-    if (!text || loading) return;
+    const images = imagesArg ?? attachments;
+    if ((!text && images.length === 0) || loading) return;
     setInput("");
+    setAttachments([]);
     setLastFailed(null);
 
-    const conv = ensureConversation(text);
+    const conv = ensureConversation(text || "Image question");
     const isFirstMessage = conv.messages.length === 0;
-    const userMsg: TutorMessage = { role: "user", content: text };
+    const userMsg: TutorMessage = {
+      role: "user",
+      content: text || "Please look at this image and help me.",
+      ...(images.length ? { images } : {}),
+    };
     const next = [...conv.messages, userMsg];
-    writeMessages(conv.id, next, text);
+    writeMessages(conv.id, next, text || "Image question");
     setLoading(true);
+
 
     // Auto-classify subject + title from the first user message
     if (isFirstMessage) {
