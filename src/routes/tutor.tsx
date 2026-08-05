@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
-  Send, Sparkles, Trash2, User, Bot, RefreshCw, Plus, MessageSquare,
+  Send, Sparkles, Trash2, User, RefreshCw, Plus, MessageSquare,
   FolderPlus, Folder, Menu, X, Pencil, Mic, MicOff, Volume2, VolumeX,
+  ImagePlus, Copy, Check, Square,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
