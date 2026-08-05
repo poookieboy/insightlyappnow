@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  ChevronLeft, Plus, Trash2, Target, TrendingUp, Sparkles, Loader2, CheckCircle2,
+  ChevronLeft, ChevronRight, Plus, Trash2, Target, TrendingUp, Sparkles, Loader2,
+  CheckCircle2, FolderOpen,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
