@@ -789,38 +789,107 @@ function ProjectDialog({
   );
 }
 
-function MessageBubble({ msg }: { msg: TutorMessage }) {
+function MessageBubble({
+  msg, streaming, onSpeak, speaking, onRegenerate,
+}: {
+  msg: TutorMessage;
+  streaming?: boolean;
+  onSpeak?: () => void;
+  speaking?: boolean;
+  onRegenerate?: () => void;
+}) {
   const isUser = msg.role === "user";
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy");
+    }
+  };
+
   return (
     <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground">
-          <Bot className="h-4 w-4" />
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
+          <Sparkles className="h-3.5 w-3.5" />
         </div>
       )}
-      <div
-        className={cn(
-          "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed animate-fade-in",
-          isUser ? "bg-gradient-primary text-primary-foreground" : "border bg-card",
-        )}
-      >
-        {isUser ? (
-          <p className="whitespace-pre-wrap">{msg.content}</p>
-        ) : (
-          <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                code({ className, children, ...props }) {
-                  const lang = /language-(\w+)/.exec(className || "")?.[1];
-                  const text = String(children).replace(/\n$/, "");
-                  if (lang === "mermaid") return <Mermaid chart={text} />;
-                  return <code className={className} {...props}>{children}</code>;
-                },
-              }}
+      <div className={cn("max-w-[85%] min-w-0", isUser ? "items-end" : "items-start")}>
+        <div
+          className={cn(
+            "rounded-2xl px-3 py-2 text-sm leading-relaxed animate-fade-in",
+            isUser ? "bg-gradient-primary text-primary-foreground" : "border bg-card",
+          )}
+        >
+          {msg.images && msg.images.length > 0 && (
+            <div className={cn("mb-2 grid gap-1.5", msg.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+              {msg.images.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt={`Attached image ${i + 1}`}
+                  loading="lazy"
+                  className="max-h-48 w-full rounded-lg object-cover"
+                />
+              ))}
+            </div>
+          )}
+
+          {isUser ? (
+            <p className="whitespace-pre-wrap">{msg.content}</p>
+          ) : (
+            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ className, children, ...props }) {
+                    const lang = /language-(\w+)/.exec(className || "")?.[1];
+                    const text = String(children).replace(/\n$/, "");
+                    if (lang === "mermaid") return <Mermaid chart={text} />;
+                    return <code className={className} {...props}>{children}</code>;
+                  },
+                }}
+              >
+                {msg.content || "…"}
+              </ReactMarkdown>
+              {streaming && (
+                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
+              )}
+            </div>
+          )}
+        </div>
+
+        {!isUser && !streaming && msg.content && (
+          <div className="mt-1 flex items-center gap-1 pl-1">
+            <button
+              onClick={copy}
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Copy reply"
             >
-              {msg.content || "…"}
-            </ReactMarkdown>
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+            {onSpeak && (
+              <button
+                onClick={onSpeak}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={speaking ? "Stop reading" : "Read aloud"}
+              >
+                {speaking ? <Square className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Regenerate reply"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -832,6 +901,7 @@ function MessageBubble({ msg }: { msg: TutorMessage }) {
     </div>
   );
 }
+
 
 function Mermaid({ chart }: { chart: string }) {
   const id = useId().replace(/:/g, "");
