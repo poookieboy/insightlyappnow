@@ -566,6 +566,29 @@ function Tutor() {
   );
 }
 
+function timeBucket(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const day = 86400000;
+  if (d.getTime() >= startOfToday) return "Today";
+  if (d.getTime() >= startOfToday - day) return "Yesterday";
+  if (d.getTime() >= startOfToday - 7 * day) return "Previous 7 days";
+  if (d.getTime() >= startOfToday - 30 * day) return "Previous 30 days";
+  return "Older";
+}
+const BUCKET_ORDER = ["Today", "Yesterday", "Previous 7 days", "Previous 30 days", "Older"];
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.round(hrs / 24)}d`;
+}
+
 function Sidebar({
   conversations, projects, activeId, activeProjectFilter,
   onSelect, onNew, onDelete, onRename, onProjectFilter, onAddProject, onEditProject, onMoveToProject,
@@ -583,122 +606,156 @@ function Sidebar({
   onEditProject: (id: string) => void;
   onMoveToProject: (convId: string, projectId: string | null) => void;
 }) {
+  const [query, setQuery] = useState("");
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? conversations.filter(
+          (c) =>
+            c.title.toLowerCase().includes(q) ||
+            (c.subject ?? "").toLowerCase().includes(q) ||
+            c.messages.some((m) => m.content.toLowerCase().includes(q)),
+        )
+      : conversations;
+    return [...filtered].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
+  }, [conversations, query]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, TutorConversation[]>();
+    for (const c of results) {
+      const key = timeBucket(c.updatedAt);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return BUCKET_ORDER.filter((k) => map.has(k)).map((k) => [k, map.get(k)!] as const);
+  }, [results]);
+
   return (
     <div className="flex h-full flex-col">
-      <div className="space-y-1 p-3">
-        <Button onClick={onNew} className="w-full justify-start gap-2 bg-gradient-primary text-primary-foreground">
+      <div className="space-y-2 p-3">
+        <Button onClick={onNew} className="press w-full justify-start gap-2 rounded-xl bg-gradient-primary text-primary-foreground">
           <Plus className="h-4 w-4" /> New chat
         </Button>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search chats…"
+            className="h-9 rounded-xl pl-9 text-sm"
+          />
+        </div>
       </div>
 
       <div className="px-3 pb-2">
         <div className="mb-1 flex items-center justify-between">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Projects</p>
-          <button onClick={onAddProject} className="text-muted-foreground hover:text-foreground" title="New project">
+          <button onClick={onAddProject} className="press text-muted-foreground hover:text-foreground" title="New project">
             <FolderPlus className="h-3.5 w-3.5" />
           </button>
         </div>
-        <div className="space-y-0.5">
+        <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => onProjectFilter(null)}
             className={cn(
-              "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted",
-              activeProjectFilter === null && "bg-muted font-medium",
+              "press rounded-full border px-2.5 py-1 text-[11px]",
+              activeProjectFilter === null ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground",
             )}
           >
-            <MessageSquare className="h-3.5 w-3.5" /> All chats
+            All chats
           </button>
           {projects.map((p) => (
-            <div key={p.id} className="group flex items-center gap-1">
+            <span key={p.id} className="flex items-center">
               <button
                 onClick={() => onProjectFilter(p.id)}
                 className={cn(
-                  "flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted",
-                  activeProjectFilter === p.id && "bg-muted font-medium",
+                  "press flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]",
+                  activeProjectFilter === p.id ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground",
                 )}
               >
-                <Folder className="h-3.5 w-3.5 text-primary" />
-                <span className="truncate">{p.name}</span>
+                <Folder className="h-3 w-3" />
+                <span className="max-w-[90px] truncate">{p.name}</span>
               </button>
               <button
                 onClick={() => onEditProject(p.id)}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+                className="press ml-0.5 text-muted-foreground hover:text-foreground"
+                aria-label={`Edit ${p.name}`}
               >
                 <Pencil className="h-3 w-3" />
               </button>
-            </div>
+            </span>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto border-t px-3 py-2">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          By subject
-        </p>
-        {conversations.length === 0 && (
-          <p className="px-2 py-3 text-xs text-muted-foreground">No chats yet.</p>
+      <div className="flex-1 overflow-y-auto border-t px-2 py-2">
+        {grouped.length === 0 && (
+          <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+            {query ? "No chats match your search." : "No chats yet — start one!"}
+          </p>
         )}
-        {(() => {
-          const groups = new Map<string, typeof conversations>();
-          for (const c of conversations) {
-            const key = c.subject || "Unsorted";
-            if (!groups.has(key)) groups.set(key, [] as typeof conversations);
-            groups.get(key)!.push(c);
-          }
-          const ordered = Array.from(groups.entries()).sort((a, b) => {
-            if (a[0] === "Unsorted") return 1;
-            if (b[0] === "Unsorted") return -1;
-            return a[0].localeCompare(b[0]);
-          });
-          return (
-            <div className="space-y-3">
-              {ordered.map(([subject, items]) => (
-                <div key={subject}>
-                  <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                    {subject}
-                  </p>
-                  <div className="space-y-0.5">
-                    {items.map((c) => (
-                      <div key={c.id} className={cn(
-                        "group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs hover:bg-muted",
+        <div className="space-y-4">
+          {grouped.map(([bucket, items]) => (
+            <div key={bucket}>
+              <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {bucket}
+              </p>
+              <div className="space-y-0.5">
+                {items.map((c) => {
+                  const preview = [...c.messages].reverse().find((m) => m.content)?.content ?? "";
+                  return (
+                    <div
+                      key={c.id}
+                      className={cn(
+                        "group flex items-start gap-2 rounded-xl px-2 py-2 transition-colors hover:bg-muted/70",
                         c.id === activeId && "bg-muted",
-                      )}>
-                        <button onClick={() => onSelect(c.id)} className="flex-1 truncate text-left">
-                          {c.title}
-                        </button>
+                      )}
+                    >
+                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
+                        <Sparkles className="h-3.5 w-3.5" />
+                      </div>
+                      <button onClick={() => onSelect(c.id)} className="min-w-0 flex-1 text-left">
+                        <span className="flex items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate text-xs font-medium">{c.title}</span>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">{relativeTime(c.updatedAt)}</span>
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                          {c.subject ? `${c.subject} · ` : ""}{preview.slice(0, 60) || "No messages yet"}
+                        </span>
+                      </button>
+                      <span className="flex shrink-0 items-center gap-1 opacity-60 group-hover:opacity-100">
                         <select
                           value={c.projectId ?? ""}
                           onChange={(e) => onMoveToProject(c.id, e.target.value || null)}
-                          className="rounded bg-transparent text-[10px] opacity-0 group-hover:opacity-100"
+                          className="w-4 rounded bg-transparent text-[10px]"
                           title="Move to project"
+                          aria-label="Move to project"
                         >
                           <option value="">No project</option>
                           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
-                        <button
-                          onClick={() => onRename(c.id)}
-                          className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
-                        >
+                        <button onClick={() => onRename(c.id)} className="press text-muted-foreground hover:text-foreground" aria-label="Rename chat">
                           <Pencil className="h-3 w-3" />
                         </button>
-                        <button
-                          onClick={() => onDelete(c.id)}
-                          className="text-destructive opacity-0 group-hover:opacity-100"
-                        >
+                        <button onClick={() => onDelete(c.id)} className="press text-destructive" aria-label="Delete chat">
                           <Trash2 className="h-3 w-3" />
                         </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          );
-        })()}
+          ))}
+        </div>
       </div>
     </div>
   );
 }
+
 
 function ProjectDialog({
   open, projectId, onClose,
