@@ -55,6 +55,14 @@ const STARTERS = [
   "How do I write a strong essay intro?",
 ];
 
+const QUICK_CHIPS = [
+  { label: "Explain a topic", text: "Explain this topic to me step by step: " },
+  { label: "Quiz me", text: "Quiz me on " },
+  { label: "Study plan", text: "Make me a study plan for " },
+  { label: "Summarize", text: "Summarize this in simple points: " },
+  { label: "Check my working", text: "Check my working and correct any mistakes: " },
+];
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
 const CLASSIFY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-classify`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -75,6 +83,7 @@ function Tutor() {
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; id?: string }>({ open: false });
   const scrollRef = useRef<HTMLDivElement>(null);
   const voice = useVoiceChat();
+  const online = useOnlineStatus();
   const [voiceMode, setVoiceMode] = useState(false);
   const lastSpokenRef = useRef<string>("");
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -149,6 +158,12 @@ function Tutor() {
     const text = (textArg ?? input).trim();
     const images = imagesArg ?? attachments;
     if ((!text && images.length === 0) || loading) return;
+    if (!online) {
+      toast("You're offline", {
+        description: "Iris needs internet. Your notes, planner and revision still work offline.",
+      });
+      return;
+    }
     setInput("");
     setAttachments([]);
     setLastFailed(null);
@@ -439,6 +454,25 @@ function Tutor() {
       </div>
 
       <form onSubmit={onSubmit} className="fixed bottom-20 left-0 right-0 z-30 mx-auto max-w-md px-4">
+        {!online && (
+          <div className="mb-2 flex items-center gap-2 rounded-2xl border bg-card/95 px-3 py-2 text-[11px] text-muted-foreground shadow-lg backdrop-blur">
+            <WifiOff className="h-3.5 w-3.5" />
+            Iris is offline — reconnect to keep chatting.
+          </div>
+        )}
+
+        <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {QUICK_CHIPS.map((c) => (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => setInput((v) => (v.startsWith(c.text) ? v : c.text + v))}
+              className="press shrink-0 rounded-full border border-border/70 bg-card/90 px-3 py-1.5 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur hover:border-primary hover:text-foreground"
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
         {attachments.length > 0 && (
           <div className="mb-2 flex gap-2 overflow-x-auto rounded-2xl border bg-card/95 p-2 shadow-lg backdrop-blur">
             {attachments.map((src, i) => (
