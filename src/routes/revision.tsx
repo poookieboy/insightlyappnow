@@ -38,6 +38,9 @@ interface AIQuestion { question: string; modelAnswer: string; hints: string[]; }
 interface MarkResult { correct: boolean; score: number; feedback: string; }
 
 async function aiCall<T>(payload: unknown): Promise<T> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    throw new Error("You're offline — connect to the internet to generate new questions. Your saved revision still works.");
+  }
   const res = await fetch(AI_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },

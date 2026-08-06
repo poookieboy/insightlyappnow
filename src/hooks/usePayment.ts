@@ -33,6 +33,11 @@ export function usePayment() {
 
   const start = useCallback(async (args: StartArgs): Promise<boolean> => {
     setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError("You're offline — connect to the internet to complete your payment.");
+      setStage("failed");
+      return false;
+    }
     setStage("sending");
     try {
       const res = await fetch("/api/payments/initiate", {
