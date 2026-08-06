@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { useStore, uid, type TutorConversation, type TutorMessage } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { humanizeMath } from "@/lib/math-format";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { toast } from "sonner";
 
 mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" });
@@ -109,7 +111,7 @@ function Tutor() {
     if (!last || last.role !== "assistant") return;
     if (last.content === lastSpokenRef.current) return;
     lastSpokenRef.current = last.content;
-    voice.speak(last.content);
+    voice.speak(humanizeMath(last.content));
   }, [messages, loading, voiceMode, voice]);
 
   const ensureConversation = (firstUserText: string): TutorConversation => {
@@ -402,7 +404,7 @@ function Tutor() {
             key={i}
             msg={m}
             streaming={loading && i === messages.length - 1 && m.role === "assistant"}
-            onSpeak={voice.supported ? () => (voice.speaking ? voice.stopSpeaking() : voice.speak(m.content)) : undefined}
+            onSpeak={voice.supported ? () => (voice.speaking ? voice.stopSpeaking() : voice.speak(humanizeMath(m.content))) : undefined}
             speaking={voice.speaking}
             onRegenerate={
               !loading && m.role === "assistant" && i === messages.length - 1
@@ -803,7 +805,7 @@ function MessageBubble({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(msg.content);
+      await navigator.clipboard.writeText(humanizeMath(msg.content));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -854,7 +856,7 @@ function MessageBubble({
                   },
                 }}
               >
-                {msg.content || "…"}
+                {humanizeMath(msg.content) || "…"}
               </ReactMarkdown>
               {streaming && (
                 <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
