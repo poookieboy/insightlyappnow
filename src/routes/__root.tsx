@@ -30,7 +30,7 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" },
       { title: "Insightly — Study smarter with Iris" },
       { name: "description", content: "Insightly helps students manage tasks, revise with real questions, organize notes, and stay motivated — guided by Iris, your AI companion." },
       { name: "author", content: "Insightly" },

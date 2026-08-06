@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   Plus, Trash2, ChevronLeft, ChevronRight, CalendarDays, LayoutGrid,
+  ListChecks, CheckCircle2, Circle, AlarmClock,
 } from "lucide-react";
 import {
   addMonths, endOfMonth, endOfWeek, format, isSameDay, isSameMonth,
@@ -39,7 +40,7 @@ const HOURS = Array.from({ length: 14 }, (_, i) => `${String(i + 7).padStart(2, 
 
 function Timetable() {
   const { state, update } = useStore();
-  const [tab, setTab] = useState<"month" | "week">("month");
+  const [tab, setTab] = useState<"month" | "week" | "list">("month");
   const [cursor, setCursor] = useState(new Date());
   const [openDay, setOpenDay] = useState<Date | null>(null);
 
@@ -112,14 +113,15 @@ function Timetable() {
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "month" | "week")}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="month"><CalendarDays className="mr-1 h-4 w-4" /> Month</TabsTrigger>
-          <TabsTrigger value="week"><LayoutGrid className="mr-1 h-4 w-4" /> Week</TabsTrigger>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "month" | "week" | "list")}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="month" className="text-xs"><CalendarDays className="mr-1 h-4 w-4" /> Calendar</TabsTrigger>
+          <TabsTrigger value="list" className="text-xs"><ListChecks className="mr-1 h-4 w-4" /> Planner</TabsTrigger>
+          <TabsTrigger value="week" className="text-xs"><LayoutGrid className="mr-1 h-4 w-4" /> Week</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {tab === "month" ? (
+      {tab === "month" && (
         <MonthView
           cursor={cursor}
           setCursor={setCursor}
@@ -127,7 +129,16 @@ function Timetable() {
           tasksByDay={tasksByDay}
           onPickDay={setOpenDay}
         />
-      ) : (
+      )}
+      {tab === "list" && (
+        <PlannerList
+          tasks={state.tasks}
+          onAdd={addTask}
+          onToggle={toggleTask}
+          onRemove={removeTask}
+        />
+      )}
+      {tab === "week" && (
         <WeekView
           entries={state.timetable}
           onAdd={addWeekly}
@@ -144,6 +155,121 @@ function Timetable() {
         onRemove={removeTask}
       />
     </AppShell>
+  );
+}
+
+function PlannerList({
+  tasks, onAdd, onToggle, onRemove,
+}: {
+  tasks: Task[];
+  onAdd: (date: Date, title: string, time: string) => void;
+  onToggle: (id: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [time, setTime] = useState("17:00");
+  const [showDone, setShowDone] = useState(false);
+
+  const groups = useMemo(() => {
+    const now = Date.now();
+    const open = tasks.filter((t) => showDone || !t.completed);
+    const sorted = [...open].sort(
+      (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
+    );
+    const map = new Map<string, { label: string; overdue: boolean; items: Task[] }>();
+    for (const t of sorted) {
+      const d = new Date(t.deadline);
+      const key = format(d, "yyyy-MM-dd");
+      const overdue = !t.completed && d.getTime() < now;
+      const label = isSameDay(d, new Date())
+        ? "Today"
+        : isSameDay(d, new Date(Date.now() + 86400000))
+          ? "Tomorrow"
+          : format(d, "EEEE d MMM");
+      if (!map.has(key)) map.set(key, { label, overdue, items: [] });
+      const g = map.get(key)!;
+      g.overdue = g.overdue || overdue;
+      g.items.push(t);
+    }
+    return Array.from(map.values());
+  }, [tasks, showDone]);
+
+  const submit = () => {
+    if (!title.trim()) return toast.error("Give your task a name");
+    const [y, m, d] = date.split("-").map(Number);
+    onAdd(new Date(y, m - 1, d), title, time);
+    setTitle("");
+    toast.success("Added to your planner");
+  };
+
+  return (
+    <div className="mt-4 space-y-3">
+      <Card className="space-y-2 p-3">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="What do you need to do?"
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+        />
+        <div className="flex gap-2">
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1" />
+          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-28" />
+          <Button onClick={submit} size="icon" className="press shrink-0 bg-gradient-primary text-primary-foreground">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs text-muted-foreground">
+          {groups.reduce((n, g) => n + g.items.length, 0)} task(s)
+        </p>
+        <button
+          onClick={() => setShowDone((v) => !v)}
+          className="press text-[11px] font-medium text-primary"
+        >
+          {showDone ? "Hide completed" : "Show completed"}
+        </button>
+      </div>
+
+      {groups.length === 0 ? (
+        <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">
+          Nothing planned yet — add your first task above.
+        </Card>
+      ) : (
+        groups.map((g) => (
+          <div key={g.label + g.items[0].id}>
+            <p className={cn(
+              "mb-1 flex items-center gap-1 px-1 text-[11px] font-semibold uppercase tracking-wide",
+              g.overdue ? "text-destructive" : "text-muted-foreground",
+            )}>
+              {g.overdue && <AlarmClock className="h-3 w-3" />} {g.label}
+            </p>
+            <Card className="divide-y overflow-hidden p-0">
+              {g.items.map((t) => (
+                <div key={t.id} className="flex items-center gap-3 p-3">
+                  <button onClick={() => onToggle(t.id)} className="press shrink-0" aria-label="Toggle task">
+                    {t.completed
+                      ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      : <Circle className="h-5 w-5 text-muted-foreground" />}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("truncate text-sm", t.completed && "text-muted-foreground line-through")}>
+                      {t.title}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{format(new Date(t.deadline), "HH:mm")}</p>
+                  </div>
+                  <button onClick={() => onRemove(t.id)} className="press shrink-0 text-destructive" aria-label="Delete task">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </Card>
+          </div>
+        ))
+      )}
+    </div>
   );
 }
 
