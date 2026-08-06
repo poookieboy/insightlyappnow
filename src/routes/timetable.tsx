@@ -200,7 +200,7 @@ function PlannerList({
     const [y, m, d] = date.split("-").map(Number);
     onAdd(new Date(y, m - 1, d), title, time);
     setTitle("");
-    toast.success(motivation.onAdd?.() ?? "Added to your planner");
+    toast.success("Added to your planner");
   };
 
   return (
