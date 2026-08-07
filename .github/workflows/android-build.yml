@@ -38,30 +38,44 @@ jobs:
           export default config;
           EOF
 
-          echo "===== CAPACITOR CONFIG ====="
-          cat capacitor.config.ts
-
       - name: Create Android project
         run: |
           rm -rf android
           npx cap add android
 
-      - name: Sync Capacitor
+      - name: Prepare Capacitor Android configuration
         run: |
-          npx cap sync android
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/assets/public
+
+          cat > android/app/src/main/assets/capacitor.config.json <<'EOF'
+          {
+            "appId": "com.ezenuel.insightly",
+            "appName": "Insightly",
+            "webDir": "dist",
+            "server": {
+              "url": "https://insightlyappnow.lovable.app",
+              "cleartext": false
+            }
+          }
+          EOF
+
+          cat > android/app/src/main/assets/capacitor.plugins.json <<'EOF'
+          {
+            "plugins": {}
+          }
+          EOF
 
       - name: Verify Android project
         run: |
           echo "===== ANDROID PROJECT ====="
           ls -la android
 
-          echo "===== CAPACITOR FILES ====="
-          find android -maxdepth 2 -type f \
-            \( -name "*capacitor*" -o -name "settings.gradle*" \) \
-            -print
+          echo "===== ASSETS ====="
+          ls -la android/app/src/main/assets
 
-          echo "===== SETTINGS.GRADLE ====="
-          cat android/settings.gradle
+          echo "===== CAPACITOR CONFIG ====="
+          cat android/app/src/main/assets/capacitor.config.json
 
       - name: Build Android App Bundle
         working-directory: android
@@ -71,7 +85,7 @@ jobs:
 
       - name: Find generated AAB
         run: |
-          echo "===== SEARCHING FOR AAB ====="
+          echo "===== AAB FILES ====="
           find android/app/build/outputs -type f -name "*.aab" -print
 
       - name: Upload AAB
