@@ -20,7 +20,17 @@ jobs:
         run: |
           npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
-      - name: Create Capacitor configuration
+      - name: Prepare Capacitor configuration
+        run: |
+          if [ -f capacitor.config.ts ]; then
+            mv capacitor.config.ts capacitor.config.ts.backup
+          fi
+
+      - name: Initialize Capacitor
+        run: |
+          npx cap init Insightly com.ezenuel.insightly --web-dir dist
+
+      - name: Configure Insightly
         run: |
           cat > capacitor.config.ts <<'EOF'
           import type { CapacitorConfig } from '@capacitor/cli';
@@ -38,44 +48,22 @@ jobs:
           export default config;
           EOF
 
-      - name: Create Android project
+      - name: Install Android platform
         run: |
-          rm -rf android
           npx cap add android
 
-      - name: Prepare Capacitor Android configuration
-        run: |
-          mkdir -p android/app/src/main/assets
-          mkdir -p android/app/src/main/assets/public
-
-          cat > android/app/src/main/assets/capacitor.config.json <<'EOF'
-          {
-            "appId": "com.ezenuel.insightly",
-            "appName": "Insightly",
-            "webDir": "dist",
-            "server": {
-              "url": "https://insightlyappnow.lovable.app",
-              "cleartext": false
-            }
-          }
-          EOF
-
-          cat > android/app/src/main/assets/capacitor.plugins.json <<'EOF'
-          {
-            "plugins": {}
-          }
-          EOF
-
-      - name: Verify Android project
+      - name: Verify Capacitor Android project
         run: |
           echo "===== ANDROID PROJECT ====="
           ls -la android
 
-          echo "===== ASSETS ====="
-          ls -la android/app/src/main/assets
-
-          echo "===== CAPACITOR CONFIG ====="
-          cat android/app/src/main/assets/capacitor.config.json
+          echo "===== CAPACITOR GRADLE FILE ====="
+          if [ -f android/capacitor.settings.gradle ]; then
+            echo "FOUND capacitor.settings.gradle"
+          else
+            echo "ERROR: capacitor.settings.gradle is missing"
+            exit 1
+          fi
 
       - name: Build Android App Bundle
         working-directory: android
@@ -83,9 +71,9 @@ jobs:
           chmod +x gradlew
           ./gradlew bundleRelease --stacktrace
 
-      - name: Find generated AAB
+      - name: Find AAB
         run: |
-          echo "===== AAB FILES ====="
+          echo "===== GENERATED AAB ====="
           find android/app/build/outputs -type f -name "*.aab" -print
 
       - name: Upload AAB
