@@ -16,99 +16,32 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check project
+      - name: Create Android project
         run: |
-          echo "===== PROJECT ====="
-          pwd
-          ls -la
-          echo "===== PACKAGE.JSON ====="
-          cat package.json
-
-      - name: Install dependencies
-        run: |
-          echo "===== INSTALLING DEPENDENCIES ====="
-          npm install --verbose
-
-      - name: Build web app
-        run: |
-          echo "===== BUILDING INSIGHTLY ====="
-          NODE_OPTIONS="--max-old-space-size=6144" npm run build
-
-      - name: Locate web assets
-        run: |
-          echo "===== SEARCHING FOR INDEX.HTML ====="
-          find . \
-            -path './node_modules' -prune -o \
-            -path './android' -prune -o \
-            -name 'index.html' -print
-
-          echo "===== BUILD DIRECTORIES ====="
-          ls -la
-          [ -d dist ] && echo "FOUND dist" || echo "dist NOT FOUND"
-          [ -d .output ] && echo "FOUND .output" || echo ".output NOT FOUND"
-
-      - name: Install Capacitor
-        run: |
-          echo "===== INSTALLING CAPACITOR ====="
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Create Capacitor configuration
-        run: |
-          echo "===== CREATING CAPACITOR CONFIG ====="
-
-          if [ -f "dist/index.html" ]; then
-            WEB_DIR="dist"
-          elif [ -f ".output/public/index.html" ]; then
-            WEB_DIR=".output/public"
-          elif [ -f ".output/index.html" ]; then
-            WEB_DIR=".output"
-          else
-            WEB_DIR=$(find . \
-              -path './node_modules' -prune -o \
-              -path './android' -prune -o \
-              -name 'index.html' -print \
-              | head -1 \
-              | xargs -r dirname)
-          fi
-
-          if [ -z "$WEB_DIR" ] || [ ! -f "$WEB_DIR/index.html" ]; then
-            echo "ERROR: NO WEB ASSET DIRECTORY FOUND"
-            exit 1
-          fi
-
-          echo "Using web directory: $WEB_DIR"
-          echo "WEB_DIR=$WEB_DIR" >> "$GITHUB_ENV"
-
-          cat > capacitor.config.ts <<EOF
+          cat > capacitor.config.ts <<'EOF'
           import type { CapacitorConfig } from '@capacitor/cli';
 
           const config: CapacitorConfig = {
             appId: 'com.ezenuel.insightly',
             appName: 'Insightly',
-            webDir: '${WEB_DIR}'
+            server: {
+              url: 'https://insightlyappnow.lovable.app',
+              cleartext: false
+            }
           };
 
           export default config;
           EOF
 
-          cat capacitor.config.ts
-
-      - name: Create Android project
-        run: |
-          echo "===== CREATING ANDROID PROJECT ====="
           npx cap add android
-
-      - name: Sync Capacitor
-        run: |
-          echo "===== SYNCING ANDROID ====="
-          npx cap sync android --verbose
 
       - name: Build Android App Bundle
         working-directory: android
         run: |
-          echo "===== BUILDING AAB ====="
           chmod +x gradlew
-          ./gradlew bundleRelease --stacktrace --info
+          ./gradlew bundleRelease
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
