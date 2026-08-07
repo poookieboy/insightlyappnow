@@ -15,13 +15,49 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install web dependencies
         run: npm install
 
       - name: Build Insightly web app
-        run: NODE_OPTIONS="--max-old-space-size=6144" npm run build
+        run: |
+          NODE_OPTIONS="--max-old-space-size=6144" npm run build
+
+      - name: Find web assets
+        id: web-assets
+        run: |
+          echo "Searching for the built web app..."
+
+          if [ -f "dist/index.html" ]; then
+            WEB_DIR="dist"
+          elif [ -f ".output/public/index.html" ]; then
+            WEB_DIR=".output/public"
+          elif [ -f ".output/index.html" ]; then
+            WEB_DIR=".output"
+          else
+            WEB_DIR=$(find . \
+              -path './node_modules' -prune -o \
+              -path './android' -prune -o \
+              -name 'index.html' -print \
+              | head -1 \
+              | xargs -r dirname)
+          fi
+
+          if [ -z "$WEB_DIR" ] || [ ! -f "$WEB_DIR/index.html" ]; then
+            echo "ERROR: Could not find built index.html"
+            echo "Searching repository for index.html:"
+            find . \
+              -path './node_modules' -prune -o \
+              -path './android' -prune -o \
+              -name 'index.html' -print
+            exit 1
+          fi
+
+          echo "Web assets found in: $WEB_DIR"
+          echo "WEB_DIR=$WEB_DIR" >> "$GITHUB_ENV"
+
+          echo "Contents:"
+          ls -la "$WEB_DIR"
 
       - name: Install Capacitor
         run: |
@@ -29,18 +65,21 @@ jobs:
 
       - name: Create Capacitor configuration
         run: |
-          cat > capacitor.config.ts <<'EOF'
+          cat > capacitor.config.ts <<EOF
           import type { CapacitorConfig } from '@capacitor/cli';
 
           const config: CapacitorConfig = {
             appId: 'com.ezenuel.insightly',
             appName: 'Insightly',
-            webDir: 'dist',
+            webDir: '${WEB_DIR}',
             bundledWebRuntime: false
           };
 
           export default config;
           EOF
+
+          echo "Capacitor configuration:"
+          cat capacitor.config.ts
 
       - name: Create Android project
         run: npx cap add android
