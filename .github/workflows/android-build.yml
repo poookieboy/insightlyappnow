@@ -16,9 +16,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Capacitor
+      - name: Install Capacitor packages
         run: |
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
       - name: Create Capacitor configuration
         run: |
@@ -38,21 +38,34 @@ jobs:
           export default config;
           EOF
 
+          echo "===== CAPACITOR CONFIG ====="
+          cat capacitor.config.ts
+
+      - name: Initialize Capacitor
+        run: |
+          npx cap init Insightly com.ezenuel.insightly --web-dir dist
+
       - name: Create Android project
         run: |
           rm -rf android
           npx cap add android
 
-      - name: Verify Capacitor Android files
-        run: |
-          echo "Checking Capacitor files..."
-          ls -la android
-          test -f android/capacitor.settings.gradle
-          echo "capacitor.settings.gradle FOUND"
-
       - name: Sync Capacitor
         run: |
           npx cap sync android
+
+      - name: Verify Android Capacitor files
+        run: |
+          echo "===== ANDROID FILES ====="
+          ls -la android
+
+          echo "===== CAPACITOR FILES ====="
+          find android -maxdepth 2 -type f \
+            \( -name "*capacitor*" -o -name "settings.gradle*" \) \
+            -print
+
+          echo "===== SETTINGS.GRADLE ====="
+          cat android/settings.gradle
 
       - name: Build Android App Bundle
         working-directory: android
