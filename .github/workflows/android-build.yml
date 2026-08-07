@@ -16,16 +16,19 @@ jobs:
         with:
           node-version: 22
 
-      - name: Create Android project
+      - name: Install Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
+      - name: Create Capacitor configuration
+        run: |
           cat > capacitor.config.ts <<'EOF'
           import type { CapacitorConfig } from '@capacitor/cli';
 
           const config: CapacitorConfig = {
             appId: 'com.ezenuel.insightly',
             appName: 'Insightly',
+            webDir: 'dist',
             server: {
               url: 'https://insightlyappnow.lovable.app',
               cleartext: false
@@ -35,13 +38,27 @@ jobs:
           export default config;
           EOF
 
+      - name: Create Android project
+        run: |
+          rm -rf android
           npx cap add android
+
+      - name: Verify Capacitor Android files
+        run: |
+          echo "Checking Capacitor files..."
+          ls -la android
+          test -f android/capacitor.settings.gradle
+          echo "capacitor.settings.gradle FOUND"
+
+      - name: Sync Capacitor
+        run: |
+          npx cap sync android
 
       - name: Build Android App Bundle
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease --stacktrace
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
