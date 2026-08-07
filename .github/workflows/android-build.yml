@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Capacitor packages
+      - name: Install Capacitor
         run: |
           npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
@@ -41,10 +41,6 @@ jobs:
           echo "===== CAPACITOR CONFIG ====="
           cat capacitor.config.ts
 
-      - name: Initialize Capacitor
-        run: |
-          npx cap init Insightly com.ezenuel.insightly --web-dir dist
-
       - name: Create Android project
         run: |
           rm -rf android
@@ -54,9 +50,9 @@ jobs:
         run: |
           npx cap sync android
 
-      - name: Verify Android Capacitor files
+      - name: Verify Android project
         run: |
-          echo "===== ANDROID FILES ====="
+          echo "===== ANDROID PROJECT ====="
           ls -la android
 
           echo "===== CAPACITOR FILES ====="
@@ -72,6 +68,11 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew bundleRelease --stacktrace
+
+      - name: Find generated AAB
+        run: |
+          echo "===== SEARCHING FOR AAB ====="
+          find android/app/build/outputs -type f -name "*.aab" -print
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
