@@ -20,18 +20,20 @@ jobs:
         run: npm install
 
       - name: Build Insightly
-        run: npm run build
+        run: NODE_OPTIONS="--max-old-space-size=6144" npm run build
 
       - name: Show build output
         run: |
           echo "===== ROOT ====="
           ls -la
+
           echo "===== DIST ====="
           if [ -d "dist" ]; then
             find dist -maxdepth 3 -type f | head -100
           else
             echo "No dist directory"
           fi
+
           echo "===== OUTPUT ====="
           if [ -d ".output" ]; then
             find .output -maxdepth 3 -type f | head -100
