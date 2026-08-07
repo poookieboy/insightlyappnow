@@ -1,0 +1,41 @@
+name: Test Insightly Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Insightly
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Insightly
+        run: npm run build
+
+      - name: Show build output
+        run: |
+          echo "===== ROOT ====="
+          ls -la
+          echo "===== DIST ====="
+          if [ -d "dist" ]; then
+            find dist -maxdepth 3 -type f | head -100
+          else
+            echo "No dist directory"
+          fi
+          echo "===== OUTPUT ====="
+          if [ -d ".output" ]; then
+            find .output -maxdepth 3 -type f | head -100
+          else
+            echo "No .output directory"
+          fi
