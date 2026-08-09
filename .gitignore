@@ -8,17 +8,21 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+# web build output
 dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
+env.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Capacitor / Android
+android/
+*.jks
+*.keystore
+android/key.properties
+android/local.properties
 
 # Editor directories and files
 .vscode/*
