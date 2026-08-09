@@ -1,0 +1,6 @@
+{
+  "appId": "com.insightly.app",
+  "appName": "Insightly",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
