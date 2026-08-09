@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+# Minimal gradlew replacement: download specified Gradle distribution and run it
+GRADLE_VERSION=7.5.1
+DIST_URL="https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
+WRAP_DIR="$PWD/.gradle-wrapper"
+GRADLE_HOME="$WRAP_DIR/gradle-${GRADLE_VERSION}"
+if [ ! -x "$GRADLE_HOME/bin/gradle" ]; then
+  echo "Installing Gradle ${GRADLE_VERSION} to $GRADLE_HOME"
+  mkdir -p "$WRAP_DIR"
+  curl -sSL "$DIST_URL" -o "$WRAP_DIR/gradle.zip"
+  unzip -q "$WRAP_DIR/gradle.zip" -d "$WRAP_DIR"
+  rm -f "$WRAP_DIR/gradle.zip"
+fi
+exec "$GRADLE_HOME/bin/gradle" "$@"
