@@ -1,0 +1,183 @@
+# Build an Android App Bundle (AAB) for testing (no repo secrets required).
+# - Detects compileSdk and Android module from android/ files
+# - Installs required SDK/platform for the detected compileSdk
+# - Builds the web app, runs `npx cap sync android` to copy assets
+# - Attempts :<module>:bundleRelease, falls back to :<module>:bundleDebug
+# - Uploads any generated .aab artifacts
+name: Build Android AAB (unsigned/test)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', 'android/gradle.properties', 'android/gradle/wrapper/**') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Make Android gradlew executable
+        run: |
+          chmod +x android/gradlew || true
+
+      - name: Detect Android module and compileSdk
+        id: detect
+        run: |
+          set -euo pipefail
+          # Default guesses
+          MODULE="app"
+          COMPILE_SDK="33"
+          # Detect module from settings.gradle (pick first included module)
+          if [ -f android/settings.gradle ]; then
+            # Try a robust parse: find the first token after include, strip quotes and leading ':'.
+            INCLUDE_LINE=$(grep -m1 "^include" android/settings.gradle || true)
+            if [ -n "$INCLUDE_LINE" ]; then
+              # Remove "include" and quotes, split on commas, pick first entry
+              TOKEN=$(echo "$INCLUDE_LINE" | sed -E 's/^include[[:space:]]+//; s/["'\\''']//g' | cut -d, -f1)
+              TOKEN=$(echo "$TOKEN" | tr -d '[:space:]')
+              # If token contains :, take the last segment
+              MODULE_CANDIDATE=$(echo "$TOKEN" | awk -F: '{print $NF}')
+              if [ -n "$MODULE_CANDIDATE" ]; then
+                MODULE="$MODULE_CANDIDATE"
+              fi
+            fi
+          fi
+
+          # Detect compileSdk from android/*/build.gradle (prefer app module)
+          if [ -f android/app/build.gradle ]; then
+            CS=$(grep -m1 -E 'compileSdk[[:space:]]+[0-9]+' android/app/build.gradle || true)
+            if [ -n "$CS" ]; then
+              COMPILE_SDK=$(echo "$CS" | sed -E 's/[^0-9]*([0-9]+).*/\1/')
+            fi
+          else
+            # fallback: search any gradle file
+            CS2=$(grep -R -m1 -E 'compileSdk[[:space:]]+[0-9]+' android || true)
+            if [ -n "$CS2" ]; then
+              COMPILE_SDK=$(echo "$CS2" | sed -E 's/[^0-9]*([0-9]+).*/\1/')
+            fi
+          fi
+
+          echo "module=$MODULE" >> "$GITHUB_OUTPUT"
+          echo "compile_sdk=$COMPILE_SDK" >> "$GITHUB_OUTPUT"
+      - name: Install Android command-line tools and SDK (platform ${{ steps.detect.outputs.compile_sdk }})
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${{ runner.temp }}/android-sdk"
+          mkdir -p "${SDK_ROOT}/cmdline-tools"
+          cd "${SDK_ROOT}"
+          curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-latest.zip" -o cmdline.zip
+          unzip -q cmdline.zip -d cmdline-tools
+          # Ensure layout cmdline-tools/latest
+          mkdir -p cmdline-tools/latest
+          if [ -d cmdline-tools/cmdline-tools ]; then
+            mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/ || true
+          elif [ -d cmdline-tools/tools ]; then
+            mv cmdline-tools/tools/* cmdline-tools/latest/ || true
+          fi
+          rm -f cmdline.zip || true
+          export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
+
+          COMPILE_SDK="${{ steps.detect.outputs.compile_sdk }}"
+          echo "Detected compileSdk: $COMPILE_SDK"
+
+          # Choose a reasonable build-tools version for the compileSdk. Adjust mappings as needed.
+          if [ "$COMPILE_SDK" -ge 34 ]; then
+            BUILD_TOOLS="34.0.0"
+          elif [ "$COMPILE_SDK" -eq 33 ]; then
+            BUILD_TOOLS="33.0.2"
+          elif [ "$COMPILE_SDK" -eq 32 ]; then
+            BUILD_TOOLS="32.0.0"
+          else
+            BUILD_TOOLS="${COMPILE_SDK}.0.0"
+          fi
+
+          echo "Installing platform-tools, platforms;android-$COMPILE_SDK, build-tools;$BUILD_TOOLS"
+          yes | sdkmanager --sdk_root="${SDK_ROOT}" "platform-tools" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}"
+          yes | sdkmanager --sdk_root="${SDK_ROOT}" --licenses
+        shell: bash
+
+      - name: Install npm dependencies
+        run: |
+          set -e
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Build web assets (vite)
+        run: |
+          set -e
+          npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Sync Capacitor Android (copy web assets + plugins)
+        run: |
+          set -e
+          npx cap sync android || npx cap copy android
+        env:
+          # Capacitor needs to run in repo root so it can find capacitor.config.*
+          # No secrets required for this step.
+
+      - name: Run Gradle to produce AAB (attempt release, fall back to debug)
+        working-directory: android
+        run: |
+          set -euo pipefail
+          MODULE="${{ steps.detect.outputs.module }}"
+          echo "Using Android module: $MODULE"
+          # Use the repository-provided gradlew wrapper
+          chmod +x ./gradlew || true
+
+          # Try bundleRelease first. If it fails (commonly due to missing signing), fall back to bundleDebug.
+          set +e
+          echo "Attempting :$MODULE:bundleRelease ..."
+          ./gradlew -Porg.gradle.jvmargs="-Xmx1536m" ":$MODULE:bundleRelease"
+          RC=$?
+          if [ $RC -ne 0 ]; then
+            echo "bundleRelease failed (exit $RC). Trying :$MODULE:bundleDebug ..."
+            ./gradlew -Porg.gradle.jvmargs="-Xmx1536m" ":$MODULE:bundleDebug"
+            RC2=$?
+            if [ $RC2 -ne 0 ]; then
+              echo "Both bundleRelease and bundleDebug failed. Exiting with first code $RC."
+              exit $RC
+            fi
+          fi
+          set -e
+
+      - name: Find and upload AAB artifact(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: |
+            android/**/outputs/bundle/**/*.aab
