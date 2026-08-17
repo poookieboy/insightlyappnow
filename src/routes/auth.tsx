@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PENDING_REFERRAL_KEY } from "@/hooks/useReferrals";
 import { toast } from "sonner";
@@ -22,6 +21,9 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [referral, setReferral] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otpId, setOtpId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
   const [busy, setBusy] = useState(false);
 
   // Pre-fill an invite code arriving via /auth?ref=CODE
@@ -39,7 +41,8 @@ function AuthPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    navigate({ to: user.email_confirmed_at ? "/" : "/verify-email" });
+    // If your useAuth hook depends on server sessions, adjust this redirect as needed.
+    navigate({ to: user?.email_confirmed_at ? "/" : "/verify-email" });
   }, [loading, user, navigate]);
 
   const friendlyError = (msg: string) => {
@@ -53,120 +56,144 @@ function AuthPage() {
     return msg;
   };
 
+  // Email/password sign in (calls your backend)
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return toast.error(friendlyError(error.message));
-    if (!data.user?.email_confirmed_at) {
-      toast.info("Please verify your email to finish setting up your account.");
-      return navigate({ to: "/verify-email" });
+    try {
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const j = await res.json();
+      setBusy(false);
+      if (!res.ok) return toast.error(j.error || "Login failed");
+      // store access token in sessionStorage and proceed
+      if (j.accessToken) window.sessionStorage.setItem("access_token", j.accessToken);
+      toast.success("Welcome back!");
+      navigate({ to: "/" });
+    } catch (err) {
+      setBusy(false);
+      toast.error("Login failed");
     }
-    toast.success("Welcome back!");
-    navigate({ to: "/" });
   };
 
+  // Email/password sign up
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     setBusy(true);
 
     const code = referral.trim().toUpperCase();
-    if (code) {
-      if (!/^[A-Z0-9]{5,12}$/.test(code)) {
-        setBusy(false);
-        return toast.error("That referral code doesn't look right. Check it and try again.");
-      }
-      const { data: valid, error: refErr } = await supabase.rpc("referral_code_valid", {
-        p_code: code,
+    try {
+      const res = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name, referral: code || undefined }),
       });
-      if (refErr || !valid) {
-        setBusy(false);
-        return toast.error("We couldn't find that referral code. Remove it or enter a valid one.");
-      }
+      const j = await res.json();
+      setBusy(false);
+      if (!res.ok) return toast.error(j.error || "Registration failed");
+      if (code) window.localStorage.setItem(PENDING_REFERRAL_KEY, code);
+      if (j.accessToken) window.sessionStorage.setItem("access_token", j.accessToken);
+      toast.success("Account created — welcome!");
+      navigate({ to: "/" });
+    } catch (err) {
+      setBusy(false);
+      toast.error("Registration failed");
     }
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: name },
-      },
-    });
-    setBusy(false);
-    if (error) return toast.error(friendlyError(error.message));
-
-    // Redeemed only after the account is email-verified (server-enforced).
-    if (code) window.localStorage.setItem(PENDING_REFERRAL_KEY, code);
-    toast.success("Account created — check your email to verify ✉️");
-    navigate({ to: "/verify-email" });
   };
 
   const handleForgot = async () => {
     if (!email) return toast.error("Enter your email above first");
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setBusy(false);
-    if (error) return toast.error(friendlyError(error.message));
-    toast.success("Password reset link sent — check your email");
+    try {
+      const res = await fetch("/auth/magic-link/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setBusy(false);
+      const j = await res.json();
+      if (!res.ok) return toast.error(j.error || "Failed to send magic link");
+      toast.success("Magic link sent — check your email");
+    } catch (err) {
+      setBusy(false);
+      toast.error("Failed to send magic link");
+    }
   };
 
-  // NEW: Use Supabase OAuth for Google sign-in (no Firebase / lovable)
-  const handleGoogle = async () => {
-    console.log("Auth: initiating Google sign-in via Supabase");
+  // GitHub OAuth: redirect to backend start endpoint
+  const handleGithub = async () => {
     setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
+      window.location.href = "/auth/github/start";
+    } catch (err) {
+      setBusy(false);
+      toast.error("GitHub sign-in failed");
+    }
+  };
+
+  // Email magic link (passwordless)
+  const handleEmailMagic = async () => {
+    if (!email) return toast.error("Enter your email above first");
+    setBusy(true);
+    try {
+      const res = await fetch("/auth/magic-link/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
+      setBusy(false);
+      const j = await res.json();
+      if (!res.ok) return toast.error(j.error || "Failed to send magic link");
+      toast.success("Magic link sent — check your email");
+    } catch (err) {
+      setBusy(false);
+      toast.error("Failed to send magic link");
+    }
+  };
 
-      if (error) {
-        // The popup may have closed or an error occurred — verify session before failing.
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session) {
-          navigate({ to: "/" });
-          return;
-        }
-        setBusy(false);
-        const raw = error.message || "";
-        if (/cancel|closed|popup/i.test(raw)) {
-          return toast.error(
-            "Sign-in window closed before finishing. Allow pop-ups for this site and try again.",
-          );
-        }
-        console.error("Auth: Google sign-in error (Supabase):", raw);
-        return toast.error(friendlyError(raw || "Google sign-in failed"));
-      }
+  // Phone OTP send (SMS or WhatsApp) - backend will return an otpId
+  const handlePhoneOtpRequest = async () => {
+    if (!phone) return toast.error("Enter your phone number first");
+    setBusy(true);
+    try {
+      const res = await fetch("/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, via: "sms" }),
+      });
+      const j = await res.json();
+      setBusy(false);
+      if (!res.ok) return toast.error(j.error || "Failed to send OTP");
+      setOtpId(j.otpId || null);
+      toast.success("OTP sent — check your phone");
+    } catch (err) {
+      setBusy(false);
+      toast.error("Failed to send OTP");
+    }
+  };
 
-      // If Supabase returned a redirect URL (hosted flow), send the browser there.
-      if ((data as any)?.url) {
-        console.log("Auth: redirecting to hosted OAuth URL", (data as any).url);
-        window.location.href = (data as any).url;
-        return;
-      }
-
-      // Otherwise, assume the session is set and navigate into the app.
-      console.log("Auth: Google sign-in completed via Supabase — navigating in-app");
+  const handlePhoneOtpVerify = async () => {
+    if (!otpId || !otpCode) return toast.error("Enter the OTP first");
+    setBusy(true);
+    try {
+      const res = await fetch("/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otpId, code: otpCode }),
+      });
+      const j = await res.json();
+      setBusy(false);
+      if (!res.ok) return toast.error(j.error || "OTP verification failed");
+      if (j.accessToken) window.sessionStorage.setItem("access_token", j.accessToken);
+      toast.success("Phone verified — signed in");
       navigate({ to: "/" });
     } catch (err) {
-      console.error("Auth: unexpected Google sign-in error", err);
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session) {
-        navigate({ to: "/" });
-        return;
-      }
       setBusy(false);
-      const raw = err instanceof Error ? err.message : "Google sign-in failed";
-      toast.error(
-        /cancel|closed|popup/i.test(raw)
-          ? "Sign-in window closed before finishing. Allow pop-ups for this site and try again."
-          : friendlyError(raw),
-      );
+      toast.error("OTP verification failed");
     }
   };
 
@@ -191,33 +218,20 @@ function AuthPage() {
         </div>
 
         <div className="rounded-3xl border bg-card p-7 shadow-xl">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-11 font-medium"
-            onClick={handleGoogle}
-            disabled={busy}
-          >
-            <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.11A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.34-2.11V7.05H2.18A11 11 0 0 0 1 12c0 1.77.42 3.45 1.18 4.95l3.66-2.84z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.2 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.29 9.14 5.38 12 5.38z"
-              />
-            </svg>
-            Continue with Google
-          </Button>
+          <div className="grid grid-cols-1 gap-3">
+            <Button onClick={handleGithub} disabled={busy} variant="outline" className="w-full h-11">Continue with GitHub</Button>
+            <Button onClick={handleEmailMagic} disabled={busy} variant="ghost" className="w-full h-11">Send magic link to email</Button>
+            <div className="flex gap-2">
+              <Input placeholder="+254700000000" value={phone} onChange={(e) => setPhone(e.target.value)} className="flex-1 h-11" />
+              <Button onClick={handlePhoneOtpRequest} disabled={busy} className="h-11">Send OTP</Button>
+            </div>
+            {otpId && (
+              <div className="flex gap-2">
+                <Input placeholder="Enter OTP" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} className="flex-1 h-11" />
+                <Button onClick={handlePhoneOtpVerify} disabled={busy} className="h-11">Verify</Button>
+              </div>
+            )}
+          </div>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
