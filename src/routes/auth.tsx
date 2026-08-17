@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { PENDING_REFERRAL_KEY } from "@/hooks/useReferrals";
 import { toast } from "sonner";
@@ -116,21 +115,24 @@ function AuthPage() {
     toast.success("Password reset link sent — check your email");
   };
 
+  // NEW: Use Supabase OAuth for Google sign-in (no Firebase / lovable)
   const handleGoogle = async () => {
     setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
       });
-      if (result.error) {
-        // The popup may have closed after the session was already set — verify before failing.
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
+
+      if (error) {
+        // The popup may have closed or an error occurred — verify session before failing.
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
           navigate({ to: "/" });
           return;
         }
         setBusy(false);
-        const raw = result.error.message || "";
+        const raw = error.message || "";
         if (/cancel|closed|popup/i.test(raw)) {
           return toast.error(
             "Sign-in window closed before finishing. Allow pop-ups for this site and try again.",
@@ -138,11 +140,18 @@ function AuthPage() {
         }
         return toast.error(friendlyError(raw || "Google sign-in failed"));
       }
-      if (result.redirected) return;
+
+      // If Supabase returned a redirect URL (hosted flow), send the browser there.
+      if ((data as any)?.url) {
+        window.location.href = (data as any).url;
+        return;
+      }
+
+      // Otherwise, assume the session is set and navigate into the app.
       navigate({ to: "/" });
     } catch (err) {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
         navigate({ to: "/" });
         return;
       }
@@ -171,7 +180,7 @@ function AuthPage() {
           </div>
           <h1 className="mt-5 text-3xl font-bold tracking-tight">Welcome to Insightly</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in to start your{" "}
+            Sign in to start your {" "}
             <span className="font-medium text-foreground">7-day free trial</span>
           </p>
         </div>
@@ -314,7 +323,7 @@ function AuthPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="su-ref" className="flex items-center gap-1.5">
-                    Referral code{" "}
+                    Referral code {" "}
                     <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <div className="relative">
@@ -357,11 +366,11 @@ function AuthPage() {
           </span>
         </div>
         <p className="mt-3 text-center text-[11px] text-muted-foreground">
-          By continuing you agree to our{" "}
+          By continuing you agree to our {" "}
           <a href="/terms" className="underline hover:text-foreground">
             Terms
           </a>{" "}
-          and{" "}
+          and {" "}
           <a href="/privacy" className="underline hover:text-foreground">
             Privacy Policy
           </a>
