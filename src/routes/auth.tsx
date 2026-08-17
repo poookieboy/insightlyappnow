@@ -117,6 +117,7 @@ function AuthPage() {
 
   // NEW: Use Supabase OAuth for Google sign-in (no Firebase / lovable)
   const handleGoogle = async () => {
+    console.log("Auth: initiating Google sign-in via Supabase");
     setBusy(true);
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -138,18 +139,22 @@ function AuthPage() {
             "Sign-in window closed before finishing. Allow pop-ups for this site and try again.",
           );
         }
+        console.error("Auth: Google sign-in error (Supabase):", raw);
         return toast.error(friendlyError(raw || "Google sign-in failed"));
       }
 
       // If Supabase returned a redirect URL (hosted flow), send the browser there.
       if ((data as any)?.url) {
+        console.log("Auth: redirecting to hosted OAuth URL", (data as any).url);
         window.location.href = (data as any).url;
         return;
       }
 
       // Otherwise, assume the session is set and navigate into the app.
+      console.log("Auth: Google sign-in completed via Supabase — navigating in-app");
       navigate({ to: "/" });
     } catch (err) {
+      console.error("Auth: unexpected Google sign-in error", err);
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session) {
         navigate({ to: "/" });
