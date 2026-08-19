@@ -1,6 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const supabase = createClient(
-  "https://xprysgjlwouonpylgusb.supabase.co",
-  "sb_publishable_Cdh8umqD_Z49bAJ2VcW2nQ_OXDJhMZ6"
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error("Missing VITE_SUPABASE_URL environment variable");
+}
+
+if (!supabaseAnonKey) {
+  throw new Error("Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
