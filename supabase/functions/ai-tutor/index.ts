@@ -2,6 +2,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 interface ChatMessage {
@@ -23,23 +24,21 @@ interface RequestBody {
 }
 
 const MODE_INSTRUCTIONS: Record<string, string> = {
-  ask: "Be conversational like ChatGPT. Answer clearly, then offer a follow-up question.",
+  ask: "Be conversational like ChatGPT. Answer clearly and naturally.",
   explain:
-    "Always answer with NUMBERED step-by-step explanations. Define terms, give a worked example, and end with a 1-line summary.",
+    "Explain step by step using numbered steps. Give a worked example and a short summary.",
   quiz:
-    "Quiz the student. Ask ONE question at a time, wait for their answer, then mark it (✅/❌) and explain. Track score across the chat.",
+    "Ask one question at a time, wait for the answer, mark it, explain it, and track the score.",
   diagram:
-    "ALWAYS include a Mermaid diagram (flowchart, sequence, or pie chart) inside a ```mermaid code block, then explain it briefly underneath.",
+    "When useful, include a Mermaid diagram and briefly explain it.",
   project:
-    "Help the student plan and build a school project. Suggest a structure (intro, materials, method, results, conclusion), then guide step by step.",
+    "Help the student plan and build a school project step by step.",
 };
 
 function parseDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
 
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
 
   return {
     mimeType: match[1],
@@ -53,7 +52,7 @@ function convertMessages(messages: ChatMessage[]) {
     .map((message) => {
       const parts: Array<Record<string, unknown>> = [];
 
-      if (message.content) {
+      if (message.content?.trim()) {
         parts.push({
           text: message.content,
         });
@@ -78,7 +77,8 @@ function convertMessages(messages: ChatMessage[]) {
         role: message.role === "assistant" ? "model" : "user",
         parts,
       };
-    });
+    })
+    .filter((message) => message.parts.length > 0);
 }
 
 function extractGeminiText(data: any): string {
@@ -97,15 +97,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const {
-      messages,
-      profile,
-      mode,
-      projectInstructions,
-      projectName,
-    } = (await req.json()) as RequestBody;
+    const body = (await req.json()) as RequestBody;
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!body.messages || !Array.isArray(body.messages)) {
       return new Response(
         JSON.stringify({
           error: "Invalid messages.",
@@ -120,10 +114,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY =
+      Deno.env.get("GEMINI_API_KEY") ||
+      Deno.env.get("GOOGLE_API_KEY") ||
+      Deno.env.get("GOOGLE_GEMINI_API_KEY");
 
     if (!GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY is not configured");
+      console.error("Gemini API key is missing.");
 
       return new Response(
         JSON.stringify({
@@ -139,63 +136,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    const profileLine = profile
-      ? `The student is ${profile.name ?? "a student"}, in ${
-          profile.grade ?? "an unspecified grade"
-        } following the ${
-          profile.curriculum ?? "standard"
+    const profileLine = body.profile
+      ? `The student is ${
+          body.profile.name ?? "a student"
+        }, in ${
+          body.profile.grade ?? "an unspecified grade"
+        }, following the ${
+          body.profile.curriculum ?? "standard"
         } curriculum.`
       : "";
 
     const modeLine =
-      mode && MODE_INSTRUCTIONS[mode]
-        ? `\nMODE: ${mode.toUpperCase()} — ${MODE_INSTRUCTIONS[mode]}`
+      body.mode && MODE_INSTRUCTIONS[body.mode]
+        ? `MODE: ${body.mode.toUpperCase()} - ${
+            MODE_INSTRUCTIONS[body.mode]
+          }`
         : "";
 
-    const projectLine = projectInstructions
-      ? `\nPROJECT CONTEXT (${
-          projectName ?? "Unnamed"
-        }): ${projectInstructions}\nFollow the project instructions above in every reply in this conversation.`
+    const projectLine = body.projectInstructions
+      ? `PROJECT CONTEXT (${
+          body.projectName ?? "Unnamed"
+        }): ${body.projectInstructions}`
       : "";
 
-    const systemPrompt = `You are Iris — the friendly AI study companion inside Insightly (the all-in-one student app).
+    const systemPrompt = `
+You are Iris, the friendly AI study companion inside Insightly.
 
-Always refer to the app as "Insightly" and to yourself as "Iris".
-Never say "Student Sync" or "StudentSync".
+Always call the app "Insightly" and yourself "Iris".
 
-${profileLine}${modeLine}${projectLine}
+${profileLine}
 
-How you help:
-- Answer academic questions clearly.
-- For procedural topics such as mathematics, science problems, and essay structure, explain STEP BY STEP using numbered steps.
+${modeLine}
+
+${projectLine}
+
+Help students understand their school work clearly.
+
+Rules:
+- Keep explanations age-appropriate.
 - Use short paragraphs and bullet points.
-- Keep language age-appropriate.
-- For maths, show working line by line.
-- For concepts, give a definition and a quick example.
-- If the student seems stuck, ask one guiding question instead of giving the full answer outright.
-- Use markdown headings, bold text, lists, and code blocks when useful.
+- Explain difficult concepts simply.
+- For mathematics, show working line by line.
+- Never use LaTeX.
+- Use markdown when useful.
+- Never invent facts.
+- When an image is attached, inspect it and help the student understand it.
+- When a student is stuck, guide them instead of simply dumping the answer.
+`;
 
-DIAGRAMS:
-When a visual would help, such as cycles, processes, structures, flows, or comparisons, include a Mermaid diagram inside a fenced code block tagged mermaid.
-
-MATHS FORMATTING:
-Never use LaTeX.
-Do not output $, $$, \\\\(, \\\\), \\\\[, \\\\], \\\\frac, \\\\sqrt or other LaTeX commands.
-Write maths as plain readable text, for example:
-2x + 5 = 17
-x = 6
-(a + b)/2
-√25 = 5
-x²
-3 × 4
-
-Show each step of mathematical working on its own line.
-
-- Never invent facts. If unsure, say so and suggest where to look.
-- When the student attaches an image, such as homework, a diagram, or handwritten work, inspect it carefully and help with it step by step.
-- Be encouraging and celebrate effort naturally without excessive emoji.`;
-
-    const contents = convertMessages(messages);
+    const contents = convertMessages(body.messages);
 
     if (contents.length === 0) {
       return new Response(
@@ -213,13 +202,16 @@ Show each step of mathematical working on its own line.
     }
 
     /*
-     * Google Gemini streaming endpoint.
+     * IMPORTANT:
+     * Use generateContent instead of streamGenerateContent.
      *
-     * The API key stays server-side in Supabase.
+     * The Gemini diagnostic confirmed that this model is
+     * available to the current API key.
      */
+    const model = "gemini-2.5-flash";
+
     const endpoint =
-      `https://generativelanguage.googleapis.com/v1beta/models/` +
-      `gemini-2.5-flash:streamGenerateContent?alt=sse&key=${encodeURIComponent(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
         GEMINI_API_KEY,
       )}`;
 
@@ -236,7 +228,9 @@ Show each step of mathematical working on its own line.
             },
           ],
         },
+
         contents,
+
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 4096,
@@ -244,19 +238,31 @@ Show each step of mathematical working on its own line.
       }),
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorData: any = {};
+
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        // Ignore invalid JSON.
+      }
 
       console.error(
         "Gemini API error:",
-        response.status,
-        errorText,
+        JSON.stringify({
+          status: response.status,
+          apiStatus: errorData?.error?.status,
+          message: errorData?.error?.message,
+        }),
       );
 
       if (response.status === 429) {
         return new Response(
           JSON.stringify({
-            error: "AI rate limit reached. Please try again shortly.",
+            error:
+              "Iris is busy right now. Please try again shortly.",
           }),
           {
             status: 429,
@@ -268,10 +274,14 @@ Show each step of mathematical working on its own line.
         );
       }
 
-      if (response.status === 401 || response.status === 403) {
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
         return new Response(
           JSON.stringify({
-            error: "The Gemini API key is invalid or not authorized.",
+            error:
+              "The Gemini API key is invalid or not authorized.",
           }),
           {
             status: 500,
@@ -285,7 +295,7 @@ Show each step of mathematical working on its own line.
 
       return new Response(
         JSON.stringify({
-          error: "Gemini AI service error.",
+          error: `Gemini AI service error (${response.status}).`,
         }),
         {
           status: 500,
@@ -297,107 +307,67 @@ Show each step of mathematical working on its own line.
       );
     }
 
-    if (!response.body) {
-      throw new Error("Gemini returned an empty response.");
+    let data: any;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid response from Gemini.",
+        }),
+        {
+          status: 502,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+
+    const text = extractGeminiText(data);
+
+    if (!text) {
+      console.error(
+        "Gemini returned no usable text.",
+        JSON.stringify(data),
+      );
+
+      return new Response(
+        JSON.stringify({
+          error: "Gemini returned no answer.",
+        }),
+        {
+          status: 502,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        },
+      );
     }
 
     /*
-     * Gemini returns SSE chunks containing Gemini response objects.
-     *
-     * The Insightly frontend already expects OpenAI-style streaming chunks,
-     * so we translate Gemini's chunks into that format here.
+     * Keep the response compatible with the existing
+     * Insightly frontend by returning an OpenAI-style
+     * SSE response.
      */
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    const encoder = new TextEncoder();
+    const streamBody =
+      `data: ${JSON.stringify({
+        choices: [
+          {
+            delta: {
+              content: text,
+            },
+            index: 0,
+          },
+        ],
+      })}\n\n` +
+      `data: [DONE]\n\n`;
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        let buffer = "";
-
-        try {
-          while (true) {
-            const { value, done } = await reader.read();
-
-            if (done) {
-              break;
-            }
-
-            buffer += decoder.decode(value, {
-              stream: true,
-            });
-
-            const events = buffer.split("\n\n");
-            buffer = events.pop() ?? "";
-
-            for (const event of events) {
-              const dataLine = event
-                .split("\n")
-                .find((line) => line.startsWith("data:"));
-
-              if (!dataLine) {
-                continue;
-              }
-
-              const jsonText = dataLine
-                .replace(/^data:\s*/, "")
-                .trim();
-
-              if (!jsonText || jsonText === "[DONE]") {
-                continue;
-              }
-
-              try {
-                const geminiData = JSON.parse(jsonText);
-                const text = extractGeminiText(geminiData);
-
-                if (!text) {
-                  continue;
-                }
-
-                const openAiChunk = {
-                  choices: [
-                    {
-                      delta: {
-                        content: text,
-                      },
-                    },
-                  ],
-                };
-
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify(openAiChunk)}\n\n`,
-                  ),
-                );
-              } catch (parseError) {
-                console.error(
-                  "Could not parse Gemini stream chunk:",
-                  parseError,
-                );
-              }
-            }
-          }
-
-          controller.enqueue(
-            encoder.encode("data: [DONE]\n\n"),
-          );
-
-          controller.close();
-        } catch (error) {
-          console.error(
-            "Gemini streaming error:",
-            error,
-          );
-
-          controller.error(error);
-        } finally {
-          reader.releaseLock();
-        }
-      },
-    });
-
-    return new Response(stream, {
+    return new Response(streamBody, {
+      status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
@@ -406,14 +376,16 @@ Show each step of mathematical working on its own line.
       },
     });
   } catch (error) {
-    console.error("ai-tutor error:", error);
+    console.error(
+      "ai-tutor error:",
+      error instanceof Error
+        ? error.message
+        : error,
+    );
 
     return new Response(
       JSON.stringify({
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown AI error.",
+        error: "Iris encountered a server error.",
       }),
       {
         status: 500,
