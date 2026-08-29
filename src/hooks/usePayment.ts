@@ -45,7 +45,6 @@ export function usePayment() {
     setStage("sending");
 
     try {
-      // Get the currently signed-in Supabase user/session.
       const {
         data: { session },
         error: sessionError,
@@ -57,13 +56,11 @@ export function usePayment() {
         return false;
       }
 
-      // The Edge Function expects "sponsor", not "sponsorship".
       const kind =
         args.type === "subscription" ? "subscription" : "sponsor";
 
-      // Start the payment directly through Supabase.
       const { data, error: functionError } =
-        await supabase.functions.invoke("payments-initiate", {
+        await supabase.functions.invoke("payments-initiate-fixed", {
           body: {
             phone: args.phone,
             amount: args.amount,
@@ -100,23 +97,11 @@ export function usePayment() {
 
       setStage("waiting");
 
-      /*
-       * Sponsor Scholar payments do not unlock a subscription.
-       * Once the payment provider accepts the request, we can finish
-       * this payment flow.
-       */
       if (kind === "sponsor") {
         setStage("success");
         return true;
       }
 
-      /*
-       * Subscription payments must NOT be considered successful merely
-       * because the M-Pesa/STK request was created.
-       *
-       * The backend webhook should update user_subscription_status.
-       * We therefore wait for pro_until to become active.
-       */
       const deadline = Date.now() + 3 * 60 * 1000;
 
       return await new Promise<boolean>((resolve) => {
