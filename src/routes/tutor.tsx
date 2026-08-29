@@ -63,7 +63,7 @@ const QUICK_CHIPS = [
   { label: "Check my working", text: "Check my working and correct any mistakes: " },
 ];
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor-v2`;
 const CLASSIFY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-classify`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
