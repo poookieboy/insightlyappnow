@@ -19,13 +19,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         run: npm install
 
       - name: Build web app
         run: npm run build
+
+      - name: Prepare Capacitor web assets
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp -R .output/public/. dist/
+          test -f dist/index.html
 
       - name: Sync Capacitor Android
         run: npx cap sync android
