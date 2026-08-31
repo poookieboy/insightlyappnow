@@ -29,17 +29,25 @@ jobs:
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > release-key.jks
+          test -s release-key.jks
 
       - name: Build Signed AAB
         working-directory: android
-        run: gradle clean bundleRelease \
-          -Pandroid.injected.signing.store.file=../release-key.jks \
-          -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
-          -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-          -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+        run: |
+          gradle clean bundleRelease \
+            "-Pandroid.injected.signing.store.file=../release-key.jks" \
+            "-Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }}" \
+            "-Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }}" \
+            "-Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}"
+
+      - name: Verify AAB exists
+        run: |
+          test -f android/app/build/outputs/bundle/release/app-release.aab
+          ls -lh android/app/build/outputs/bundle/release/app-release.aab
 
       - name: Upload Signed AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
           path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
