@@ -2,10 +2,10 @@ name: Android Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:   # 👈 manual trigger option
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,31 +13,33 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4   # ✅ latest stable
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4 # ✅ updated version
+        uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
+          java-version: "17"
+          distribution: "temurin"
 
-      - name: Ensure Gradle wrapper is executable
-        run: chmod +x ./gradlew   # ✅ fixes "Permission denied"
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > release-key.jks
 
       - name: Build Signed AAB
-        run: ./gradlew clean bundleRelease \
-          -Pandroid.injected.signing.store.file=release-key.jks \
+        working-directory: android
+        run: gradle clean bundleRelease \
+          -Pandroid.injected.signing.store.file=../release-key.jks \
           -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
           -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
           -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
 
       - name: Upload Signed AAB Artifact
-        uses: actions/upload-artifact@v4   # ✅ fixed deprecation issue
+        uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
-          path: app/build/outputs/bundle/release/app-release.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
