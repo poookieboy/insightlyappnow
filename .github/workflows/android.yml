@@ -27,11 +27,35 @@ jobs:
         run: npm run build
 
       - name: Prepare Capacitor web assets
+        shell: bash
         run: |
-          rm -rf dist
+          set -e
+
+          echo "Checking build output..."
+
+          if [ ! -d ".output/public" ]; then
+            echo "ERROR: .output/public does not exist."
+            echo "Available build directories:"
+            find . -maxdepth 3 -type d \( -name "dist" -o -name "public" -o -name ".output" \) -print
+            exit 1
+          fi
+
+          echo "Build output found:"
+          find .output/public -maxdepth 2 -type f | head -50
+
           mkdir -p dist
-          cp -R .output/public/. dist/
-          test -f dist/index.html
+
+          cp -a .output/public/. dist/
+
+          echo "Capacitor assets prepared:"
+          ls -la dist
+
+          if [ ! -f "dist/index.html" ]; then
+            echo "ERROR: dist/index.html was not created."
+            exit 1
+          fi
+
+          echo "dist/index.html found successfully."
 
       - name: Sync Capacitor Android
         run: npx cap sync android
