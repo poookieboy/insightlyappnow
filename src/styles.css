@@ -147,29 +147,31 @@
 
 /* Tutor (Iris) page tokens — graphite + warm coffee-brown,
  * intentionally distinct from the cool ocean app palette. */
+/* Iris — light, minimal, premium learning-assistant surface. */
 .theme-iris {
-  --background: oklch(0.13 0 0);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.18 0 0);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.16 0 0);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.72 0.1 205);
-  --primary-foreground: oklch(0.13 0 0);
-  --primary-glow: oklch(0.8 0.09 205);
-  --secondary: oklch(0.22 0 0);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.24 0 0);
-  --muted-foreground: oklch(0.7 0 0);
-  --accent: oklch(0.28 0 0);
-  --accent-foreground: oklch(0.97 0 0);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.72 0.1 205);
-  --gradient-primary: linear-gradient(135deg, oklch(0.3 0 0), oklch(0.42 0.02 205));
-  --gradient-soft: linear-gradient(180deg, oklch(0.13 0 0) 0%, oklch(0.11 0 0) 100%);
-  --shadow-glow: 0 10px 40px -10px oklch(0 0 0 / 0.7);
+  --background: oklch(0.99 0.002 250);
+  --foreground: oklch(0.21 0.015 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.015 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.015 255);
+  --primary: oklch(0.55 0.13 250);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-glow: oklch(0.72 0.11 250);
+  --secondary: oklch(0.965 0.005 250);
+  --secondary-foreground: oklch(0.28 0.015 255);
+  --muted: oklch(0.965 0.005 250);
+  --muted-foreground: oklch(0.53 0.012 255);
+  --accent: oklch(0.955 0.012 250);
+  --accent-foreground: oklch(0.28 0.015 255);
+  --border: oklch(0.21 0.015 255 / 9%);
+  --input: oklch(0.21 0.015 255 / 12%);
+  --ring: oklch(0.55 0.13 250);
+  --gradient-primary: linear-gradient(135deg, oklch(0.55 0.13 250), oklch(0.66 0.12 245));
+  --gradient-soft: linear-gradient(180deg, oklch(0.995 0.002 250) 0%, oklch(0.975 0.006 250) 100%);
+  --shadow-glow: 0 12px 32px -16px oklch(0.55 0.13 250 / 0.45);
 }
+
 
 @layer base {
   * {
