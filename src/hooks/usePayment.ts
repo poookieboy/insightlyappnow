@@ -43,7 +43,7 @@ export function usePayment() {
         !navigator.onLine
       ) {
         setError(
-          "You're offline — connect to the internet to complete your payment.",
+          "You're offline. Connect to the internet to complete your payment.",
         );
         setStage("failed");
         return false;
@@ -117,30 +117,33 @@ export function usePayment() {
         }
 
         /*
-         * At this point the payment request was accepted
-         * by the payment function.
+         * The payment request was accepted by the
+         * Edge Function.
          *
-         * This does NOT mean the M-Pesa payment is complete.
-         * The user should now receive the STK Push prompt.
+         * This does NOT mean the M-Pesa payment has
+         * been completed yet.
          */
         setStage("waiting");
 
         /*
-         * Sponsor Scholar payments don't activate Pro.
-         * We still wait briefly for the provider request to
-         * complete, then report that the request was accepted.
+         * Both subscriptions and Sponsor Scholar payments
+         * must be confirmed by the backend before the UI
+         * reports a completed payment.
+         *
+         * The backend/webhook should update the payment
+         * record after Lipawin confirms the transaction.
          */
-        if (kind === "sponsor") {
-          setStage("success");
-          return true;
+
+        const paymentId = data.paymentId;
+
+        if (!paymentId) {
+          setError(
+            "Payment request was sent, but we couldn't track the transaction.",
+          );
+          setStage("failed");
+          return false;
         }
 
-        /*
-         * Subscription:
-         *
-         * Wait for the LipaWin webhook to update
-         * user_subscription_status.pro_until.
-         */
         const deadline =
           Date.now() + 3 * 60 * 1000;
 
@@ -148,29 +151,29 @@ export function usePayment() {
           (resolve) => {
             const poll = async () => {
               try {
+                /*
+                 * Check the payment record for provider
+                 * confirmation.
+                 */
                 const {
-                  data: subscription,
-                  error: subscriptionError,
+                  data: payment,
+                  error: paymentError,
                 } = await supabase
-                  .from("user_subscription_status")
-                  .select("pro_until")
-                  .eq(
-                    "user_id",
-                    session.user.id,
+                  .from("payments")
+                  .select(
+                    "status, provider_transaction_id, transaction_id",
                   )
+                  .eq("id", paymentId)
                   .maybeSingle();
 
-                if (
-                  !subscriptionError &&
-                  subscription?.pro_until
-                ) {
-                  const proUntil = new Date(
-                    subscription.pro_until,
-                  ).getTime();
+                if (!paymentError && payment) {
+                  const status =
+                    String(payment.status || "").toLowerCase();
 
                   if (
-                    Number.isFinite(proUntil) &&
-                    proUntil > Date.now()
+                    status === "success" ||
+                    status === "completed" ||
+                    status === "paid"
                   ) {
                     setStage("success");
 
@@ -181,17 +184,77 @@ export function usePayment() {
 
                     return resolve(true);
                   }
+
+                  if (
+                    status === "failed" ||
+                    status === "cancelled" ||
+                    status === "canceled"
+                  ) {
+                    setError(
+                      "The payment was not completed.",
+                    );
+
+                    setStage("failed");
+
+                    if (timer.current) {
+                      clearTimeout(timer.current);
+                      timer.current = null;
+                    }
+
+                    return resolve(false);
+                  }
+                }
+
+                /*
+                 * For subscriptions, also check whether
+                 * Pro access has been activated.
+                 */
+                if (kind === "subscription") {
+                  const {
+                    data: subscription,
+                    error: subscriptionError,
+                  } = await supabase
+                    .from("user_subscription_status")
+                    .select("pro_until")
+                    .eq(
+                      "user_id",
+                      session.user.id,
+                    )
+                    .maybeSingle();
+
+                  if (
+                    !subscriptionError &&
+                    subscription?.pro_until
+                  ) {
+                    const proUntil = new Date(
+                      subscription.pro_until,
+                    ).getTime();
+
+                    if (
+                      Number.isFinite(proUntil) &&
+                      proUntil > Date.now()
+                    ) {
+                      setStage("success");
+
+                      if (timer.current) {
+                        clearTimeout(timer.current);
+                        timer.current = null;
+                      }
+
+                      return resolve(true);
+                    }
+                  }
                 }
               } catch (pollError) {
                 console.error(
-                  "Subscription status check failed:",
+                  "Payment status check failed:",
                   pollError,
                 );
               }
 
               if (Date.now() > deadline) {
                 setError(
-                  "We haven't received payment confirmation yet. If you completed the M-Pesa payment, your subscription will unlock after confirmation.",
+                  "We haven't received payment confirmation yet. If you completed the M-Pesa payment, it will be updated after confirmation.",
                 );
 
                 setStage("failed");
@@ -241,4 +304,4 @@ export function usePayment() {
     start,
     reset,
   };
-    }
+                         }
