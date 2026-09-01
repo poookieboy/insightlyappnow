@@ -16,7 +16,7 @@ interface StartArgs {
   message?: string;
 }
 
-const PAYMENT_FUNCTION = "payments-initiate-v2";
+const PAYMENT_FUNCTION = "lipawin-payment";
 
 export function usePayment() {
   const [stage, setStage] = useState<PayStage>("idle");
