@@ -34,6 +34,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
 import { Route as ApiPaymentsInitiateRouteImport } from './routes/api/payments/initiate'
@@ -164,6 +165,11 @@ const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   path: '/$noteId',
   getParentRoute: () => NotesRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const TestsPaperIdPreviewRoute = TestsPaperIdPreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
@@ -190,7 +196,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -221,7 +228,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -253,7 +261,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/calculator': typeof CalculatorRoute
   '/dashboard': typeof DashboardRoute
   '/donate': typeof DonateRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/timetable': typeof TimetableRoute
   '/tutor': typeof TutorRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/tutor'
     | '/verify-email'
+    | '/auth/callback'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/tutor'
     | '/verify-email'
+    | '/auth/callback'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/tutor'
     | '/verify-email'
+    | '/auth/callback'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -380,7 +392,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   CalculatorRoute: typeof CalculatorRoute
   DashboardRoute: typeof DashboardRoute
   DonateRoute: typeof DonateRoute
@@ -582,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesNoteIdRouteImport
       parentRoute: typeof NotesRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/tests/$paperId/preview': {
       id: '/tests/$paperId/preview'
       path: '/preview'
@@ -612,6 +631,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface NotesRouteChildren {
   NotesNoteIdRoute: typeof NotesNoteIdRoute
@@ -649,7 +678,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   CalculatorRoute: CalculatorRoute,
   DashboardRoute: DashboardRoute,
   DonateRoute: DonateRoute,
@@ -676,3 +705,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
