@@ -353,13 +353,16 @@ function Tutor() {
         </Sheet>
 
         <div className="min-w-0 flex-1">
-          <h1 className="flex items-center gap-2 truncate text-lg font-bold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            {active?.title ?? "Iris"}
-          </h1>
-          <p className="truncate text-[11px] text-muted-foreground">
-            {MODES.find((m) => m.id === mode)?.hint}
-          </p>
+          {/* Dynamic-Island style status pill */}
+          <div className="mx-auto flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur">
+            <IrisMark size="sm" active={loading || voice.speaking || voice.listening} />
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+              {active?.title ?? "Iris"}
+            </span>
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              {voice.listening ? "Listening" : voice.speaking ? "Speaking" : loading ? "Thinking" : "Ready"}
+            </span>
+          </div>
         </div>
 
         <Button size="icon" variant="ghost" className="h-9 w-9" onClick={newChat} title="New chat">
@@ -367,15 +370,24 @@ function Tutor() {
         </Button>
       </div>
 
-      <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="mb-3">
-        <TabsList className="grid h-9 w-full grid-cols-5">
-          {MODES.map((m) => (
-            <TabsTrigger key={m.id} value={m.id} className="px-1 text-[11px]">
-              {m.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMode(m.id)}
+            className={cn(
+              "press shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
+              mode === m.id
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/70 bg-card/70 text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
 
       {lastFailed && (
         <Card className="mb-3 flex items-center gap-2 border-destructive/30 bg-destructive/5 p-3">
