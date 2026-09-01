@@ -14,7 +14,6 @@ import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -321,7 +320,7 @@ function Tutor() {
   };
 
   return (
-    <AppShell className="theme-iris dark">
+    <AppShell className="theme-iris">
       <div className="mb-3 flex items-center justify-between gap-2">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger asChild>
@@ -353,13 +352,16 @@ function Tutor() {
         </Sheet>
 
         <div className="min-w-0 flex-1">
-          <h1 className="flex items-center gap-2 truncate text-lg font-bold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            {active?.title ?? "Iris"}
-          </h1>
-          <p className="truncate text-[11px] text-muted-foreground">
-            {MODES.find((m) => m.id === mode)?.hint}
-          </p>
+          {/* Dynamic-Island style status pill */}
+          <div className="mx-auto flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur">
+            <IrisMark size="sm" active={loading || voice.speaking || voice.listening} />
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+              {active?.title ?? "Iris"}
+            </span>
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              {voice.listening ? "Listening" : voice.speaking ? "Speaking" : loading ? "Thinking" : "Ready"}
+            </span>
+          </div>
         </div>
 
         <Button size="icon" variant="ghost" className="h-9 w-9" onClick={newChat} title="New chat">
@@ -367,15 +369,24 @@ function Tutor() {
         </Button>
       </div>
 
-      <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="mb-3">
-        <TabsList className="grid h-9 w-full grid-cols-5">
-          {MODES.map((m) => (
-            <TabsTrigger key={m.id} value={m.id} className="px-1 text-[11px]">
-              {m.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMode(m.id)}
+            className={cn(
+              "press shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
+              mode === m.id
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/70 bg-card/70 text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
 
       {lastFailed && (
         <Card className="mb-3 flex items-center gap-2 border-destructive/30 bg-destructive/5 p-3">
@@ -390,9 +401,7 @@ function Tutor() {
         {messages.length === 0 && (
           <Card className="border-dashed bg-muted/40 p-5">
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-700 to-zinc-900 text-white shadow-glow">
-                <Sparkles className="h-5 w-5" />
-              </div>
+              <IrisMark size="lg" />
               <div>
                 <p className="font-display text-base font-semibold">Iris</p>
                 <p className="text-xs text-muted-foreground">
@@ -436,9 +445,7 @@ function Tutor() {
 
         {loading && messages[messages.length - 1]?.role === "user" && (
           <div className="flex items-center gap-2 animate-fade-in">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
-              <Sparkles className="h-3.5 w-3.5" />
-            </div>
+            <IrisMark active />
             <div className="flex items-center gap-1 rounded-2xl border bg-card px-3 py-2.5">
               {[0, 1, 2].map((d) => (
                 <span
@@ -748,9 +755,7 @@ function Sidebar({
                         c.id === activeId && "bg-muted",
                       )}
                     >
-                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
-                        <Sparkles className="h-3.5 w-3.5" />
-                      </div>
+                      <div className="mt-0.5"><IrisMark /></div>
                       <button onClick={() => onSelect(c.id)} className="min-w-0 flex-1 text-left">
                         <span className="flex items-center gap-2">
                           <span className="min-w-0 flex-1 truncate text-xs font-medium">{c.title}</span>
@@ -907,9 +912,7 @@ function MessageBubble({
   return (
     <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-white">
-          <Sparkles className="h-3.5 w-3.5" />
-        </div>
+        <div className="mt-1"><IrisMark /></div>
       )}
       <div className={cn("max-w-[85%] min-w-0", isUser ? "items-end" : "items-start")}>
         <div
@@ -1016,4 +1019,21 @@ function Mermaid({ chart }: { chart: string }) {
 
   if (error) return <pre className="overflow-x-auto rounded-lg bg-muted p-2 text-xs">{chart}</pre>;
   return <div ref={ref} className="my-2 overflow-x-auto rounded-lg border bg-card p-2 [&_svg]:mx-auto [&_svg]:max-w-full" />;
+}
+
+/** Minimal Iris identity mark — soft gradient orb, no heavy chrome. */
+function IrisMark({ size = "md", active = false }: { size?: "sm" | "md" | "lg"; active?: boolean }) {
+  const dim = size === "sm" ? "h-6 w-6" : size === "lg" ? "h-11 w-11" : "h-7 w-7";
+  const icon = size === "lg" ? "h-5 w-5" : "h-3.5 w-3.5";
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-sm",
+        dim,
+        active && "animate-pulse",
+      )}
+    >
+      <Sparkles className={icon} />
+    </span>
+  );
 }
