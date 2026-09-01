@@ -116,23 +116,7 @@ export function usePayment() {
           return false;
         }
 
-        /*
-         * The payment request was accepted by the
-         * Edge Function.
-         *
-         * This does NOT mean the M-Pesa payment has
-         * been completed yet.
-         */
         setStage("waiting");
-
-        /*
-         * Both subscriptions and Sponsor Scholar payments
-         * must be confirmed by the backend before the UI
-         * reports a completed payment.
-         *
-         * The backend/webhook should update the payment
-         * record after Lipawin confirms the transaction.
-         */
 
         const paymentId = data.paymentId;
 
@@ -151,18 +135,12 @@ export function usePayment() {
           (resolve) => {
             const poll = async () => {
               try {
-                /*
-                 * Check the payment record for provider
-                 * confirmation.
-                 */
                 const {
                   data: payment,
                   error: paymentError,
                 } = await supabase
                   .from("payments")
-                  .select(
-                    "status, provider_transaction_id, transaction_id",
-                  )
+                  .select("status")
                   .eq("id", paymentId)
                   .maybeSingle();
 
@@ -205,10 +183,6 @@ export function usePayment() {
                   }
                 }
 
-                /*
-                 * For subscriptions, also check whether
-                 * Pro access has been activated.
-                 */
                 if (kind === "subscription") {
                   const {
                     data: subscription,
@@ -304,4 +278,4 @@ export function usePayment() {
     start,
     reset,
   };
-                         }
+}
