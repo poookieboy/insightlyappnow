@@ -321,7 +321,7 @@ function Tutor() {
   };
 
   return (
-    <AppShell className="theme-iris dark">
+    <AppShell className="theme-iris">
       <div className="mb-3 flex items-center justify-between gap-2">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger asChild>
