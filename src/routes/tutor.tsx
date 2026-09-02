@@ -600,7 +600,7 @@ function Tutor() {
         )}
       </form>
 
-      <div className="h-20" />
+      <div className="h-56" />
 
       <ProjectDialog
         open={projectDialog.open}
