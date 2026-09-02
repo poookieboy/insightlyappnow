@@ -351,17 +351,8 @@ function Tutor() {
           </SheetContent>
         </Sheet>
 
-        <div className="min-w-0 flex-1">
-          {/* Dynamic-Island style status pill */}
-          <div className="mx-auto flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur">
-            <IrisMark size="sm" active={loading || voice.speaking || voice.listening} />
-            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
-              {active?.title ?? "Iris"}
-            </span>
-            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
-              {voice.listening ? "Listening" : voice.speaking ? "Speaking" : loading ? "Thinking" : "Ready"}
-            </span>
-          </div>
+        <div className="min-w-0 flex-1 text-center">
+          <p className="truncate text-sm font-semibold">{active?.title ?? "Iris"}</p>
         </div>
 
         <Button size="icon" variant="ghost" className="h-9 w-9" onClick={newChat} title="New chat">
@@ -369,23 +360,7 @@ function Tutor() {
         </Button>
       </div>
 
-      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setMode(m.id)}
-            className={cn(
-              "press shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
-              mode === m.id
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border/70 bg-card/70 text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+
 
 
       {lastFailed && (
