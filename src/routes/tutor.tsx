@@ -902,6 +902,11 @@ function MessageBubble({
 }) {
   const isUser = msg.role === "user";
   const [copied, setCopied] = useState(false);
+  const chunks = useMemo(
+    () => (isUser ? [] : splitIntoTurns(humanizeMath(msg.content))),
+    [isUser, msg.content],
+  );
+
 
   const copy = async () => {
     try {
