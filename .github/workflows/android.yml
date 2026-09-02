@@ -12,154 +12,73 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # --------------------------------------------------
-      # 1. Get the source code
-      # --------------------------------------------------
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # --------------------------------------------------
-      # 2. Set up Node.js
-      # --------------------------------------------------
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      # --------------------------------------------------
-      # 3. Install JavaScript dependencies
-      # --------------------------------------------------
       - name: Install dependencies
         run: npm install
 
-      # --------------------------------------------------
-      # 4. Build the web application
-      # --------------------------------------------------
       - name: Build web app
         run: npm run build
 
-      # --------------------------------------------------
-      # 5. Find the actual web build output
-      #    and prepare Capacitor's dist directory
-      # --------------------------------------------------
       - name: Prepare Capacitor web assets
         shell: bash
         run: |
           set -e
 
           echo "========================================"
-          echo "Checking web build output"
+          echo "Preparing Capacitor web assets"
           echo "========================================"
 
-          echo ""
-          echo "Root directory:"
-          ls -la
+          rm -rf dist
+          mkdir -p dist
 
-          echo ""
-          echo "Searching for index.html:"
-          find . \
-            -type f \
-            -name "index.html" \
-            -not -path "./node_modules/*" \
-            -not -path "./android/*" \
-            -not -path "./dist/*" \
-            -print
-
-          echo ""
-          echo "Searching for possible build directories:"
-          find . \
-            -maxdepth 4 \
-            -type d \
-            \( -name "dist" -o -name ".output" -o -name "build" -o -name "public" \) \
-            -not -path "./node_modules/*" \
-            -not -path "./android/*" \
-            -print
-
-          echo ""
-          echo "========================================"
-          echo "Finding web entry point"
-          echo "========================================"
-
-          INDEX_FILE=$(find . \
-            -type f \
-            -name "index.html" \
-            -not -path "./node_modules/*" \
-            -not -path "./android/*" \
-            -not -path "./dist/*" \
-            -print -quit)
-
-          if [ -z "$INDEX_FILE" ]; then
+          if [ ! -d ".output/public" ]; then
             echo ""
-            echo "ERROR: No index.html was produced by npm run build."
+            echo "ERROR: .output/public does not exist."
             echo ""
-            echo "Build output:"
+            echo "Available build directories:"
             find . \
               -maxdepth 4 \
-              -type f \
+              -type d \
+              \( -name "dist" -o -name ".output" -o -name "build" -o -name "public" \) \
               -not -path "./node_modules/*" \
               -not -path "./android/*" \
-              | head -200
+              -print
             exit 1
           fi
 
-          echo "Found index.html at:"
-          echo "$INDEX_FILE"
+          echo "Found web build output:"
+          echo ".output/public"
 
-          SOURCE_DIR=$(dirname "$INDEX_FILE")
-
-          echo ""
-          echo "Web source directory:"
-          echo "$SOURCE_DIR"
-
-          echo ""
-          echo "========================================"
-          echo "Preparing dist directory"
-          echo "========================================"
-
-          mkdir -p dist
-
-          cp -a "$SOURCE_DIR"/. dist/
+          cp -a .output/public/. dist/
 
           echo ""
           echo "Contents of dist:"
-          find dist -maxdepth 2 -type f | head -100
-
-          if [ ! -f "dist/index.html" ]; then
-            echo ""
-            echo "ERROR: dist/index.html was not created."
-            exit 1
-          fi
+          find dist -maxdepth 3 -type f | head -100
 
           echo ""
           echo "SUCCESS: Capacitor web assets prepared."
-          echo "dist/index.html exists."
 
-      # --------------------------------------------------
-      # 6. Sync the web application into Android
-      # --------------------------------------------------
-      - name: Sync Capacitor Android
-        run: npx cap sync android
-
-      # --------------------------------------------------
-      # 7. Set up Java
-      # --------------------------------------------------
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
 
-      # --------------------------------------------------
-      # 8. Set up Gradle 8.7
-      # --------------------------------------------------
-      - name: Set up Gradle 8.7
+      - name: Set up Gradle 8.11.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
 
-      # --------------------------------------------------
-      # 9. Decode the Android release keystore
-      # --------------------------------------------------
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
       - name: Decode Keystore
         run: |
           set -e
@@ -173,9 +92,6 @@ jobs:
 
           echo "Keystore decoded successfully."
 
-      # --------------------------------------------------
-      # 10. Build the signed Android App Bundle
-      # --------------------------------------------------
       - name: Build Signed AAB
         working-directory: android
         run: |
@@ -185,9 +101,6 @@ jobs:
             "-Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }}" \
             "-Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}"
 
-      # --------------------------------------------------
-      # 11. Verify that the AAB was actually created
-      # --------------------------------------------------
       - name: Verify AAB exists
         run: |
           set -e
@@ -205,9 +118,6 @@ jobs:
           echo "AAB successfully created:"
           ls -lh "$AAB_PATH"
 
-      # --------------------------------------------------
-      # 12. Upload the signed AAB to GitHub Actions
-      # --------------------------------------------------
       - name: Upload Signed AAB Artifact
         uses: actions/upload-artifact@v4
         with:
