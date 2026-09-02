@@ -443,7 +443,36 @@ function Tutor() {
           </div>
         )}
 
+        {/* Dynamic-Island style status pill — lives at the bottom, above the composer */}
+        <div className="mb-2 flex justify-center">
+          <div className="flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-card/90 px-3 py-1 shadow-md backdrop-blur">
+            <IrisMark size="sm" active={loading || voice.speaking || voice.listening} />
+            <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+              {voice.listening ? "Listening…" : voice.speaking ? "Speaking…" : loading ? "Thinking…" : "Iris · Ready"}
+            </span>
+          </div>
+        </div>
+
         <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setMode(m.id)}
+              className={cn(
+                "press shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium shadow-sm backdrop-blur transition-colors",
+                mode === m.id
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/70 bg-card/90 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+
           {QUICK_CHIPS.map((c) => (
             <button
               key={c.label}
