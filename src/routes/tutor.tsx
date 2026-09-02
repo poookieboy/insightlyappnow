@@ -891,7 +891,50 @@ function ProjectDialog({
   );
 }
 
+/**
+ * Break a long reply into short conversational messages instead of one wall of text.
+ * Paragraphs become separate bubbles; lists, tables and code blocks stay together
+ * with the heading/intro line above them.
+ */
+function splitIntoTurns(md: string): string[] {
+  const text = (md || "").trim();
+  if (!text) return ["…"];
+  const blocks: string[] = [];
+  let buffer: string[] = [];
+  let inFence = false;
+
+  const flush = () => {
+    const t = buffer.join("\n").trim();
+    if (t) blocks.push(t);
+    buffer = [];
+  };
+
+  for (const line of text.split("\n")) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      buffer.push(line);
+      if (!inFence) flush();
+      continue;
+    }
+    if (inFence) { buffer.push(line); continue; }
+    if (!line.trim()) { flush(); continue; }
+    buffer.push(line);
+  }
+  flush();
+
+  // Merge tiny blocks (headings / one-liners) into the following block.
+  const merged: string[] = [];
+  for (const b of blocks) {
+    const prev = merged[merged.length - 1];
+    const prevIsLead = prev && (/^#{1,6}\s/.test(prev) || (prev.length < 60 && !/\n/.test(prev) && prev.endsWith(":")));
+    if (prevIsLead) merged[merged.length - 1] = `${prev}\n\n${b}`;
+    else merged.push(b);
+  }
+  return merged.length ? merged : [text];
+}
+
 function MessageBubble({
+
   msg, streaming, onSpeak, speaking, onRegenerate,
 }: {
   msg: TutorMessage;
