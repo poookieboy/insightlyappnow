@@ -850,111 +850,113 @@ function NoteEditor({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex flex-col animate-fade-in"
-      style={{ background: bg.css, color: bg.text === "light" ? "#fff" : "#111827" }}
+      className="fixed inset-0 z-[60] flex flex-col animate-fade-in"
+      style={{ color: bg.text === "light" ? "#fff" : "#111827" }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b border-black/10 bg-white/40 px-3 py-2 backdrop-blur-md dark:bg-black/20">
-        <Button size="icon" variant="ghost" onClick={onClose}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <span className="flex items-center gap-1 text-xs font-medium opacity-70">
-          {offline && <WifiOff className="h-3.5 w-3.5" />}
-          {offline ? "Offline — changes save when you reconnect" : saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
-        </span>
+      {/* Constant wallpaper layer — stays put while the note scrolls */}
+      <div className="pointer-events-none absolute inset-0" style={{ background: bg.css }} />
 
-        <div className="flex-1" />
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button size="icon" variant="ghost"><MoreVertical className="h-5 w-5" /></Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-56 p-1">
-            <MenuItem icon={<Palette className="h-4 w-4" />} label="Background" onClick={() => setShowBg(true)} />
-            <MenuItem icon={<ImageIcon className="h-4 w-4" />} label="Cover image" onClick={() => coverInputRef.current?.click()} />
-            {coverPath && (
-              <MenuItem icon={<X className="h-4 w-4" />} label="Remove cover" onClick={() => setCoverPath(null)} />
-            )}
-            <MenuItem icon={<Smile className="h-4 w-4" />} label="Icon" onClick={() => setShowIcon(true)} />
-            <MenuItem icon={<Paperclip className="h-4 w-4" />} label="Attach file" onClick={() => attachInputRef.current?.click()} />
-            <div className="my-1 h-px bg-border" />
-            <MenuItem icon={<History className="h-4 w-4" />} label="Version history" onClick={openHistory} />
-            <MenuItem icon={<Share2 className="h-4 w-4" />} label="Share note" onClick={shareNote} />
-            <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as HTML" onClick={exportHtml} />
-            <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as text" onClick={exportText} />
-            <MenuItem icon={<Printer className="h-4 w-4" />} label="Print / save as PDF" onClick={printNote} />
-            <div className="my-1 h-px bg-border" />
-            <MenuItem
-              icon={note.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-              label={note.is_locked ? "Remove lock" : "Lock with PIN"}
-              onClick={toggleLock}
-            />
-            <div className="my-1 h-px bg-border" />
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        {/* Compact header: back · status · tab · menu */}
+        <div className="flex items-center gap-1.5 border-b border-black/10 bg-white/35 px-2 py-1.5 backdrop-blur-md dark:bg-black/20">
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onClose}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium opacity-70">
+            {offline && <WifiOff className="h-3.5 w-3.5" />}
+            {offline ? "Offline" : saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : ""}
+          </span>
 
-            <MenuItem
-              icon={<Trash2 className="h-4 w-4 text-destructive" />}
-              label="Delete note"
-              onClick={() => { if (confirm("Delete this note?")) onDelete(); }}
-              danger
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+          <div className="flex-1" />
 
-      {/* Category selector */}
-      <div className="flex items-center gap-2 border-b border-black/10 bg-white/30 px-3 py-1.5 backdrop-blur-md dark:bg-black/10">
-        <Label className="text-[11px] font-semibold uppercase tracking-wider opacity-70">Tab</Label>
-        <Select value={categoryId ?? "none"} onValueChange={(v) => setCategoryId(v === "none" ? null : v)}>
-          <SelectTrigger className="h-7 w-auto min-w-[8rem] border-none bg-white/60 text-xs dark:bg-black/30">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Unsorted</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          <Select value={categoryId ?? "none"} onValueChange={(v) => setCategoryId(v === "none" ? null : v)}>
+            <SelectTrigger className="h-7 w-auto min-w-[6.5rem] max-w-[9rem] border-none bg-white/60 text-[11px] dark:bg-black/30">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Unsorted</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      {/* Cover */}
-      {coverUrl && (
-        <div className="relative h-32 shrink-0 sm:h-48" style={{ background: `url(${coverUrl}) center/cover` }}>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8"><MoreVertical className="h-5 w-5" /></Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-1">
+              <MenuItem icon={<Palette className="h-4 w-4" />} label="Background" onClick={() => setShowBg(true)} />
+              <MenuItem icon={<ImageIcon className="h-4 w-4" />} label="Cover image" onClick={() => coverInputRef.current?.click()} />
+              {coverPath && (
+                <MenuItem icon={<X className="h-4 w-4" />} label="Remove cover" onClick={() => setCoverPath(null)} />
+              )}
+              <MenuItem icon={<Smile className="h-4 w-4" />} label="Icon" onClick={() => setShowIcon(true)} />
+              <MenuItem icon={<Paperclip className="h-4 w-4" />} label="Attach file" onClick={() => attachInputRef.current?.click()} />
+              <div className="my-1 h-px bg-border" />
+              <MenuItem icon={<History className="h-4 w-4" />} label="Version history" onClick={openHistory} />
+              <MenuItem icon={<Share2 className="h-4 w-4" />} label="Share note" onClick={shareNote} />
+              <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as HTML" onClick={exportHtml} />
+              <MenuItem icon={<FileDown className="h-4 w-4" />} label="Export as text" onClick={exportText} />
+              <MenuItem icon={<Printer className="h-4 w-4" />} label="Print / save as PDF" onClick={printNote} />
+              <div className="my-1 h-px bg-border" />
+              <MenuItem
+                icon={note.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                label={note.is_locked ? "Remove lock" : "Lock with PIN"}
+                onClick={toggleLock}
+              />
+              <div className="my-1 h-px bg-border" />
+              <MenuItem
+                icon={<Trash2 className="h-4 w-4 text-destructive" />}
+                label="Delete note"
+                onClick={() => { if (confirm("Delete this note?")) onDelete(); }}
+                danger
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-      )}
 
-      {/* Title + icon */}
-      <div className="flex items-center gap-2 px-4 pt-4">
-        <button
-          onClick={() => setShowIcon(true)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 text-2xl backdrop-blur-md dark:bg-black/20"
-        >
-          {icon ?? "＋"}
-        </button>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
-          className="min-w-0 flex-1 border-none bg-transparent text-2xl font-bold placeholder:opacity-50 focus:outline-none"
-          style={{ color: "inherit" }}
-        />
+        {/* Cover */}
+        {coverUrl && (
+          <div className="relative h-24 shrink-0 sm:h-40" style={{ background: `url(${coverUrl}) center/cover` }}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          </div>
+        )}
+
+        {/* Title + icon */}
+        <div className="flex shrink-0 items-center gap-2 px-3 pt-2">
+          <button
+            onClick={() => setShowIcon(true)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/60 text-lg backdrop-blur-md dark:bg-black/20"
+          >
+            {icon ?? "＋"}
+          </button>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            className="min-w-0 flex-1 border-none bg-transparent text-lg font-bold placeholder:opacity-50 focus:outline-none"
+            style={{ color: "inherit" }}
+          />
+        </div>
+
+        {/* Editor — takes all remaining space, format bar pinned at the bottom */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <RichEditor
+            content={content}
+            onChange={setContent}
+            onInsertPhoto={() => photoInputRef.current?.click()}
+            onOpenDrawing={() => setDrawing(true)}
+            onStartRecording={startRecording}
+            onStopRecording={stopRecording}
+            recording={recording}
+            onAttachFile={() => attachInputRef.current?.click()}
+            textClass={bg.text === "light" ? "prose-invert" : ""}
+            placeholder="Start writing your thoughts…"
+          />
+        </div>
       </div>
 
-      {/* Editor */}
-      <div className="flex min-h-0 flex-1 flex-col">
-        <RichEditor
-          content={content}
-          onChange={setContent}
-          onInsertPhoto={() => photoInputRef.current?.click()}
-          onOpenDrawing={() => setDrawing(true)}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
-          recording={recording}
-          onAttachFile={() => attachInputRef.current?.click()}
-          textClass={bg.text === "light" ? "prose-invert" : ""}
-          placeholder="Start writing your thoughts…"
-        />
-      </div>
 
       <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPickPhoto} />
       <input ref={coverInputRef} type="file" accept="image/*" hidden onChange={onPickCover} />

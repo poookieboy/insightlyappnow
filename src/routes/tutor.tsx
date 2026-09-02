@@ -351,17 +351,8 @@ function Tutor() {
           </SheetContent>
         </Sheet>
 
-        <div className="min-w-0 flex-1">
-          {/* Dynamic-Island style status pill */}
-          <div className="mx-auto flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur">
-            <IrisMark size="sm" active={loading || voice.speaking || voice.listening} />
-            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
-              {active?.title ?? "Iris"}
-            </span>
-            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
-              {voice.listening ? "Listening" : voice.speaking ? "Speaking" : loading ? "Thinking" : "Ready"}
-            </span>
-          </div>
+        <div className="min-w-0 flex-1 text-center">
+          <p className="truncate text-sm font-semibold">{active?.title ?? "Iris"}</p>
         </div>
 
         <Button size="icon" variant="ghost" className="h-9 w-9" onClick={newChat} title="New chat">
@@ -369,23 +360,7 @@ function Tutor() {
         </Button>
       </div>
 
-      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setMode(m.id)}
-            className={cn(
-              "press shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
-              mode === m.id
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border/70 bg-card/70 text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+
 
 
       {lastFailed && (
@@ -468,7 +443,36 @@ function Tutor() {
           </div>
         )}
 
+        {/* Dynamic-Island style status pill — lives at the bottom, above the composer */}
+        <div className="mb-2 flex justify-center">
+          <div className="flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-card/90 px-3 py-1 shadow-md backdrop-blur">
+            <IrisMark size="sm" active={loading || voice.speaking || voice.listening} />
+            <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+              {voice.listening ? "Listening…" : voice.speaking ? "Speaking…" : loading ? "Thinking…" : "Iris · Ready"}
+            </span>
+          </div>
+        </div>
+
         <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setMode(m.id)}
+              className={cn(
+                "press shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium shadow-sm backdrop-blur transition-colors",
+                mode === m.id
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/70 bg-card/90 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+
           {QUICK_CHIPS.map((c) => (
             <button
               key={c.label}
@@ -596,7 +600,7 @@ function Tutor() {
         )}
       </form>
 
-      <div className="h-20" />
+      <div className="h-56" />
 
       <ProjectDialog
         open={projectDialog.open}
@@ -887,7 +891,50 @@ function ProjectDialog({
   );
 }
 
+/**
+ * Break a long reply into short conversational messages instead of one wall of text.
+ * Paragraphs become separate bubbles; lists, tables and code blocks stay together
+ * with the heading/intro line above them.
+ */
+function splitIntoTurns(md: string): string[] {
+  const text = (md || "").trim();
+  if (!text) return ["…"];
+  const blocks: string[] = [];
+  let buffer: string[] = [];
+  let inFence = false;
+
+  const flush = () => {
+    const t = buffer.join("\n").trim();
+    if (t) blocks.push(t);
+    buffer = [];
+  };
+
+  for (const line of text.split("\n")) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      buffer.push(line);
+      if (!inFence) flush();
+      continue;
+    }
+    if (inFence) { buffer.push(line); continue; }
+    if (!line.trim()) { flush(); continue; }
+    buffer.push(line);
+  }
+  flush();
+
+  // Merge tiny blocks (headings / one-liners) into the following block.
+  const merged: string[] = [];
+  for (const b of blocks) {
+    const prev = merged[merged.length - 1];
+    const prevIsLead = prev && (/^#{1,6}\s/.test(prev) || (prev.length < 60 && !/\n/.test(prev) && prev.endsWith(":")));
+    if (prevIsLead) merged[merged.length - 1] = `${prev}\n\n${b}`;
+    else merged.push(b);
+  }
+  return merged.length ? merged : [text];
+}
+
 function MessageBubble({
+
   msg, streaming, onSpeak, speaking, onRegenerate,
 }: {
   msg: TutorMessage;
@@ -898,6 +945,11 @@ function MessageBubble({
 }) {
   const isUser = msg.role === "user";
   const [copied, setCopied] = useState(false);
+  const chunks = useMemo(
+    () => (isUser ? [] : splitIntoTurns(humanizeMath(msg.content))),
+    [isUser, msg.content],
+  );
+
 
   const copy = async () => {
     try {
@@ -915,49 +967,53 @@ function MessageBubble({
         <div className="mt-1"><IrisMark /></div>
       )}
       <div className={cn("max-w-[85%] min-w-0", isUser ? "items-end" : "items-start")}>
-        <div
-          className={cn(
-            "rounded-2xl px-3 py-2 text-sm leading-relaxed animate-fade-in",
-            isUser ? "bg-gradient-primary text-primary-foreground" : "border bg-card",
-          )}
-        >
-          {msg.images && msg.images.length > 0 && (
-            <div className={cn("mb-2 grid gap-1.5", msg.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-              {msg.images.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={`Attached image ${i + 1}`}
-                  loading="lazy"
-                  className="max-h-48 w-full rounded-lg object-cover"
-                />
-              ))}
-            </div>
-          )}
-
-          {isUser ? (
+        {isUser ? (
+          <div className="rounded-2xl bg-gradient-primary px-3 py-2 text-sm leading-relaxed text-primary-foreground animate-fade-in">
+            {msg.images && msg.images.length > 0 && (
+              <div className={cn("mb-2 grid gap-1.5", msg.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+                {msg.images.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt={`Attached image ${i + 1}`}
+                    loading="lazy"
+                    className="max-h-48 w-full rounded-lg object-cover"
+                  />
+                ))}
+              </div>
+            )}
             <p className="whitespace-pre-wrap">{msg.content}</p>
-          ) : (
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ className, children, ...props }) {
-                    const lang = /language-(\w+)/.exec(className || "")?.[1];
-                    const text = String(children).replace(/\n$/, "");
-                    if (lang === "mermaid") return <Mermaid chart={text} />;
-                    return <code className={className} {...props}>{children}</code>;
-                  },
-                }}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {chunks.map((chunk, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border bg-card px-3 py-2 text-sm leading-relaxed animate-fade-in"
               >
-                {humanizeMath(msg.content) || "…"}
-              </ReactMarkdown>
-              {streaming && (
-                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
-              )}
-            </div>
-          )}
-        </div>
+                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-headings:mt-1 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ className, children, ...props }) {
+                        const lang = /language-(\w+)/.exec(className || "")?.[1];
+                        const text = String(children).replace(/\n$/, "");
+                        if (lang === "mermaid") return <Mermaid chart={text} />;
+                        return <code className={className} {...props}>{children}</code>;
+                      },
+                    }}
+                  >
+                    {chunk}
+                  </ReactMarkdown>
+                  {streaming && i === chunks.length - 1 && (
+                    <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
 
         {!isUser && !streaming && msg.content && (
           <div className="mt-1 flex items-center gap-1 pl-1">
