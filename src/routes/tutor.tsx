@@ -919,49 +919,53 @@ function MessageBubble({
         <div className="mt-1"><IrisMark /></div>
       )}
       <div className={cn("max-w-[85%] min-w-0", isUser ? "items-end" : "items-start")}>
-        <div
-          className={cn(
-            "rounded-2xl px-3 py-2 text-sm leading-relaxed animate-fade-in",
-            isUser ? "bg-gradient-primary text-primary-foreground" : "border bg-card",
-          )}
-        >
-          {msg.images && msg.images.length > 0 && (
-            <div className={cn("mb-2 grid gap-1.5", msg.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-              {msg.images.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={`Attached image ${i + 1}`}
-                  loading="lazy"
-                  className="max-h-48 w-full rounded-lg object-cover"
-                />
-              ))}
-            </div>
-          )}
-
-          {isUser ? (
+        {isUser ? (
+          <div className="rounded-2xl bg-gradient-primary px-3 py-2 text-sm leading-relaxed text-primary-foreground animate-fade-in">
+            {msg.images && msg.images.length > 0 && (
+              <div className={cn("mb-2 grid gap-1.5", msg.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+                {msg.images.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt={`Attached image ${i + 1}`}
+                    loading="lazy"
+                    className="max-h-48 w-full rounded-lg object-cover"
+                  />
+                ))}
+              </div>
+            )}
             <p className="whitespace-pre-wrap">{msg.content}</p>
-          ) : (
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:mt-3 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ className, children, ...props }) {
-                    const lang = /language-(\w+)/.exec(className || "")?.[1];
-                    const text = String(children).replace(/\n$/, "");
-                    if (lang === "mermaid") return <Mermaid chart={text} />;
-                    return <code className={className} {...props}>{children}</code>;
-                  },
-                }}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {chunks.map((chunk, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border bg-card px-3 py-2 text-sm leading-relaxed animate-fade-in"
               >
-                {humanizeMath(msg.content) || "…"}
-              </ReactMarkdown>
-              {streaming && (
-                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
-              )}
-            </div>
-          )}
-        </div>
+                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-headings:mt-1 prose-headings:mb-1 prose-pre:bg-muted prose-pre:text-foreground">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ className, children, ...props }) {
+                        const lang = /language-(\w+)/.exec(className || "")?.[1];
+                        const text = String(children).replace(/\n$/, "");
+                        if (lang === "mermaid") return <Mermaid chart={text} />;
+                        return <code className={className} {...props}>{children}</code>;
+                      },
+                    }}
+                  >
+                    {chunk}
+                  </ReactMarkdown>
+                  {streaming && i === chunks.length - 1 && (
+                    <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
 
         {!isUser && !streaming && msg.content && (
           <div className="mt-1 flex items-center gap-1 pl-1">
