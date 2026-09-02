@@ -53,17 +53,61 @@ jobs:
             exit 1
           fi
 
+          echo ""
           echo "Found web build output:"
           echo ".output/public"
 
+          echo ""
+          echo "Inspecting generated files:"
+          find .output/public \
+            -maxdepth 3 \
+            -type f \
+            -print | sort | head -200
+
+          # Copy the complete TanStack Start public output.
           cp -a .output/public/. dist/
 
+          # TanStack Start SPA builds may provide the application shell
+          # as _shell.html instead of index.html.
+          if [ -f "dist/_shell.html" ]; then
+            echo ""
+            echo "Found TanStack Start SPA shell: _shell.html"
+            echo "Creating Capacitor entry point: index.html"
+
+            cp "dist/_shell.html" "dist/index.html"
+          fi
+
+          # If a normal index.html was generated, use it directly.
+          if [ -f "dist/index.html" ]; then
+            echo ""
+            echo "SUCCESS: dist/index.html exists."
+          else
+            echo ""
+            echo "ERROR: Capacitor requires dist/index.html."
+            echo ""
+            echo "No index.html or _shell.html was generated."
+            echo ""
+            echo "Final generated files:"
+            find dist \
+              -maxdepth 3 \
+              -type f \
+              -print | sort | head -200
+            exit 1
+          fi
+
           echo ""
-          echo "Contents of dist:"
-          find dist -maxdepth 3 -type f | head -100
+          echo "========================================"
+          echo "Final Capacitor web assets"
+          echo "========================================"
+
+          find dist \
+            -maxdepth 3 \
+            -type f \
+            -print | sort | head -200
 
           echo ""
           echo "SUCCESS: Capacitor web assets prepared."
+          echo "dist/index.html is ready."
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
