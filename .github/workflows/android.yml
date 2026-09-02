@@ -12,21 +12,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ========================================
+      # CHECKOUT
+      # ========================================
       - name: Checkout source
         uses: actions/checkout@v4
 
+      # ========================================
+      # NODE.JS
+      # ========================================
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "npm"
 
+      # ========================================
+      # INSTALL DEPENDENCIES
+      # ========================================
       - name: Install dependencies
         run: npm install
 
+      # ========================================
+      # BUILD WEB APP
+      # ========================================
       - name: Build web app
         run: npm run build
 
+      # ========================================
+      # PREPARE CAPACITOR WEB ASSETS
+      # ========================================
       - name: Prepare Capacitor web assets
         shell: bash
         run: |
@@ -36,6 +51,9 @@ jobs:
           echo "Preparing Capacitor web assets"
           echo "========================================"
 
+          echo ""
+          echo "Checking build output..."
+
           if [ ! -d ".output/public" ]; then
             echo ""
             echo "ERROR: .output/public does not exist."
@@ -44,16 +62,35 @@ jobs:
             find . \
               -maxdepth 4 \
               -type d \
-              \( -name "dist" -o -name ".output" -o -name "build" -o -name "public" \) \
+              \( \
+                -name "dist" \
+                -o -name ".output" \
+                -o -name "build" \
+                -o -name "public" \
+              \) \
               -not -path "./node_modules/*" \
               -not -path "./android/*" \
               -print
+
+            echo ""
+            echo "Build output tree:"
+            find .output \
+              -maxdepth 4 \
+              -print 2>/dev/null || true
+
             exit 1
           fi
 
           echo ""
-          echo "Found TanStack Start build output:"
+          echo "FOUND:"
           echo ".output/public"
+
+          echo ""
+          echo "Files inside .output/public:"
+          find .output/public \
+            -maxdepth 5 \
+            -type f \
+            -print | sort | head -300
 
           echo ""
           echo "Preparing dist directory..."
@@ -61,27 +98,37 @@ jobs:
           rm -rf dist
           mkdir -p dist
 
-          cp -a .output/public/. dist/
+          echo ""
+          echo "Copying .output/public -> dist..."
+
+          cp -R .output/public/. dist/
 
           echo ""
-          echo "Checking Capacitor entry point..."
+          echo "Contents of dist:"
+          find dist \
+            -maxdepth 5 \
+            -type f \
+            -print | sort | head -300
+
+          echo ""
+          echo "Checking index.html..."
 
           if [ ! -f "dist/index.html" ]; then
             echo ""
-            echo "ERROR: dist/index.html does not exist after copying build output."
+            echo "ERROR: dist/index.html was NOT created."
             echo ""
-            echo "Contents of .output/public:"
+            echo "The TanStack build output does not contain a root index.html."
+            echo ""
+            echo "Full .output/public contents:"
             find .output/public \
-              -maxdepth 4 \
-              -type f \
-              -print | sort | head -300
+              -maxdepth 10 \
+              -print | sort | head -500
 
             echo ""
-            echo "Contents of dist:"
+            echo "Full dist contents:"
             find dist \
-              -maxdepth 4 \
-              -type f \
-              -print | sort | head -300
+              -maxdepth 10 \
+              -print | sort | head -500
 
             exit 1
           fi
@@ -91,32 +138,35 @@ jobs:
 
           echo ""
           echo "========================================"
-          echo "Final Capacitor web assets"
+          echo "Capacitor assets prepared successfully"
           echo "========================================"
 
-          find dist \
-            -maxdepth 4 \
-            -type f \
-            -print | sort | head -300
-
-          echo ""
-          echo "SUCCESS: Capacitor web assets prepared."
-          echo "dist/index.html is ready."
-
+      # ========================================
+      # JAVA
+      # ========================================
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
 
+      # ========================================
+      # GRADLE
+      # ========================================
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
 
+      # ========================================
+      # CAPACITOR SYNC
+      # ========================================
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      # ========================================
+      # VERIFY ANDROID PROJECT
+      # ========================================
       - name: Verify Android project
         shell: bash
         run: |
@@ -141,6 +191,7 @@ jobs:
             exit 1
           fi
 
+          echo ""
           echo "Android project found successfully."
 
           echo ""
@@ -148,9 +199,15 @@ jobs:
           find android \
             -maxdepth 3 \
             -type f \
-            \( -name "*.gradle" -o -name "*.gradle.kts" \) \
+            \( \
+              -name "*.gradle" \
+              -o -name "*.gradle.kts" \
+            \) \
             -print | sort
 
+      # ========================================
+      # DECODE SIGNING KEYSTORE
+      # ========================================
       - name: Decode Keystore
         shell: bash
         run: |
@@ -170,11 +227,18 @@ jobs:
 
           echo "Keystore decoded successfully."
 
+      # ========================================
+      # BUILD SIGNED AAB
+      # ========================================
       - name: Build Signed AAB
         working-directory: android
         shell: bash
         run: |
           set -e
+
+          echo "========================================"
+          echo "Building signed Android App Bundle"
+          echo "========================================"
 
           gradle clean bundleRelease \
             "-Pandroid.injected.signing.store.file=../release-key.jks" \
@@ -182,6 +246,9 @@ jobs:
             "-Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }}" \
             "-Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}"
 
+      # ========================================
+      # VERIFY AAB
+      # ========================================
       - name: Verify AAB exists
         shell: bash
         run: |
@@ -189,15 +256,21 @@ jobs:
 
           AAB_PATH="android/app/build/outputs/bundle/release/app-release.aab"
 
+          echo "========================================"
+          echo "Checking AAB"
+          echo "========================================"
+
           if [ ! -f "$AAB_PATH" ]; then
             echo ""
             echo "ERROR: AAB was not created."
             echo ""
             echo "Available bundle files:"
+
             find android/app/build/outputs \
               -type f \
               -name "*.aab" \
               -print || true
+
             exit 1
           fi
 
@@ -205,9 +278,13 @@ jobs:
           echo "========================================"
           echo "AAB SUCCESSFULLY CREATED"
           echo "========================================"
+
           echo ""
           ls -lh "$AAB_PATH"
 
+      # ========================================
+      # UPLOAD AAB
+      # ========================================
       - name: Upload Signed AAB Artifact
         uses: actions/upload-artifact@v4
         with:
