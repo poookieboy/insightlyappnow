@@ -1,0 +1,65 @@
+name: Android Release (AAB + APK)
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: "Version name (e.g. 1.0.0)"
+        required: false
+        default: "1.0.0"
+      versionCode:
+        description: "Version code (integer)"
+        required: false
+        default: "1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build web assets
+        run: bun run build
+
+      - name: Ensure Capacitor Android project
+        run: |
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Apply version
+        run: |
+          sed -i "s/versionCode .*/versionCode ${{ github.event.inputs.versionCode }}/" android/app/build.gradle
+          sed -i "s/versionName \".*\"/versionName \"${{ github.event.inputs.versionName }}\"/" android/app/build.gradle
+
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $RUNNER_TEMP/insightly.jks
+
+      - name: Build signed AAB and APK
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease assembleRelease \
+            -Pandroid.injected.signing.store.file=$RUNNER_TEMP/insightly.jks \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: insightly-android
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/*.apk
