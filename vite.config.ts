@@ -3,17 +3,17 @@
 //   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, cloudflare (build-only),
 //     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
 //     error logger plugins, and sandbox detection (port/host/strictPort).
+
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   tanstackStart: {
-    // Generate the server entry expected by the TanStack prerender process.
-    server: { entry: "server" },
+    server: {
+      entry: "server",
+    },
 
     spa: {
       enabled: true,
-
-      // outputPath belongs inside prerender.
       prerender: {
         outputPath: "/index.html",
       },
