@@ -38,36 +38,98 @@ type Body = GenBody | MarkBody | HintBody;
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-async function callAI(messages: { role: string; content: string }[], jsonMode = true) {
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) throw new Error("LOVABLE_API_KEY not configured");
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages,
-      ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-    }),
-  });
-  if (!resp.ok) {
+// ---- AI helper (Gemini first, legacy gateway fallback) ----
+const GEMINI_MODEL = "gemini-2.5-flash";
+
+function geminiKey(): string | undefined {
+  return (
+    Deno.env.get("GEMINI_API_KEY") ||
+    Deno.env.get("GOOGLE_API_KEY") ||
+    Deno.env.get("GOOGLE_GEMINI_API_KEY") ||
+    undefined
+  );
+}
+
+async function callAI(
+  messages: { role: string; content: string }[],
+  jsonMode = true,
+): Promise<string> {
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }))
+    .filter((m) => m.parts[0].text?.trim());
+
+  const key = geminiKey();
+  if (key) {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+          contents,
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 8192,
+            ...(jsonMode ? { responseMimeType: "application/json" } : {}),
+          },
+        }),
+      },
+    );
     const text = await resp.text();
-    const err: any = new Error(`AI gateway ${resp.status}`);
-    err.status = resp.status;
-    err.body = text;
-    throw err;
+    if (!resp.ok) {
+      console.error("Gemini error", resp.status, text.slice(0, 400));
+      const err: any = new Error(`AI service error (${resp.status})`);
+      err.status = resp.status;
+      throw err;
+    }
+    const data = JSON.parse(text);
+    return data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? "").join("") ?? "";
   }
-  const data = await resp.json();
-  return data.choices?.[0]?.message?.content ?? "";
+
+  const legacy = Deno.env.get("LOVABLE_API_KEY");
+  if (legacy) {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${legacy}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages,
+        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text();
+      console.error("AI gateway error", resp.status, body.slice(0, 400));
+      const err: any = new Error(`AI service error (${resp.status})`);
+      err.status = resp.status;
+      throw err;
+    }
+    const data = await resp.json();
+    return data?.choices?.[0]?.message?.content ?? "";
+  }
+
+  const err: any = new Error(
+    "AI is not configured on the server. Add the GEMINI_API_KEY secret in Project Settings → Secrets.",
+  );
+  err.status = 500;
+  throw err;
 }
 
 function safeJson<T>(raw: string): T | null {
-  try { return JSON.parse(raw) as T; } catch {
-    const m = raw.match(/\{[\s\S]*\}/);
+  const cleaned = String(raw).replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try { return JSON.parse(cleaned) as T; } catch {
+    const m = cleaned.match(/\{[\s\S]*\}/);
     if (!m) return null;
     try { return JSON.parse(m[0]) as T; } catch { return null; }
   }
 }
+// -----------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
