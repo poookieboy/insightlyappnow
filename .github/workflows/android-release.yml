@@ -72,14 +72,6 @@ jobs:
       # =========================================================
       # 4. INSTALL DEPENDENCIES
       # =========================================================
-      # IMPORTANT:
-      # Do NOT use npm ci here.
-      #
-      # The existing package-lock.json is out of sync with
-      # package.json. npm ci therefore stops the workflow.
-      #
-      # npm install reconciles the dependency tree and allows
-      # the build to continue.
 
       - name: Install dependencies
         shell: bash
@@ -90,10 +82,8 @@ jobs:
           echo "Installing dependencies"
           echo "========================================"
 
-          echo "Removing old node_modules..."
           rm -rf node_modules
 
-          echo "Installing dependencies..."
           npm install --no-audit --no-fund
 
           echo ""
@@ -110,14 +100,61 @@ jobs:
           set -euo pipefail
 
           echo "========================================"
-          echo "Building web application"
+          echo "Building Insightly web application"
           echo "========================================"
 
           npm run build
 
+          echo ""
+          echo "Web build command completed."
+
 
       # =========================================================
-      # 6. PREPARE CAPACITOR WEB ASSETS
+      # 6. DIAGNOSE BUILD OUTPUT
+      # =========================================================
+
+      - name: Diagnose web build output
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "========================================"
+          echo "WEB BUILD OUTPUT"
+          echo "========================================"
+
+          echo ""
+          echo "Root directories:"
+          find . \
+            -maxdepth 2 \
+            -type d \
+            ! -path "./node_modules*" \
+            ! -path "./.git*" \
+            | sort
+
+          echo ""
+          echo "index.html files:"
+          find . \
+            -maxdepth 6 \
+            -type f \
+            -name "index.html" \
+            ! -path "./node_modules/*" \
+            ! -path "./.git/*" \
+            -print | sort || true
+
+          echo ""
+          echo ".output files:"
+          if [ -d ".output" ]; then
+            find .output \
+              -maxdepth 6 \
+              -type f \
+              -print | sort
+          else
+            echo ".output does not exist."
+          fi
+
+
+      # =========================================================
+      # 7. PREPARE CAPACITOR WEB ASSETS
       # =========================================================
 
       - name: Prepare Capacitor web assets
@@ -130,7 +167,7 @@ jobs:
           echo "========================================"
 
           # -----------------------------------------------------
-          # Case 1: dist already contains index.html
+          # Case 1: dist/index.html already exists
           # -----------------------------------------------------
 
           if [ -f "dist/index.html" ]; then
@@ -139,7 +176,7 @@ jobs:
             echo "Using existing dist directory."
 
           # -----------------------------------------------------
-          # Case 2: TanStack Start output
+          # Case 2: TanStack Start generated .output/public
           # -----------------------------------------------------
 
           elif [ -f ".output/public/index.html" ]; then
@@ -153,46 +190,57 @@ jobs:
             cp -a .output/public/. dist/
 
           # -----------------------------------------------------
-          # Case 3: No usable output
+          # Case 3: Search common static output directories
+          # -----------------------------------------------------
+
+          elif [ -f "build/index.html" ]; then
+
+            echo "Found build/index.html"
+            echo "Copying build -> dist"
+
+            rm -rf dist
+            mkdir -p dist
+
+            cp -a build/. dist/
+
+          elif [ -f "public/index.html" ]; then
+
+            echo "Found public/index.html"
+            echo "Copying public -> dist"
+
+            rm -rf dist
+            mkdir -p dist
+
+            cp -a public/. dist/
+
+          # -----------------------------------------------------
+          # Case 4: No usable output
           # -----------------------------------------------------
 
           else
 
             echo ""
-            echo "ERROR: No Capacitor-compatible web build was found."
-            echo ""
+            echo "========================================"
+            echo "ERROR: NO WEB BUILD FOUND"
+            echo "========================================"
 
-            echo "Expected:"
+            echo ""
+            echo "Expected one of:"
             echo "  dist/index.html"
-            echo "or:"
             echo "  .output/public/index.html"
+            echo "  build/index.html"
+            echo "  public/index.html"
 
             echo ""
-            echo "========================================"
-            echo "Build output diagnostics"
-            echo "========================================"
+            echo "Searching entire repository for index.html..."
 
-            echo ""
-            echo ".output:"
-            if [ -d ".output" ]; then
-              find .output \
-                -maxdepth 6 \
-                -type f \
-                -print | sort
-            else
-              echo ".output does not exist."
-            fi
-
-            echo ""
-            echo "dist:"
-            if [ -d "dist" ]; then
-              find dist \
-                -maxdepth 6 \
-                -type f \
-                -print | sort
-            else
-              echo "dist does not exist."
-            fi
+            find . \
+              -maxdepth 8 \
+              -type f \
+              -name "index.html" \
+              ! -path "./node_modules/*" \
+              ! -path "./.git/*" \
+              -print | sort || true
 
             exit 1
 
@@ -203,7 +251,7 @@ jobs:
 
 
       # =========================================================
-      # 7. VERIFY CAPACITOR WEB ASSETS
+      # 8. VERIFY CAPACITOR WEB ASSETS
       # =========================================================
 
       - name: Verify Capacitor web assets
@@ -224,11 +272,20 @@ jobs:
           echo ""
           echo "SUCCESS: dist/index.html exists."
 
+          echo ""
+          echo "dist contents:"
+          find dist \
+            -maxdepth 3 \
+            -type f \
+            -print | sort
+
+          echo ""
+          echo "index.html:"
           ls -lh dist/index.html
 
 
       # =========================================================
-      # 8. JAVA 17
+      # 9. JAVA 17
       # =========================================================
 
       - name: Set up Java 17
@@ -239,7 +296,7 @@ jobs:
 
 
       # =========================================================
-      # 9. ANDROID SDK
+      # 10. ANDROID SDK
       # =========================================================
 
       - name: Set up Android SDK
@@ -247,7 +304,7 @@ jobs:
 
 
       # =========================================================
-      # 10. CAPACITOR ANDROID PROJECT
+      # 11. ENSURE CAPACITOR ANDROID PROJECT
       # =========================================================
 
       - name: Ensure Capacitor Android project and sync
@@ -273,21 +330,21 @@ jobs:
           fi
 
           echo ""
-          echo "Checking web assets..."
+          echo "Checking Capacitor web assets..."
 
-          if [ ! -f "dist/index.html" ]; then
-            echo "ERROR: dist/index.html is missing."
-            exit 1
-          fi
+          test -f dist/index.html
 
           echo ""
-          echo "Syncing Capacitor Android..."
+          echo "Running Capacitor sync..."
 
           npx cap sync android
 
+          echo ""
+          echo "Capacitor sync completed."
+
 
       # =========================================================
-      # 11. VERIFY ANDROID PROJECT
+      # 12. VERIFY ANDROID PROJECT
       # =========================================================
 
       - name: Verify Android project
@@ -321,7 +378,7 @@ jobs:
 
 
       # =========================================================
-      # 12. CHECK ANDROID SDK CONFIGURATION
+      # 13. VERIFY ANDROID SDK 36
       # =========================================================
 
       - name: Verify Android SDK 36 configuration
@@ -348,7 +405,7 @@ jobs:
 
 
       # =========================================================
-      # 13. APPLY VERSION
+      # 14. APPLY VERSION
       # =========================================================
 
       - name: Apply Android version
@@ -393,7 +450,7 @@ jobs:
 
 
       # =========================================================
-      # 14. DECODE RELEASE KEYSTORE
+      # 15. DECODE RELEASE KEYSTORE
       # =========================================================
 
       - name: Decode release keystore
@@ -411,7 +468,6 @@ jobs:
             echo ""
             echo "ERROR:"
             echo "ANDROID_KEYSTORE_BASE64 secret is missing."
-            echo ""
             exit 1
           fi
 
@@ -424,11 +480,12 @@ jobs:
             exit 1
           fi
 
+          echo ""
           echo "Keystore decoded successfully."
 
 
       # =========================================================
-      # 15. VERIFY SIGNING SECRETS
+      # 16. VERIFY SIGNING SECRETS
       # =========================================================
 
       - name: Verify signing configuration
@@ -464,7 +521,7 @@ jobs:
 
 
       # =========================================================
-      # 16. BUILD SIGNED AAB + APK
+      # 17. BUILD SIGNED AAB + APK
       # =========================================================
 
       - name: Build signed AAB and APK
@@ -500,11 +557,11 @@ jobs:
             --stacktrace
 
           echo ""
-          echo "Gradle build completed."
+          echo "Gradle build completed successfully."
 
 
       # =========================================================
-      # 17. LOCATE RELEASE FILES
+      # 18. LOCATE RELEASE FILES
       # =========================================================
 
       - name: Locate Android release files
@@ -534,7 +591,7 @@ jobs:
 
 
       # =========================================================
-      # 18. VERIFY AAB + APK
+      # 19. VERIFY AAB + APK
       # =========================================================
 
       - name: Verify AAB and APK
@@ -594,7 +651,7 @@ jobs:
 
 
       # =========================================================
-      # 19. UPLOAD AAB + APK
+      # 20. UPLOAD AAB + APK
       # =========================================================
 
       - name: Upload AAB and APK
