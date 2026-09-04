@@ -7,46 +7,107 @@ on:
         description: "Version name (e.g. 1.0.0)"
         required: false
         default: "1.0.0"
+
       versionCode:
         description: "Version code (integer)"
         required: false
         default: "1"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Prevent the Node.js heap error that killed the VoltBuilder build.
+    env:
+      NODE_OPTIONS: "--max-old-space-size=8192"
+
     steps:
-      # ---------------------------------------------------------
-      # 1. Checkout
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 1. CHECKOUT
+      # =========================================================
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ---------------------------------------------------------
-      # 2. Node.js
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 2. NODE.JS 24
+      # =========================================================
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "npm"
 
-      # ---------------------------------------------------------
-      # 3. Install dependencies
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 3. VERIFY NODE MEMORY
+      # =========================================================
+      - name: Verify Node.js configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "========================================"
+          echo "Node.js configuration"
+          echo "========================================"
+
+          node --version
+          npm --version
+
+          echo ""
+          echo "NODE_OPTIONS:"
+          echo "$NODE_OPTIONS"
+
+          echo ""
+          echo "Node heap configuration:"
+          node -e "console.log(require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024 + ' MB')"
+
+
+      # =========================================================
+      # 4. INSTALL DEPENDENCIES
+      # =========================================================
       - name: Install dependencies
-        run: npm install
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      # ---------------------------------------------------------
-      # 4. Build web application
-      # ---------------------------------------------------------
+          echo "========================================"
+          echo "Installing dependencies"
+          echo "========================================"
+
+          if [ -f "package-lock.json" ]; then
+            echo "package-lock.json found."
+            echo "Using npm ci."
+            npm ci
+          else
+            echo "WARNING: package-lock.json not found."
+            echo "Using npm install."
+            npm install
+          fi
+
+
+      # =========================================================
+      # 5. BUILD WEB APPLICATION
+      # =========================================================
       - name: Build web assets
-        run: npm run build
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      # ---------------------------------------------------------
-      # 5. Prepare Capacitor web assets
-      # ---------------------------------------------------------
+          echo "========================================"
+          echo "Building web application"
+          echo "========================================"
+
+          npm run build
+
+
+      # =========================================================
+      # 6. PREPARE CAPACITOR WEB ASSETS
+      # =========================================================
       - name: Prepare Capacitor web assets
         shell: bash
         run: |
@@ -56,13 +117,19 @@ jobs:
           echo "Preparing Capacitor web assets"
           echo "========================================"
 
-          # If dist/index.html already exists, use it.
+          # -----------------------------------------------------
+          # Case 1: dist/index.html already exists
+          # -----------------------------------------------------
           if [ -f "dist/index.html" ]; then
+
             echo "Found dist/index.html"
             echo "Using existing dist directory."
 
-          # Otherwise use TanStack Start output.
+          # -----------------------------------------------------
+          # Case 2: TanStack Start output exists
+          # -----------------------------------------------------
           elif [ -f ".output/public/index.html" ]; then
+
             echo "Found .output/public/index.html"
             echo "Copying .output/public -> dist"
 
@@ -71,13 +138,17 @@ jobs:
 
             cp -a .output/public/. dist/
 
+          # -----------------------------------------------------
+          # Case 3: Nothing usable was produced
+          # -----------------------------------------------------
           else
+
             echo ""
             echo "ERROR: No Capacitor-compatible web build was found."
             echo ""
-            echo "Expected:"
+
+            echo "Expected one of:"
             echo "  dist/index.html"
-            echo "or:"
             echo "  .output/public/index.html"
             echo ""
 
@@ -95,6 +166,7 @@ jobs:
             fi
 
             echo ""
+
             echo "========================================"
             echo "dist contents"
             echo "========================================"
@@ -109,7 +181,7 @@ jobs:
             fi
 
             echo ""
-            echo "FAIL: npm run build did not produce a Capacitor-compatible index.html."
+            echo "FAIL: npm run build did not produce a usable web build."
 
             exit 1
           fi
@@ -124,15 +196,18 @@ jobs:
             -type f \
             -print | sort | head -200
 
-      # ---------------------------------------------------------
-      # 6. Verify web assets BEFORE Capacitor
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 7. VERIFY CAPACITOR WEB ASSETS
+      # =========================================================
       - name: Verify Capacitor web assets
         shell: bash
         run: |
           set -euo pipefail
 
-          echo "Checking dist/index.html..."
+          echo "========================================"
+          echo "Verifying Capacitor web assets"
+          echo "========================================"
 
           if [ ! -f "dist/index.html" ]; then
             echo ""
@@ -142,11 +217,30 @@ jobs:
 
           echo ""
           echo "SUCCESS: dist/index.html exists."
+
           ls -lh dist/index.html
 
-      # ---------------------------------------------------------
-      # 7. Capacitor Android project + sync
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 8. SET UP JAVA 17
+      # =========================================================
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+
+      # =========================================================
+      # 9. SET UP ANDROID SDK
+      # =========================================================
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+
+      # =========================================================
+      # 10. ENSURE CAPACITOR ANDROID PROJECT
+      # =========================================================
       - name: Ensure Capacitor Android project and sync
         shell: bash
         run: |
@@ -157,19 +251,23 @@ jobs:
           echo "========================================"
 
           if [ ! -d "android" ]; then
+
             echo "Android project does not exist."
             echo "Adding Capacitor Android platform..."
 
             npx cap add android
+
           else
+
             echo "Android project already exists."
+
           fi
 
           echo ""
-          echo "Verifying dist/index.html before sync..."
+          echo "Verifying dist/index.html before Capacitor sync..."
 
           if [ ! -f "dist/index.html" ]; then
-            echo "ERROR: dist/index.html is missing before Capacitor sync."
+            echo "ERROR: dist/index.html is missing."
             exit 1
           fi
 
@@ -178,42 +276,69 @@ jobs:
 
           npx cap sync android
 
-      # ---------------------------------------------------------
-      # 8. Java 17
-      # ---------------------------------------------------------
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
 
-      # ---------------------------------------------------------
-      # 9. Android SDK
-      # ---------------------------------------------------------
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      # ---------------------------------------------------------
-      # 10. Gradle wrapper
-      # ---------------------------------------------------------
-      - name: Ensure Gradle wrapper is executable
+      # =========================================================
+      # 11. VERIFY ANDROID PROJECT
+      # =========================================================
+      - name: Verify Android project
         shell: bash
         run: |
           set -euo pipefail
+
+          echo "========================================"
+          echo "Verifying Android project"
+          echo "========================================"
 
           if [ ! -f "android/gradlew" ]; then
             echo "ERROR: android/gradlew does not exist."
             exit 1
           fi
 
+          if [ ! -f "android/app/build.gradle" ]; then
+            echo "ERROR: android/app/build.gradle does not exist."
+            exit 1
+          fi
+
           chmod +x android/gradlew
 
-          echo "Gradle wrapper is ready."
+          echo ""
+          echo "Gradle wrapper:"
+          android/gradlew --version
 
-      # ---------------------------------------------------------
-      # 11. Apply version
-      # ---------------------------------------------------------
-      - name: Apply version
+          echo ""
+          echo "Android project verified."
+
+
+      # =========================================================
+      # 12. CHECK SDK 36
+      # =========================================================
+      - name: Verify Android SDK 36 configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "========================================"
+          echo "Checking Android SDK configuration"
+          echo "========================================"
+
+          echo ""
+          echo "Searching Android Gradle files..."
+
+          grep -RniE \
+            "compileSdk|targetSdk|minSdk" \
+            android/app/build.gradle \
+            android/build.gradle \
+            android/gradle.properties \
+            2>/dev/null || true
+
+          echo ""
+          echo "SDK configuration check complete."
+
+
+      # =========================================================
+      # 13. APPLY VERSION
+      # =========================================================
+      - name: Apply Android version
         shell: bash
         run: |
           set -euo pipefail
@@ -228,6 +353,16 @@ jobs:
           echo "Version name: $VERSION_NAME"
           echo "Version code: $VERSION_CODE"
 
+          if ! [[ "$VERSION_CODE" =~ ^[0-9]+$ ]]; then
+            echo "ERROR: versionCode must be an integer."
+            exit 1
+          fi
+
+          if [ -z "$VERSION_NAME" ]; then
+            echo "ERROR: versionName cannot be empty."
+            exit 1
+          fi
+
           sed -i \
             "s/versionCode .*/versionCode $VERSION_CODE/" \
             android/app/build.gradle
@@ -236,10 +371,18 @@ jobs:
             "s/versionName \".*\"/versionName \"$VERSION_NAME\"/" \
             android/app/build.gradle
 
-      # ---------------------------------------------------------
-      # 12. Decode signing keystore
-      # ---------------------------------------------------------
-      - name: Decode keystore
+          echo ""
+          echo "Updated Android version configuration."
+
+          grep -nE \
+            "versionCode|versionName" \
+            android/app/build.gradle || true
+
+
+      # =========================================================
+      # 14. DECODE RELEASE KEYSTORE
+      # =========================================================
+      - name: Decode release keystore
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -251,7 +394,12 @@ jobs:
           echo "========================================"
 
           if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
-            echo "ERROR: ANDROID_KEYSTORE_BASE64 secret is missing."
+            echo ""
+            echo "ERROR:"
+            echo "ANDROID_KEYSTORE_BASE64 secret is missing."
+            echo ""
+            echo "The Android release cannot be signed without the"
+            echo "release keystore."
             exit 1
           fi
 
@@ -266,9 +414,44 @@ jobs:
 
           echo "Keystore decoded successfully."
 
-      # ---------------------------------------------------------
-      # 13. Build signed AAB + APK
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 15. VERIFY SIGNING SECRETS
+      # =========================================================
+      - name: Verify signing configuration
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          echo "========================================"
+          echo "Checking signing configuration"
+          echo "========================================"
+
+          if [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_PASSWORD is missing."
+            exit 1
+          fi
+
+          if [ -z "${ANDROID_KEY_ALIAS:-}" ]; then
+            echo "ERROR: ANDROID_KEY_ALIAS is missing."
+            exit 1
+          fi
+
+          if [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
+            echo "ERROR: ANDROID_KEY_PASSWORD is missing."
+            exit 1
+          fi
+
+          echo "All required signing secrets are present."
+
+
+      # =========================================================
+      # 16. BUILD SIGNED AAB + APK
+      # =========================================================
       - name: Build signed AAB and APK
         working-directory: android
         shell: bash
@@ -283,15 +466,61 @@ jobs:
           echo "Building signed AAB and APK"
           echo "========================================"
 
+          echo ""
+          echo "Node memory:"
+          node -e "console.log(process.execArgv)"
+
+          echo ""
+          echo "Gradle version:"
+          ./gradlew --version
+
+          echo ""
+          echo "Starting Android release build..."
+
           ./gradlew clean bundleRelease assembleRelease \
             "-Pandroid.injected.signing.store.file=$RUNNER_TEMP/insightly.jks" \
             "-Pandroid.injected.signing.store.password=$ANDROID_KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$ANDROID_KEY_ALIAS" \
-            "-Pandroid.injected.signing.key.password=$ANDROID_KEY_PASSWORD"
+            "-Pandroid.injected.signing.key.password=$ANDROID_KEY_PASSWORD" \
+            --no-daemon \
+            --stacktrace
 
-      # ---------------------------------------------------------
-      # 14. Verify AAB + APK
-      # ---------------------------------------------------------
+          echo ""
+          echo "Gradle build completed."
+
+
+      # =========================================================
+      # 17. FIND RELEASE FILES
+      # =========================================================
+      - name: Locate Android release files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "========================================"
+          echo "Locating Android release files"
+          echo "========================================"
+
+          echo ""
+          echo "AAB files:"
+
+          find android/app/build/outputs \
+            -type f \
+            -name "*.aab" \
+            -print || true
+
+          echo ""
+          echo "APK files:"
+
+          find android/app/build/outputs \
+            -type f \
+            -name "*.apk" \
+            -print || true
+
+
+      # =========================================================
+      # 18. VERIFY AAB + APK
+      # =========================================================
       - name: Verify AAB and APK
         shell: bash
         run: |
@@ -305,26 +534,30 @@ jobs:
           echo "========================================"
 
           if [ ! -f "$AAB" ]; then
+
             echo ""
             echo "ERROR: AAB was not created."
             echo ""
-            echo "Available AAB files:"
+
             find android/app/build/outputs \
               -type f \
               -name "*.aab" \
               -print || true
+
             exit 1
           fi
 
           if [ ! -f "$APK" ]; then
+
             echo ""
             echo "ERROR: APK was not created."
             echo ""
-            echo "Available APK files:"
+
             find android/app/build/outputs \
               -type f \
               -name "*.apk" \
               -print || true
+
             exit 1
           fi
 
@@ -341,9 +574,10 @@ jobs:
           echo "ANDROID BUILD SUCCESSFUL"
           echo "========================================"
 
-      # ---------------------------------------------------------
-      # 15. Upload both artifacts
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 19. UPLOAD AAB + APK
+      # =========================================================
       - name: Upload AAB and APK
         uses: actions/upload-artifact@v4
         with:
