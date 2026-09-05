@@ -95,7 +95,8 @@
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
     "zod": "^3.24.2",
-    "@capacitor/android": "^5.0.4"
+    "@capacitor/android": "5.7.8",
+    "@capacitor/core": "5.7.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -114,6 +115,6 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1",
-    "@capacitor/cli": "^5.0.4"
+    "@capacitor/cli": "5.7.8"
   }
 }
