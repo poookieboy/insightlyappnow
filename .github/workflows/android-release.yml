@@ -34,7 +34,7 @@ jobs:
 
 
       # =========================================================
-      # 2. NODE.JS 24
+      # 2. NODE.JS
       # =========================================================
 
       - name: Set up Node.js
@@ -106,11 +106,13 @@ jobs:
           npm run build
 
           echo ""
-          echo "Web build command completed."
+          echo "========================================"
+          echo "WEB BUILD COMPLETED"
+          echo "========================================"
 
 
       # =========================================================
-      # 6. DIAGNOSE BUILD OUTPUT
+      # 6. DIAGNOSE WEB BUILD OUTPUT
       # =========================================================
 
       - name: Diagnose web build output
@@ -119,7 +121,7 @@ jobs:
           set -euo pipefail
 
           echo "========================================"
-          echo "WEB BUILD OUTPUT"
+          echo "Diagnosing web build output"
           echo "========================================"
 
           echo ""
@@ -132,20 +134,20 @@ jobs:
             | sort
 
           echo ""
-          echo "index.html files:"
+          echo "HTML files:"
           find . \
-            -maxdepth 6 \
             -type f \
-            -name "index.html" \
+            \( -name "*.html" -o -name "*.htm" \) \
             ! -path "./node_modules/*" \
             ! -path "./.git/*" \
             -print | sort || true
 
           echo ""
           echo ".output files:"
+
           if [ -d ".output" ]; then
             find .output \
-              -maxdepth 6 \
+              -maxdepth 10 \
               -type f \
               -print | sort
           else
@@ -166,17 +168,20 @@ jobs:
           echo "Preparing Capacitor web assets"
           echo "========================================"
 
+          rm -rf dist
+          mkdir -p dist
+
           # -----------------------------------------------------
-          # Case 1: dist/index.html already exists
+          # CASE 1: dist/index.html already exists
           # -----------------------------------------------------
 
           if [ -f "dist/index.html" ]; then
 
             echo "Found dist/index.html"
-            echo "Using existing dist directory."
+            echo "Using existing Capacitor web assets."
 
           # -----------------------------------------------------
-          # Case 2: TanStack Start generated .output/public
+          # CASE 2: .output/public/index.html
           # -----------------------------------------------------
 
           elif [ -f ".output/public/index.html" ]; then
@@ -184,13 +189,25 @@ jobs:
             echo "Found .output/public/index.html"
             echo "Copying .output/public -> dist"
 
-            rm -rf dist
-            mkdir -p dist
-
             cp -a .output/public/. dist/
 
           # -----------------------------------------------------
-          # Case 3: Search common static output directories
+          # CASE 3: TanStack SPA shell
+          # -----------------------------------------------------
+
+          elif [ -f ".output/public/_shell.html" ]; then
+
+            echo "Found .output/public/_shell.html"
+            echo "Converting TanStack SPA shell to index.html"
+
+            cp -a .output/public/. dist/
+
+            cp \
+              ".output/public/_shell.html" \
+              "dist/index.html"
+
+          # -----------------------------------------------------
+          # CASE 4: build/index.html
           # -----------------------------------------------------
 
           elif [ -f "build/index.html" ]; then
@@ -198,56 +215,135 @@ jobs:
             echo "Found build/index.html"
             echo "Copying build -> dist"
 
-            rm -rf dist
-            mkdir -p dist
-
             cp -a build/. dist/
+
+          # -----------------------------------------------------
+          # CASE 5: public/index.html
+          # -----------------------------------------------------
 
           elif [ -f "public/index.html" ]; then
 
             echo "Found public/index.html"
             echo "Copying public -> dist"
 
-            rm -rf dist
-            mkdir -p dist
-
             cp -a public/. dist/
 
           # -----------------------------------------------------
-          # Case 4: No usable output
+          # CASE 6: Search generated output for ANY HTML
           # -----------------------------------------------------
 
           else
 
             echo ""
             echo "========================================"
-            echo "ERROR: NO WEB BUILD FOUND"
+            echo "NO STANDARD INDEX FOUND"
+            echo "Searching generated output..."
             echo "========================================"
 
-            echo ""
-            echo "Expected one of:"
-            echo "  dist/index.html"
-            echo "  .output/public/index.html"
-            echo "  build/index.html"
-            echo "  public/index.html"
+            HTML_FILE="$(
+              find .output/public \
+                -type f \
+                \( -name "*.html" -o -name "*.htm" \) \
+                -print \
+                2>/dev/null \
+                | head -n 1 || true
+            )"
+
+            if [ -n "$HTML_FILE" ]; then
+
+              echo ""
+              echo "Found generated HTML:"
+              echo "$HTML_FILE"
+
+              echo ""
+              echo "Copying .output/public -> dist"
+
+              cp -a .output/public/. dist/
+
+              echo ""
+              echo "Creating dist/index.html"
+
+              cp "$HTML_FILE" "dist/index.html"
+
+            else
+
+              echo ""
+              echo "========================================"
+              echo "ERROR: NO WEB BUILD FOUND"
+              echo "========================================"
+
+              echo ""
+              echo "Expected one of:"
+              echo "  dist/index.html"
+              echo "  .output/public/index.html"
+              echo "  .output/public/_shell.html"
+              echo "  build/index.html"
+              echo "  public/index.html"
+
+              echo ""
+              echo "Searching entire repository for HTML..."
+
+              find . \
+                -type f \
+                \( -name "*.html" -o -name "*.htm" \) \
+                ! -path "./node_modules/*" \
+                ! -path "./.git/*" \
+                -print | sort || true
+
+              echo ""
+              echo "Full .output contents:"
+
+              if [ -d ".output" ]; then
+                find .output \
+                  -maxdepth 10 \
+                  -type f \
+                  -print | sort
+              else
+                echo ".output does not exist."
+              fi
+
+              exit 1
+
+            fi
+
+          fi
+
+
+          # =====================================================
+          # FINAL CHECK
+          # =====================================================
+
+          echo ""
+          echo "========================================"
+          echo "Final Capacitor web asset check"
+          echo "========================================"
+
+          if [ ! -f "dist/index.html" ]; then
 
             echo ""
-            echo "Searching entire repository for index.html..."
-
-            find . \
-              -maxdepth 8 \
-              -type f \
-              -name "index.html" \
-              ! -path "./node_modules/*" \
-              ! -path "./.git/*" \
-              -print | sort || true
-
+            echo "ERROR: dist/index.html was not created."
             exit 1
 
           fi
 
           echo ""
-          echo "Web assets prepared successfully."
+          echo "SUCCESS: dist/index.html exists."
+
+          echo ""
+          echo "File:"
+          ls -lh dist/index.html
+
+          echo ""
+          echo "dist contents:"
+          find dist \
+            -maxdepth 5 \
+            -type f \
+            -print | sort
+
+          echo ""
+          echo "========================================"
+          echo "CAPACITOR WEB ASSETS READY"
+          echo "========================================"
 
 
       # =========================================================
@@ -270,17 +366,11 @@ jobs:
           fi
 
           echo ""
-          echo "SUCCESS: dist/index.html exists."
+          echo "SUCCESS:"
+          echo "dist/index.html exists."
 
           echo ""
-          echo "dist contents:"
-          find dist \
-            -maxdepth 3 \
-            -type f \
-            -print | sort
-
-          echo ""
-          echo "index.html:"
+          echo "Size:"
           ls -lh dist/index.html
 
 
@@ -307,7 +397,7 @@ jobs:
       # 11. ENSURE CAPACITOR ANDROID PROJECT
       # =========================================================
 
-      - name: Ensure Capacitor Android project and sync
+      - name: Ensure Capacitor Android project
         shell: bash
         run: |
           set -euo pipefail
@@ -329,22 +419,35 @@ jobs:
 
           fi
 
-          echo ""
-          echo "Checking Capacitor web assets..."
 
-          test -f dist/index.html
+      # =========================================================
+      # 12. CAPACITOR SYNC
+      # =========================================================
 
-          echo ""
-          echo "Running Capacitor sync..."
+      - name: Sync Capacitor Android
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "========================================"
+          echo "Syncing Capacitor Android"
+          echo "========================================"
+
+          if [ ! -f "dist/index.html" ]; then
+            echo "ERROR: dist/index.html is missing."
+            exit 1
+          fi
 
           npx cap sync android
 
           echo ""
-          echo "Capacitor sync completed."
+          echo "========================================"
+          echo "CAPACITOR SYNC COMPLETED"
+          echo "========================================"
 
 
       # =========================================================
-      # 12. VERIFY ANDROID PROJECT
+      # 13. VERIFY ANDROID PROJECT
       # =========================================================
 
       - name: Verify Android project
@@ -378,7 +481,7 @@ jobs:
 
 
       # =========================================================
-      # 13. VERIFY ANDROID SDK 36
+      # 14. VERIFY ANDROID SDK 36
       # =========================================================
 
       - name: Verify Android SDK 36 configuration
@@ -405,7 +508,7 @@ jobs:
 
 
       # =========================================================
-      # 14. APPLY VERSION
+      # 15. APPLY ANDROID VERSION
       # =========================================================
 
       - name: Apply Android version
@@ -433,6 +536,16 @@ jobs:
             exit 1
           fi
 
+          if ! grep -q "versionCode" android/app/build.gradle; then
+            echo "ERROR: versionCode not found."
+            exit 1
+          fi
+
+          if ! grep -q "versionName" android/app/build.gradle; then
+            echo "ERROR: versionName not found."
+            exit 1
+          fi
+
           sed -i \
             "s/versionCode .*/versionCode $VERSION_CODE/" \
             android/app/build.gradle
@@ -442,7 +555,7 @@ jobs:
             android/app/build.gradle
 
           echo ""
-          echo "Updated Android version:"
+          echo "Updated version:"
 
           grep -nE \
             "versionCode|versionName" \
@@ -450,7 +563,7 @@ jobs:
 
 
       # =========================================================
-      # 15. DECODE RELEASE KEYSTORE
+      # 16. DECODE RELEASE KEYSTORE
       # =========================================================
 
       - name: Decode release keystore
@@ -465,13 +578,12 @@ jobs:
           echo "========================================"
 
           if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
-            echo ""
-            echo "ERROR:"
-            echo "ANDROID_KEYSTORE_BASE64 secret is missing."
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 is missing."
             exit 1
           fi
 
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
+          printf '%s' \
+            "$ANDROID_KEYSTORE_BASE64" \
             | base64 --decode \
             > "$RUNNER_TEMP/insightly.jks"
 
@@ -485,7 +597,7 @@ jobs:
 
 
       # =========================================================
-      # 16. VERIFY SIGNING SECRETS
+      # 17. VERIFY SIGNING SECRETS
       # =========================================================
 
       - name: Verify signing configuration
@@ -521,7 +633,7 @@ jobs:
 
 
       # =========================================================
-      # 17. BUILD SIGNED AAB + APK
+      # 18. BUILD SIGNED AAB + APK
       # =========================================================
 
       - name: Build signed AAB and APK
@@ -557,11 +669,13 @@ jobs:
             --stacktrace
 
           echo ""
-          echo "Gradle build completed successfully."
+          echo "========================================"
+          echo "GRADLE BUILD COMPLETED"
+          echo "========================================"
 
 
       # =========================================================
-      # 18. LOCATE RELEASE FILES
+      # 19. LOCATE RELEASE FILES
       # =========================================================
 
       - name: Locate Android release files
@@ -582,83 +696,4 @@ jobs:
             -print || true
 
           echo ""
-          echo "APK files:"
-
-          find android/app/build/outputs \
-            -type f \
-            -name "*.apk" \
-            -print || true
-
-
-      # =========================================================
-      # 19. VERIFY AAB + APK
-      # =========================================================
-
-      - name: Verify AAB and APK
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          AAB="android/app/build/outputs/bundle/release/app-release.aab"
-          APK="android/app/build/outputs/apk/release/app-release.apk"
-
-          echo "========================================"
-          echo "Checking Android release files"
-          echo "========================================"
-
-          if [ ! -f "$AAB" ]; then
-
-            echo ""
-            echo "ERROR: AAB was not created."
-            echo ""
-
-            find android/app/build/outputs \
-              -type f \
-              -name "*.aab" \
-              -print || true
-
-            exit 1
-
-          fi
-
-          if [ ! -f "$APK" ]; then
-
-            echo ""
-            echo "ERROR: APK was not created."
-            echo ""
-
-            find android/app/build/outputs \
-              -type f \
-              -name "*.apk" \
-              -print || true
-
-            exit 1
-
-          fi
-
-          echo ""
-          echo "AAB successfully created:"
-          ls -lh "$AAB"
-
-          echo ""
-          echo "APK successfully created:"
-          ls -lh "$APK"
-
-          echo ""
-          echo "========================================"
-          echo "ANDROID BUILD SUCCESSFUL"
-          echo "========================================"
-
-
-      # =========================================================
-      # 20. UPLOAD AAB + APK
-      # =========================================================
-
-      - name: Upload AAB and APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Insightly-Android-Release
-          path: |
-            android/app/build/outputs/bundle/release/app-release.aab
-            android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
+        
