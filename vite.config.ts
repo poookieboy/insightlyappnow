@@ -1,26 +1,14 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig((config) => {
-  const isBuild = config.command === "build";
-
-  const baseConfig = {
-    tanstackStart: {
-      spa: {
-        enabled: true,
-        outputPath: "/index.html",
-      },
+export default defineConfig({
+  tanstackStart: {
+    spa: {
+      enabled: true,
       prerender: {
-        enabled: false,
+        outputPath: "/index.html",
+        crawlLinks: false,
+        retryCount: 0,
       },
     },
-  };
-
-  if (!isBuild) {
-    return baseConfig;
-  }
-
-  return {
-    ...baseConfig,
-    plugins: [],
-  };
+  },
 });
