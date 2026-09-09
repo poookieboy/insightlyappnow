@@ -1,0 +1,60 @@
+workflows:
+  insightly-android:
+    name: Insightly Android
+    max_build_duration: 120
+    instance_type: linux_x2
+
+    environment:
+      node: lts
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+
+      - name: Build Insightly web app
+        script: |
+          npm run build
+
+      - name: Prepare Capacitor web assets
+        script: |
+          rm -rf dist
+          mkdir -p dist
+
+          if [ -f ".output/public/index.html" ]; then
+            echo "Using .output/public"
+            cp -R .output/public/. dist/
+          elif [ -f "dist/index.html" ]; then
+            echo "Using dist"
+          else
+            echo "ERROR: No web build output found"
+            echo "Available directories:"
+            find . -maxdepth 3 -type d | sort
+            exit 1
+          fi
+
+          test -f dist/index.html
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync android
+
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+
+      - name: Build Android AAB
+        script: |
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+
+      - name: Build Android APK
+        script: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
