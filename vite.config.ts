@@ -8,6 +8,11 @@ export default defineConfig({
 
     spa: {
       enabled: true,
+      prerender: {
+        outputPath: "/index.html",
+        crawlLinks: false,
+        retryCount: 0,
+      },
     },
 
     prerender: {
