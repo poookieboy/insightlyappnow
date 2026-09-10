@@ -2,19 +2,13 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   tanstackStart: {
-    prerender: {
+    spa: {
       enabled: true,
-      crawlLinks: false,
-      retryCount: 0,
-    },
-    pages: [
-      {
-        path: "/",
-        prerender: {
-          enabled: true,
-          outputPath: "/index.html",
-        },
+      prerender: {
+        outputPath: "/index.html",
+        crawlLinks: false,
+        retryCount: 0,
       },
-    ],
+    },
   },
 });
