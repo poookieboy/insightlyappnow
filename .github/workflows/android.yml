@@ -65,8 +65,20 @@ jobs:
           echo "CHECKING WEB OUTPUT"
           echo "=========================================="
 
-          if [ -f "dist/index.html" ]; then
-            echo "SUCCESS: dist/index.html exists."
+          if [ -f "dist/client/index.html" ]; then
+            echo "SUCCESS: dist/client/index.html exists."
+            echo "Preparing dist/client as the Capacitor web root..."
+
+            rm -rf dist-capacitor
+            mkdir -p dist-capacitor
+
+            cp -R dist/client/. dist-capacitor/
+
+            rm -rf dist
+            mv dist-capacitor dist
+
+          elif [ -f "dist/index.html" ]; then
+            echo "SUCCESS: dist/index.html already exists."
 
           elif [ -f ".output/public/index.html" ]; then
             echo "SUCCESS: .output/public/index.html exists."
