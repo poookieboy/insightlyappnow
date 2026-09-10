@@ -5,13 +5,20 @@ export default defineConfig({
     server: {
       entry: "server",
     },
-    prerender: {
-      enabled: false,
+
+    spa: {
+      enabled: true,
+      prerender: {
+        outputPath: "/index.html",
+        crawlLinks: false,
+        retryCount: 0,
+      },
     },
   },
 
   nitro: {
     preset: "node-server",
+
     output: {
       dir: "dist",
       serverDir: "dist/server",
