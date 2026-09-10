@@ -1,577 +1,140 @@
-name: Android Build
+name: Insightly Android Release
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build Android AAB + APK
+  android:
+    name: Build signed APK + AAB
     runs-on: ubuntu-latest
 
     steps:
-
-      # ============================================================
-      # 1. CHECKOUT
-      # ============================================================
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # ============================================================
-      # 2. NODE 24
-      # ============================================================
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "20"
           cache: npm
 
-      # ============================================================
-      # 3. INSTALL DEPENDENCIES
-      #
-      # The repository lockfile is currently out of sync with
-      # package.json, so npm ci cannot be used until the lockfile
-      # has been regenerated.
-      #
-      # npm install resolves package.json and repairs the lockfile
-      # inside the CI workspace.
-      # ============================================================
       - name: Install dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
+        run: npm install --no-audit --no-fund
 
-          echo "========================================"
-          echo "INSTALLING NODE DEPENDENCIES"
-          echo "========================================"
-
-          npm install \
-            --no-audit \
-            --no-fund
-
-          echo ""
-          echo "Node:"
-          node --version
-
-          echo ""
-          echo "NPM:"
-          npm --version
-
-          echo ""
-          echo "Installed Capacitor packages:"
-          npm list \
-            @capacitor/android \
-            @capacitor/core \
-            @capacitor/cli \
-            --depth=0 || true
-
-      # ============================================================
-      # 4. BUILD WEB APP
-      # ============================================================
       - name: Build web app
+        run: npm run build
+
+      - name: Prepare dist for Capacitor
         shell: bash
         run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "BUILDING WEB APPLICATION"
-          echo "========================================"
-
-          rm -rf dist
-
-          npm run build
-
-      # ============================================================
-      # 5. INSPECT TANSTACK OUTPUT
-      # ============================================================
-      - name: Inspect web build output
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "WEB BUILD DIAGNOSTICS"
-          echo "========================================"
-
-          echo ""
-          echo "Generated HTML files:"
-
-          find . \
-            -type f \
-            -name "*.html" \
-            ! -path "./node_modules/*" \
-            ! -path "./android/*" \
-            -print \
-            | sort || true
-
-          echo ""
-          echo "TanStack output:"
-
-          if [ -d ".output" ]; then
-            find .output \
-              -maxdepth 10 \
-              -type f \
-              -print \
-              | sort || true
-          else
-            echo ".output does not exist."
-          fi
-
-      # ============================================================
-      # 6. PREPARE CAPACITOR WEB ASSETS
-      #
-      # capacitor.config.json uses:
-      #
-      #     webDir: dist
-      #
-      # TanStack Start may produce:
-      #
-      #     .output/public/index.html
-      #
-      # OR:
-      #
-      #     .output/public/_shell.html
-      # ============================================================
-      - name: Prepare Capacitor web assets
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "PREPARING CAPACITOR WEB ASSETS"
-          echo "========================================"
+          set -e
 
           rm -rf dist
           mkdir -p dist
 
-          # --------------------------------------------------------
-          # CASE 1: Normal static output
-          # --------------------------------------------------------
           if [ -f ".output/public/index.html" ]; then
-
-            echo "Found .output/public/index.html"
-
+            echo "Using .output/public"
             cp -a .output/public/. dist/
 
-          # --------------------------------------------------------
-          # CASE 2: TanStack SPA shell
-          # --------------------------------------------------------
           elif [ -f ".output/public/_shell.html" ]; then
-
-            echo "Found .output/public/_shell.html"
-
+            echo "Using TanStack shell"
             cp -a .output/public/. dist/
+            cp .output/public/_shell.html dist/index.html
 
-            cp \
-              ".output/public/_shell.html" \
-              "dist/index.html"
-
-          # --------------------------------------------------------
-          # CASE 3: Existing dist
-          # --------------------------------------------------------
           elif [ -f "dist/index.html" ]; then
+            echo "Using existing dist"
 
-            echo "Found dist/index.html"
-
-          # --------------------------------------------------------
-          # CASE 4: Vite build
-          # --------------------------------------------------------
           elif [ -f "build/index.html" ]; then
-
-            echo "Found build/index.html"
-
+            echo "Using build/"
             cp -a build/. dist/
 
-          # --------------------------------------------------------
-          # CASE 5: Public directory
-          # --------------------------------------------------------
-          elif [ -f "public/index.html" ]; then
-
-            echo "Found public/index.html"
-
-            cp -a public/. dist/
-
-          # --------------------------------------------------------
-          # CASE 6: Search fallback
-          # --------------------------------------------------------
           else
+            echo "Searching for generated HTML..."
 
-            echo "Searching for any generated HTML..."
+            HTML_FILE=$(find . \
+              -path "./node_modules" -prune -o \
+              -path "./android" -prune -o \
+              -type f -name "*.html" -print \
+              | sort \
+              | head -1 || true)
 
-            HTML_FILE="$(
-              find .output/public .output build public \
-                -type f \
-                -name "*.html" \
-                2>/dev/null \
-                | sort \
-                | head -1 || true
-            )"
-
-            if [ -n "$HTML_FILE" ] && [ -f "$HTML_FILE" ]; then
-
-              echo "Using fallback:"
-              echo "$HTML_FILE"
-
-              SOURCE_DIR="$(dirname "$HTML_FILE")"
-
-              cp -a "$SOURCE_DIR"/. dist/
-
-              cp "$HTML_FILE" dist/index.html
-
-            else
-
-              echo ""
-              echo "========================================"
-              echo "ERROR: NO WEB ENTRY POINT FOUND"
-              echo "========================================"
-
-              echo ""
-              echo "Repository HTML files:"
-
-              find . \
-                -type f \
-                -name "*.html" \
-                ! -path "./node_modules/*" \
-                ! -path "./android/*" \
-                -print \
-                | sort || true
-
-              echo ""
-              echo "Full .output tree:"
-
-              if [ -d ".output" ]; then
-                find .output \
-                  -maxdepth 12 \
-                  -type f \
-                  -print \
-                  | sort
-              fi
-
+            if [ -z "$HTML_FILE" ]; then
+              echo "ERROR: No HTML entry point was produced."
               exit 1
             fi
+
+            echo "Using: $HTML_FILE"
+
+            SOURCE_DIR=$(dirname "$HTML_FILE")
+            cp -a "$SOURCE_DIR"/. dist/
+            cp "$HTML_FILE" dist/index.html
           fi
 
-          # ========================================================
-          # FINAL VALIDATION
-          # ========================================================
+          test -f dist/index.html
 
-          if [ ! -f "dist/index.html" ]; then
-            echo ""
-            echo "ERROR: dist/index.html was not created."
-            exit 1
-          fi
-
-          echo ""
-          echo "========================================"
-          echo "CAPACITOR WEB ASSETS READY"
-          echo "========================================"
-
-          echo ""
-          echo "dist/index.html:"
+          echo "Capacitor web assets:"
+          ls -lah dist
+          echo "index.html:"
           ls -lh dist/index.html
 
-          echo ""
-          echo "Dist files:"
-          find dist \
-            -maxdepth 6 \
-            -type f \
-            -print \
-            | sort \
-            | head -300
-
-      # ============================================================
-      # 7. VERIFY CAPACITOR CONFIG
-      # ============================================================
-      - name: Verify Capacitor configuration
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "CAPACITOR CONFIGURATION"
-          echo "========================================"
-
-          test -f capacitor.config.json
-
-          cat capacitor.config.json
-
-          if ! grep -q \
-            '"webDir"[[:space:]]*:[[:space:]]*"dist"' \
-            capacitor.config.json; then
-
-            echo "ERROR: Capacitor webDir must be dist."
-            exit 1
-          fi
-
-          echo ""
-          echo "Confirmed: webDir=dist"
-
-      # ============================================================
-      # 8. JAVA 17
-      # ============================================================
-      - name: Set up JDK 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: "17"
-          distribution: "temurin"
           cache: gradle
 
-      # ============================================================
-      # 9. ANDROID SDK
-      # ============================================================
-      - name: Set up Android SDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # ============================================================
-      # 10. INSTALL REQUIRED ANDROID SDK
-      # ============================================================
       - name: Install Android SDK 36
-        shell: bash
         run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "INSTALLING ANDROID SDK COMPONENTS"
-          echo "========================================"
-
-          yes | sdkmanager --licenses >/dev/null || true
-
+          yes | sdkmanager --licenses || true
           sdkmanager \
             "platform-tools" \
             "platforms;android-36" \
             "build-tools;35.0.0"
 
-          echo ""
-          echo "Installed Android SDK packages:"
-          sdkmanager --list_installed | grep -E \
-            "platforms;android-36|build-tools;35.0.0|platform-tools" \
-            || true
+      - name: Sync Capacitor
+        run: npx cap sync android
 
-      # ============================================================
-      # 11. VERIFY ANDROID PROJECT
-      # ============================================================
       - name: Verify Android project
-        shell: bash
         run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "ANDROID PROJECT CHECK"
-          echo "========================================"
-
           test -d android
           test -f android/gradlew
-          test -f android/build.gradle
           test -f android/app/build.gradle
           test -f android/settings.gradle
+          test -f android/app/src/main/assets/capacitor.config.json || true
 
           chmod +x android/gradlew
 
-          echo ""
-          echo "Gradle launcher:"
-          ls -lh android/gradlew
-
-          echo ""
-          echo "Android project files:"
-          find android \
-            -maxdepth 5 \
-            -type f \
-            \( \
-              -name "build.gradle" \
-              -o -name "settings.gradle" \
-              -o -name "gradlew" \
-              -o -name "AndroidManifest.xml" \
-            \) \
-            -print \
-            | sort
-
-      # ============================================================
-      # 12. VERIFY SDK 36
-      # ============================================================
-      - name: Verify compileSdk and targetSdk
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "ANDROID SDK VERSION CHECK"
-          echo "========================================"
-
-          APP_GRADLE="android/app/build.gradle"
-
-          COMPILE_SDK="$(
-            grep -E \
-              '^[[:space:]]*compileSdk[[:space:]]+[0-9]+' \
-              "$APP_GRADLE" \
-              | head -1 \
-              | grep -oE '[0-9]+' \
-              | head -1
-          )"
-
-          TARGET_SDK="$(
-            grep -E \
-              '^[[:space:]]*targetSdk[[:space:]]+[0-9]+' \
-              "$APP_GRADLE" \
-              | head -1 \
-              | grep -oE '[0-9]+' \
-              | head -1
-          )"
-
-          echo "compileSdk = $COMPILE_SDK"
-          echo "targetSdk  = $TARGET_SDK"
-
-          if [ "$COMPILE_SDK" != "36" ]; then
-            echo "ERROR: compileSdk must be 36."
-            exit 1
-          fi
-
-          if [ "$TARGET_SDK" != "36" ]; then
-            echo "ERROR: targetSdk must be 36."
-            exit 1
-          fi
-
-          echo ""
-          echo "SDK 36 configuration confirmed."
-
-      # ============================================================
-      # 13. SYNC CAPACITOR
-      # ============================================================
-      - name: Sync Capacitor Android
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "SYNCING CAPACITOR ANDROID"
-          echo "========================================"
-
-          npx cap sync android
-
-      # ============================================================
-      # 14. VERIFY CAPACITOR ASSETS
-      # ============================================================
-      - name: Verify Capacitor Android web assets
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "VERIFYING CAPACITOR ASSETS"
-          echo "========================================"
-
-          test -f dist/index.html
-
-          echo "dist/index.html exists."
-
-          if [ ! -d "android/app/src/main/assets" ]; then
-            echo "ERROR: Capacitor Android assets directory missing."
-            exit 1
-          fi
-
-          echo ""
-          echo "Android assets:"
-          find android/app/src/main/assets \
-            -maxdepth 6 \
-            -type f \
-            -print \
-            | sort \
-            | head -300
-
-      # ============================================================
-      # 15. CHECK SIGNING SECRETS
-      # ============================================================
-      - name: Check signing configuration
-        shell: bash
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "CHECKING SIGNING SECRETS"
-          echo "========================================"
-
-          test -n "$KEYSTORE_BASE64" || {
-            echo "ERROR: ANDROID_KEYSTORE_BASE64 is missing."
-            exit 1
-          }
-
-          test -n "$KEYSTORE_PASSWORD" || {
-            echo "ERROR: ANDROID_KEYSTORE_PASSWORD is missing."
-            exit 1
-          }
-
-          test -n "$KEY_ALIAS" || {
-            echo "ERROR: ANDROID_KEY_ALIAS is missing."
-            exit 1
-          }
-
-          test -n "$KEY_PASSWORD" || {
-            echo "ERROR: ANDROID_KEY_PASSWORD is missing."
-            exit 1
-          }
-
-          echo "All signing secrets are present."
-
-      # ============================================================
-      # 16. DECODE KEYSTORE
-      # ============================================================
-      - name: Decode Android keystore
-        shell: bash
+      - name: Decode signing keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          set -euo pipefail
+          set -e
 
-          echo "========================================"
-          echo "DECODING ANDROID KEYSTORE"
-          echo "========================================"
+          test -n "$KEYSTORE_BASE64"
 
-          KEYSTORE_PATH="$RUNNER_TEMP/insightly-release.jks"
+          echo "$KEYSTORE_BASE64" | base64 --decode \
+            > "$RUNNER_TEMP/insightly-release.jks"
 
-          printf '%s' "$KEYSTORE_BASE64" \
-            | base64 --decode \
-            > "$KEYSTORE_PATH"
+          test -s "$RUNNER_TEMP/insightly-release.jks"
 
-          test -s "$KEYSTORE_PATH"
-
-          echo "Keystore created successfully."
-
-      # ============================================================
-      # 17. BUILD SIGNED AAB
-      # ============================================================
       - name: Build signed AAB
         working-directory: android
-        shell: bash
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "BUILDING SIGNED AAB"
-          echo "========================================"
-
           chmod +x ./gradlew
-
-          ./gradlew --version
-
-          ./gradlew clean --no-daemon
 
           ./gradlew bundleRelease \
             "-Pandroid.injected.signing.store.file=$RUNNER_TEMP/insightly-release.jks" \
@@ -581,23 +144,13 @@ jobs:
             --no-daemon \
             --stacktrace
 
-      # ============================================================
-      # 18. BUILD SIGNED APK
-      # ============================================================
       - name: Build signed APK
         working-directory: android
-        shell: bash
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          set -euo pipefail
-
-          echo "========================================"
-          echo "BUILDING SIGNED APK"
-          echo "========================================"
-
           ./gradlew assembleRelease \
             "-Pandroid.injected.signing.store.file=$RUNNER_TEMP/insightly-release.jks" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
@@ -606,62 +159,32 @@ jobs:
             --no-daemon \
             --stacktrace
 
-      # ============================================================
-      # 19. VERIFY AAB + APK
-      # ============================================================
-      - name: Verify release outputs
-        shell: bash
+      - name: Verify APK and AAB
         run: |
-          set -euo pipefail
+          set -e
 
-          echo "========================================"
-          echo "VERIFYING RELEASE OUTPUTS"
-          echo "========================================"
-
-          AAB="android/app/build/outputs/bundle/release/app-release.aab"
           APK="android/app/build/outputs/apk/release/app-release.apk"
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
 
-          echo ""
-          echo "AAB files:"
-          find android/app/build/outputs \
-            -type f \
-            -name "*.aab" \
-            -print \
-            2>/dev/null \
-            | sort || true
+          test -f "$APK"
+          test -f "$AAB"
 
-          echo ""
-          echo "APK files:"
-          find android/app/build/outputs \
-            -type f \
-            -name "*.apk" \
-            -print \
-            2>/dev/null \
-            | sort || true
-
-          test -f "$AAB" || {
-            echo "ERROR: Signed AAB was not created."
-            exit 1
-          }
-
-          test -f "$APK" || {
-            echo "ERROR: Signed APK was not created."
-            exit 1
-          }
-
-          echo ""
-          echo "========================================"
-          echo "ANDROID BUILD SUCCESSFUL"
-          echo "========================================"
-
-          echo ""
-          echo "SIGNED AAB:"
-          ls -lh "$AAB"
-
-          echo ""
-          echo "SIGNED APK:"
+          echo "APK:"
           ls -lh "$APK"
 
-      # ============================================================
-      # 20. UPLOAD AAB
-      # ================================================
+          echo "AAB:"
+          ls -lh "$AAB"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Insightly-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: Insightly-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
