@@ -1,98 +1,71 @@
-# Android Build - builds web, prepares Capacitor assets,
-# syncs Android, builds signed AAB + APK, and uploads artifacts.
-
 name: Android Build
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "npm"
+          node-version: 24
+          cache: npm
 
-      # IMPORTANT:
-      # npm ci was failing because package.json and package-lock.json
-      # are currently out of sync.
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      # Build the Lovable/TanStack web application.
+      # The generated public files are normally placed in .output/public.
       - name: Build web app
         run: npm run build
 
       - name: Prepare Capacitor web assets
         shell: bash
         run: |
-          set -euo pipefail
+          set -e
 
-          echo "========================================"
-          echo "Preparing Capacitor web assets"
-          echo "========================================"
+          echo "Checking web build output..."
 
-          if [ -f "dist/index.html" ]; then
-            echo "Found dist/index.html"
-
-          elif [ -d ".output/public" ] && [ -f ".output/public/index.html" ]; then
+          if [ -f ".output/public/index.html" ]; then
             echo "Found .output/public/index.html"
-            echo "Copying .output/public -> dist"
 
             rm -rf dist
             mkdir -p dist
-            cp -a .output/public/. dist/
+            cp -R .output/public/. dist/
+
+          elif [ -f "dist/index.html" ]; then
+            echo "Found dist/index.html"
 
           else
-            echo "No compatible web output found."
-            echo "Attempting fallback Vite build..."
-
-            rm -rf dist
-
-            npx vite build --outDir dist
-
-            if [ ! -f "dist/index.html" ]; then
-              echo ""
-              echo "ERROR: Could not create dist/index.html"
-              echo ""
-              echo "Project directories:"
-              find . -maxdepth 3 -type d \
-                \( -name "dist" -o -name ".output" -o -name "build" -o -name "public" \) \
-                -not -path "./node_modules/*" \
-                -not -path "./android/*" \
-                -print || true
-
-              echo ""
-              echo "Full .output listing:"
-              if [ -d ".output" ]; then
-                find .output -maxdepth 6 -print || true
-              fi
-
-              exit 1
+            echo "ERROR: No web build was found."
+            echo ""
+            echo "Contents of the repository root:"
+            ls -la
+            echo ""
+            echo "Contents of .output, if present:"
+            if [ -d ".output" ]; then
+              find .output -maxdepth 3 -type f | head -100
+            else
+              echo ".output does not exist"
             fi
+            exit 1
           fi
 
           echo ""
-          echo "========================================"
-          echo "Final web assets"
-          echo "========================================"
-
-          find dist -maxdepth 4 -type f -print | sort | head -200 || true
+          echo "Final Capacitor web assets:"
+          find dist -maxdepth 2 -type f | head -100
 
           if [ ! -f "dist/index.html" ]; then
-            echo "ERROR: dist/index.html is missing."
+            echo "ERROR: dist/index.html was not created."
             exit 1
           fi
 
@@ -101,173 +74,92 @@ jobs:
 
       - name: Show Capacitor config
         run: |
-          echo "========================================"
-          echo "Capacitor configuration"
-          echo "========================================"
+          echo "Capacitor configuration:"
+          cat capacitor.config.json
 
-          if [ -f "capacitor.config.json" ]; then
-            cat capacitor.config.json
-          else
-            echo "ERROR: capacitor.config.json not found."
-            exit 1
-          fi
-
-      - name: Set up JDK 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          java-version: "17"
-          distribution: "temurin"
+          distribution: temurin
+          java-version: '17'
 
-      - name: Ensure Gradle wrapper is executable
-        shell: bash
-        run: |
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
-            echo "android/gradlew is executable"
-          else
-            echo "ERROR: android/gradlew not found."
-            exit 1
-          fi
+      - name: Make Gradle executable
+        run: chmod +x android/gradlew
 
       - name: Sync Capacitor Android
         run: npx cap sync android
 
       - name: Verify Android project
-        shell: bash
         run: |
-          set -euo pipefail
+          test -f android/gradlew
+          test -f android/app/build.gradle
+          echo "Android project verified."
 
-          echo "========================================"
-          echo "Checking Android project"
-          echo "========================================"
-
-          if [ ! -d "android" ]; then
-            echo "ERROR: android directory does not exist."
-            exit 1
-          fi
-
-          if [ ! -f "android/gradlew" ]; then
-            echo "ERROR: android/gradlew does not exist."
-            exit 1
-          fi
-
-          if [ ! -f "android/app/build.gradle" ]; then
-            echo "ERROR: android/app/build.gradle does not exist."
-            exit 1
-          fi
-
-          echo "Android project found."
-
-          echo ""
-          echo "Android files:"
-          find android -maxdepth 3 -type f \
-            \( -name "*.gradle" -o -name "AndroidManifest.xml" \) \
-            -print | sort
-
-      - name: Decode Keystore
-        shell: bash
+      - name: Decode signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          set -euo pipefail
-
-          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          if [ -z "$KEYSTORE_BASE64" ]; then
             echo "ERROR: KEYSTORE_BASE64 secret is missing."
             exit 1
           fi
 
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > release-key.jks
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/insightly-release.keystore
 
-          if [ ! -s release-key.jks ]; then
-            echo "ERROR: release-key.jks is empty."
-            exit 1
-          fi
-
+          test -s android/insightly-release.keystore
           echo "Keystore decoded successfully."
 
       - name: Build signed AAB and APK
-        working-directory: android
-        shell: bash
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          set -euo pipefail
+          cd android
 
-          echo "========================================"
-          echo "Building signed AAB and APK"
-          echo "========================================"
+          ./gradlew clean
 
-          GRADLE_CMD="./gradlew"
+          ./gradlew \
+            bundleRelease \
+            assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/insightly-release.keystore" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
-          chmod +x "$GRADLE_CMD"
-
-          echo "Gradle version:"
-          "$GRADLE_CMD" --version
-
-          echo ""
-          echo "Starting release build..."
-
-          "$GRADLE_CMD" clean bundleRelease assembleRelease \
-            -Pandroid.injected.signing.store.file=../release-key.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
-
-      - name: Verify outputs
-        shell: bash
+      - name: Verify APK and AAB
         run: |
-          set -euo pipefail
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
 
-          AAB_PATH="android/app/build/outputs/bundle/release/app-release.aab"
-          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
-
-          echo "========================================"
-          echo "Checking release files"
-          echo "========================================"
-
-          if [ ! -f "$AAB_PATH" ]; then
-            echo "ERROR: Signed AAB was not created."
-
-            echo ""
-            echo "Available AAB files:"
-            find android/app/build/outputs \
-              -type f \
-              -name "*.aab" \
-              -print || true
-
+          if [ ! -f "$AAB" ]; then
+            echo "ERROR: AAB was not created."
             exit 1
           fi
 
-          if [ ! -f "$APK_PATH" ]; then
-            echo "ERROR: Signed APK was not created."
-
-            echo ""
-            echo "Available APK files:"
-            find android/app/build/outputs \
-              -type f \
-              -name "*.apk" \
-              -print || true
-
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: APK was not created."
             exit 1
           fi
 
           echo ""
-          echo "========================================"
-          echo "BUILD SUCCESS"
-          echo "========================================"
-
+          echo "================================"
+          echo "SIGNED ANDROID BUILDS CREATED"
+          echo "================================"
           echo ""
-          echo "Signed AAB:"
-          ls -lh "$AAB_PATH"
+          ls -lh "$AAB"
+          ls -lh "$APK"
 
-          echo ""
-          echo "Signed APK:"
-          ls -lh "$APK_PATH"
-
-      - name: Upload Signed AAB
+      - name: Upload signed AAB
         uses: actions/upload-artifact@v4
         with:
           name: Insightly-release-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      - name: Upload Signed APK
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Insightly-release-APK
