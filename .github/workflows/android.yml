@@ -1,18 +1,33 @@
-name: Android Build
+name: Insightly Android Build
 
 on:
   push:
     branches:
       - main
+
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   android:
+    name: Build Signed Android APK and AAB
     runs-on: ubuntu-latest
 
     steps:
+
+      # --------------------------------------------------
+      # 1. CHECKOUT
+      # --------------------------------------------------
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+
+      # --------------------------------------------------
+      # 2. NODE
+      # --------------------------------------------------
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,196 +35,246 @@ jobs:
           node-version: 24
           cache: npm
 
+
+      # --------------------------------------------------
+      # 3. INSTALL DEPENDENCIES
+      # --------------------------------------------------
+
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Build web app
-        shell: bash
         run: |
-          set +e
+          npm install --no-audit --no-fund
 
-          echo "======================================"
-          echo "BUILDING INSIGHTLY WEB APPLICATION"
-          echo "======================================"
 
-          npm run build
+      # --------------------------------------------------
+      # 4. BUILD WEB APPLICATION
+      # --------------------------------------------------
 
-          BUILD_STATUS=$?
-
-          echo ""
-          echo "npm run build exit code: $BUILD_STATUS"
-          echo ""
-
-          if [ -f ".output/public/index.html" ]; then
-            echo "======================================"
-            echo "WEB ASSETS FOUND"
-            echo "======================================"
-            echo "Found: .output/public/index.html"
-            echo ""
-
-            if [ "$BUILD_STATUS" -ne 0 ]; then
-              echo "WARNING: npm run build returned an error"
-              echo "but the usable public web assets were generated."
-              echo "Continuing with the Capacitor Android build."
-            fi
-
-            exit 0
-          fi
-
-          if [ -f "dist/index.html" ]; then
-            echo "======================================"
-            echo "WEB ASSETS FOUND"
-            echo "======================================"
-            echo "Found: dist/index.html"
-            exit 0
-          fi
-
-          echo "======================================"
-          echo "ERROR: NO USABLE WEB BUILD"
-          echo "======================================"
-          echo ""
-          echo "Searching for index.html files..."
-          find . -maxdepth 6 -type f -name "index.html" -print
-
-          echo ""
-          echo "Searching .output..."
-          if [ -d ".output" ]; then
-            find .output -maxdepth 5 -type f | head -150
-          else
-            echo ".output does not exist."
-          fi
-
-          echo ""
-          echo "The web build did not produce usable files."
-          exit "${BUILD_STATUS:-1}"
-
-      - name: Prepare Capacitor web assets
+      - name: Build web application
         shell: bash
         run: |
           set -e
 
-          echo "======================================"
-          echo "PREPARING CAPACITOR WEB ASSETS"
-          echo "======================================"
+          echo "=========================================="
+          echo "BUILDING INSIGHTLY WEB APPLICATION"
+          echo "=========================================="
 
-          if [ -f ".output/public/index.html" ]; then
-            echo "Using .output/public"
+          npm run build
+
+          echo ""
+          echo "=========================================="
+          echo "CHECKING WEB BUILD OUTPUT"
+          echo "=========================================="
+
+          if [ -f "dist/index.html" ]; then
+            echo "SUCCESS: dist/index.html exists."
+
+          elif [ -f ".output/public/index.html" ]; then
+            echo "SUCCESS: .output/public/index.html exists."
+
+            echo "Copying .output/public into dist..."
 
             rm -rf dist
             mkdir -p dist
+
             cp -R .output/public/. dist/
 
-          elif [ -f "dist/index.html" ]; then
-            echo "Using existing dist directory."
-
-          elif [ -f "build/index.html" ]; then
-            echo "Using build directory."
-
-            rm -rf dist
-            mkdir -p dist
-            cp -R build/. dist/
-
-          elif [ -f "public/index.html" ]; then
-            echo "Using public directory."
-
-            rm -rf dist
-            mkdir -p dist
-            cp -R public/. dist/
-
           else
-            echo "ERROR: Could not find web assets."
+            echo ""
+            echo "ERROR: No usable web build was produced."
+            echo ""
+            echo "Searching for index.html..."
+            find . -maxdepth 7 -type f -name "index.html" -print
+
+            echo ""
+            echo "Searching for web output directories..."
+
+            if [ -d ".output" ]; then
+              find .output -maxdepth 5 -type f | head -200
+            fi
+
+            if [ -d "dist" ]; then
+              find dist -maxdepth 5 -type f | head -200
+            fi
+
             exit 1
           fi
 
           echo ""
-          echo "Checking final Capacitor directory..."
+          echo "=========================================="
+          echo "VERIFYING DIST"
+          echo "=========================================="
 
           test -f dist/index.html
 
-          echo "✅ dist/index.html exists."
+          echo "SUCCESS: dist/index.html is ready."
           echo ""
 
-          echo "Files inside dist:"
+          echo "Contents of dist:"
           find dist -maxdepth 2 -type f | head -100
 
-      - name: Show Capacitor configuration
+
+      # --------------------------------------------------
+      # 5. VERIFY CAPACITOR CONFIG
+      # --------------------------------------------------
+
+      - name: Verify Capacitor configuration
+        shell: bash
         run: |
-          echo "======================================"
+          set -e
+
+          echo "=========================================="
           echo "CAPACITOR CONFIGURATION"
-          echo "======================================"
+          echo "=========================================="
+
+          test -f capacitor.config.json
+
           cat capacitor.config.json
 
-      - name: Setup Java
+          echo ""
+          echo "Checking app ID..."
+
+          grep -q '"com.insightly.app"' capacitor.config.json
+
+          echo "SUCCESS: Insightly app ID verified."
+
+
+      # --------------------------------------------------
+      # 6. JAVA 17
+      # --------------------------------------------------
+
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
-      - name: Make Gradle executable
-        run: chmod +x android/gradlew
+
+      # --------------------------------------------------
+      # 7. VERIFY ANDROID PROJECT
+      # --------------------------------------------------
 
       - name: Verify Android project
+        shell: bash
         run: |
-          echo "Checking Android project..."
+          set -e
+
+          echo "=========================================="
+          echo "VERIFYING ANDROID PROJECT"
+          echo "=========================================="
 
           test -f android/gradlew
           test -f android/settings.gradle
           test -f android/app/build.gradle
 
-          echo "✅ Android project verified."
+          chmod +x android/gradlew
+
+          echo "SUCCESS: Android project verified."
+
+
+      # --------------------------------------------------
+      # 8. CAPACITOR SYNC
+      # --------------------------------------------------
 
       - name: Sync Capacitor
+        shell: bash
         run: |
-          echo "======================================"
+          set -e
+
+          echo "=========================================="
           echo "SYNCING CAPACITOR"
-          echo "======================================"
+          echo "=========================================="
 
           npx cap sync android
 
-      - name: Verify signing secret
+          echo ""
+          echo "SUCCESS: Capacitor sync completed."
+
+
+      # --------------------------------------------------
+      # 9. CHECK KEYSTORE SECRET
+      # --------------------------------------------------
+
+      - name: Check signing secrets
         shell: bash
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -e
+
+          echo "Checking Android signing secrets..."
+
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "ERROR: KEYSTORE_BASE64 secret is missing."
+            echo "ERROR: KEYSTORE_BASE64 is missing."
             exit 1
           fi
 
-          echo "✅ KEYSTORE_BASE64 secret is available."
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "ERROR: KEYSTORE_PASSWORD is missing."
+            exit 1
+          fi
 
-      - name: Decode signing keystore
+          if [ -z "$KEY_ALIAS" ]; then
+            echo "ERROR: KEY_ALIAS is missing."
+            exit 1
+          fi
+
+          if [ -z "$KEY_PASSWORD" ]; then
+            echo "ERROR: KEY_PASSWORD is missing."
+            exit 1
+          fi
+
+          echo "SUCCESS: All signing secrets are present."
+
+
+      # --------------------------------------------------
+      # 10. DECODE KEYSTORE
+      # --------------------------------------------------
+
+      - name: Decode Android keystore
         shell: bash
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/insightly-release.keystore
+          set -e
 
-          if [ ! -s android/insightly-release.keystore ]; then
-            echo "ERROR: Keystore could not be decoded."
-            exit 1
-          fi
+          echo "Decoding signing keystore..."
 
-          echo "✅ Signing keystore decoded."
+          echo "$KEYSTORE_BASE64" \
+            | base64 --decode \
+            > android/insightly-release.keystore
 
-      - name: Build signed Android APK and AAB
+          test -s android/insightly-release.keystore
+
+          echo "SUCCESS: Keystore decoded."
+
+
+      # --------------------------------------------------
+      # 11. BUILD SIGNED APK + AAB
+      # --------------------------------------------------
+
+      - name: Build signed APK and AAB
         shell: bash
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -e
+
           cd android
 
-          echo "======================================"
-          echo "BUILDING SIGNED APK + AAB"
-          echo "======================================"
+          echo "=========================================="
+          echo "BUILDING SIGNED APK AND AAB"
+          echo "=========================================="
 
           ./gradlew clean
 
           ./gradlew \
-            bundleRelease \
             assembleRelease \
+            bundleRelease \
             --no-daemon \
             --stacktrace \
             -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/insightly-release.keystore" \
@@ -217,54 +282,83 @@ jobs:
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
-      - name: Verify APK and AAB
+
+      # --------------------------------------------------
+      # 12. VERIFY APK
+      # --------------------------------------------------
+
+      - name: Verify APK
         shell: bash
         run: |
-          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          set -e
+
           APK="android/app/build/outputs/apk/release/app-release.apk"
 
-          echo "======================================"
-          echo "VERIFYING ANDROID BUILDS"
-          echo "======================================"
+          echo "Checking APK..."
 
-          if [ ! -f "$AAB" ]; then
-            echo "❌ AAB was not created."
-            exit 1
-          fi
-
-          if [ ! -f "$APK" ]; then
-            echo "❌ APK was not created."
-            exit 1
-          fi
+          test -f "$APK"
 
           echo ""
-          echo "✅ SIGNED AAB CREATED"
-          ls -lh "$AAB"
-
-          echo ""
-          echo "✅ SIGNED APK CREATED"
+          echo "SUCCESS: Signed APK created."
           ls -lh "$APK"
 
-      - name: Upload signed AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: Insightly-release-AAB
-          path: android/app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
+
+      # --------------------------------------------------
+      # 13. VERIFY AAB
+      # --------------------------------------------------
+
+      - name: Verify AAB
+        shell: bash
+        run: |
+          set -e
+
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+
+          echo "Checking AAB..."
+
+          test -f "$AAB"
+
+          echo ""
+          echo "SUCCESS: Signed AAB created."
+          ls -lh "$AAB"
+
+
+      # --------------------------------------------------
+      # 14. UPLOAD APK
+      # --------------------------------------------------
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Insightly-release-APK
+          name: Insightly-Signed-APK
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
-      - name: Build complete
+
+      # --------------------------------------------------
+      # 15. UPLOAD AAB
+      # --------------------------------------------------
+
+      - name: Upload signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: Insightly-Signed-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+
+      # --------------------------------------------------
+      # 16. SUCCESS
+      # --------------------------------------------------
+
+      - name: Build successful
         run: |
           echo ""
-          echo "======================================"
-          echo "🎉 INSIGHTLY ANDROID BUILD COMPLETE"
-          echo "======================================"
+          echo "=========================================="
+          echo "       INSIGHTLY ANDROID BUILD COMPLETE"
+          echo "=========================================="
           echo ""
-          echo "APK: signed and ready for testing"
-          echo "AAB: signed and ready for Google Play"
+          echo "SIGNED APK: READY FOR TESTING"
+          echo "SIGNED AAB: READY FOR GOOGLE PLAY"
+          echo ""
+          echo "=========================================="
