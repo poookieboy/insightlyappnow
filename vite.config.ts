@@ -27,5 +27,6 @@ export default defineConfig({
       serverDir: "dist/server",
       publicDir: "dist/client",
     },
+    noExternalDirs: true,
   },
 });
