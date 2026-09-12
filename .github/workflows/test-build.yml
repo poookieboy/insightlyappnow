@@ -1,10 +1,14 @@
-name: Test Insightly Build
+name: Build Insightly Android
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
+  android:
+    name: Build APK and AAB
     runs-on: ubuntu-latest
 
     steps:
@@ -15,28 +19,99 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build Insightly
-        run: NODE_OPTIONS="--max-old-space-size=6144" npm run build
-
-      - name: Show build output
+      - name: Build web app
         run: |
-          echo "===== ROOT ====="
-          ls -la
+          NODE_OPTIONS="--max-old-space-size=6144" npm run build
 
-          echo "===== DIST ====="
-          if [ -d "dist" ]; then
-            find dist -maxdepth 3 -type f | head -100
+      - name: Prepare Capacitor web assets
+        shell: bash
+        run: |
+          set -e
+
+          if [ -f ".output/public/index.html" ]; then
+            echo "Using .output/public"
+            rm -rf dist
+            mkdir -p dist
+            cp -R .output/public/. dist/
+
+          elif [ -f "dist/index.html" ]; then
+            echo "Using existing dist directory"
+
+          elif [ -f "build/index.html" ]; then
+            echo "Using build directory"
+            rm -rf dist
+            mkdir -p dist
+            cp -R build/. dist/
+
           else
-            echo "No dist directory"
+            echo "ERROR: No web build output found."
+            echo "Searching for index.html files..."
+            find . -maxdepth 4 -type f -name "index.html" -print
+            exit 1
           fi
 
-          echo "===== OUTPUT ====="
-          if [ -d ".output" ]; then
-            find .output -maxdepth 3 -type f | head -100
-          else
-            echo "No .output directory"
-          fi
+          echo "Checking Capacitor web assets..."
+          test -f dist/index.html
+
+          echo "Web build is ready."
+          find dist -maxdepth 2 -type f | head -50
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Make Gradle executable
+        run: chmod +x android/gradlew
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build release AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          echo "APK files:"
+          find android/app/build/outputs/apk/release -type f -name "*.apk" -print
+
+          test -n "$(find android/app/build/outputs/apk/release -type f -name '*.apk')"
+
+      - name: Verify AAB
+        shell: bash
+        run: |
+          echo "AAB files:"
+          find android/app/build/outputs/bundle/release -type f -name "*.aab" -print
+
+          test -n "$(find android/app/build/outputs/bundle/release -type f -name '*.aab')"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Insightly-APK
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: Insightly-AAB
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
