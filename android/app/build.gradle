@@ -45,7 +45,12 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // Use the release signing config if a keystore is configured; otherwise fall back to debug signing so CI/test builds can produce artifacts.
+            if (signingConfigs.release != null && signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
 
             minifyEnabled false
 
