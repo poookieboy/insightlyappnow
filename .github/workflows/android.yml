@@ -65,7 +65,11 @@ jobs:
           echo "CHECKING WEB OUTPUT"
           echo "=========================================="
 
-          if [ -f "dist/client/index.html" ]; then
+          if [ -f "dist/server/server.js" ] && [ -f "dist/client/index.html" ]; then
+            echo "SUCCESS: Full build output detected (server + client)."
+            echo "Using complete dist/ directory as-is for prerendering..."
+
+          elif [ -f "dist/client/index.html" ]; then
             echo "SUCCESS: dist/client/index.html exists."
             echo "Preparing dist/client as the Capacitor web root..."
 
