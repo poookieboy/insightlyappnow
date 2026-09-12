@@ -1,11 +1,14 @@
-// AI Paper Generator — uses Lovable AI Gateway with tool-calling to produce
-// a structured mock paper (20-30 questions) for a given subject/grade/curriculum.
+// AI Paper Generator — produces a structured mock paper (20-30 questions).
+// Provider: Groq (OpenAI-compatible API). Server-side GROQ_API_KEY only.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const GROQ_MODEL = "openai/gpt-oss-120b";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 interface RequestBody {
   subject: string;
@@ -16,15 +19,42 @@ interface RequestBody {
   questionCount?: number;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+class AIError extends Error {
+  status: number;
+  constructor(message: string, status = 500) { super(message); this.status = status; }
+}
+
+function groqKey(): string {
+  const key = Deno.env.get("GROQ_API_KEY");
+  if (!key) {
+    throw new AIError(
+      "AI is not configured on the server. Add the GROQ_API_KEY secret in Project Settings → Secrets.",
+      500,
+    );
   }
+  return key;
+}
+
+function safeJson<T>(raw: string): T | null {
+  let cleaned = String(raw).trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  try { return JSON.parse(cleaned) as T; } catch { /* fall through */ }
+  const start = cleaned.search(/[[{]/);
+  if (start === -1) return null;
+  const closer = cleaned[start] === "{" ? "}" : "]";
+  const end = cleaned.lastIndexOf(closer);
+  if (end <= start) return null;
+  try { return JSON.parse(cleaned.slice(start, end + 1)) as T; } catch { return null; }
+}
+
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const body = (await req.json()) as RequestBody;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const subject = body.subject || "Mathematics";
     const curriculum = body.curriculum || "CBC";
@@ -37,7 +67,8 @@ Deno.serve(async (req) => {
 Always align to the requested curriculum (e.g. CBC means Kenyan Competency-Based Curriculum).
 Mix multiple-choice and short-answer questions. About 60% MCQ, 40% short answer.
 Make MCQ options plausible. Short-answer model answers must be concise (1-6 words) so they can be auto-graded.
-Provide acceptable alternative spellings/phrasings for short answers.`;
+Provide acceptable alternative spellings/phrasings for short answers.
+Return STRICT JSON only.`;
 
     const userPrompt = `Create a complete mock paper.
 Subject: ${subject}
@@ -46,99 +77,56 @@ Grade: ${grade}
 Topic focus: ${topic}
 Difficulty: ${difficulty}
 Number of questions: ${count}
-Include a creative title, an emoji, and a sensible duration in minutes.`;
 
-    const tool = {
-      type: "function",
-      function: {
-        name: "create_paper",
-        description: "Return a mock paper",
-        parameters: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            emoji: { type: "string" },
-            topic: { type: "string" },
-            durationMinutes: { type: "number" },
-            questions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  kind: { type: "string", enum: ["mcq", "short"] },
-                  prompt: { type: "string" },
-                  options: { type: "array", items: { type: "string" } },
-                  correctIndex: { type: "number" },
-                  modelAnswer: { type: "string" },
-                  acceptable: { type: "array", items: { type: "string" } },
-                  marks: { type: "number" },
-                },
-                required: ["kind", "prompt", "marks"],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: ["title", "emoji", "topic", "durationMinutes", "questions"],
-          additionalProperties: false,
-        },
-      },
-    };
+Return JSON of this exact shape:
+{
+  "title": "creative paper title",
+  "emoji": "one emoji",
+  "topic": "${topic}",
+  "durationMinutes": <integer>,
+  "questions": [
+    {"kind":"mcq","prompt":"...","options":["A","B","C","D"],"correctIndex":0,"marks":1},
+    {"kind":"short","prompt":"...","modelAnswer":"...","acceptable":["..."],"marks":2}
+  ]
+}`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch(GROQ_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${groqKey()}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: GROQ_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "create_paper" } },
+        temperature: 0.8,
+        max_completion_tokens: 8192,
+        response_format: { type: "json_object" },
       }),
     });
 
-    if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited. Try again soon." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const text = await resp.text();
+
+    if (!resp.ok) {
+      console.error("Groq error", resp.status, text.slice(0, 400));
+      if (resp.status === 429) return json({ error: "The AI service is busy right now. Please try again shortly." }, 429);
+      if (resp.status === 401 || resp.status === 403) return json({ error: "The AI service key is invalid or not authorized." }, 500);
+      return json({ error: `AI service error (${resp.status}).` }, 502);
     }
 
-    const data = await aiResp.json();
-    const call = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) throw new Error("No tool call in AI response");
-    const args = JSON.parse(call.function.arguments);
+    let data: any;
+    try { data = JSON.parse(text); } catch { return json({ error: "Invalid response from the AI service." }, 502); }
 
-    return new Response(
-      JSON.stringify({
-        ...args,
-        subject,
-        curriculum,
-        grade,
-        difficulty,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  } catch (e) {
-    console.error("ai-paper error", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const content = data?.choices?.[0]?.message?.content ?? "";
+    const args = safeJson<any>(content);
+
+    if (!args?.questions?.length) {
+      return json({ error: "The AI returned a malformed paper. Please try again." }, 502);
+    }
+
+    return json({ ...args, subject, curriculum, grade, difficulty });
+  } catch (e: any) {
+    console.error("ai-paper error", e?.message ?? e);
+    return json({ error: e?.message ?? "Unknown error" }, e?.status ?? 500);
   }
 });
