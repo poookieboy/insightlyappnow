@@ -1,8 +1,10 @@
 // AI classifier — detects the subject + a short title for a chat message.
-// Uses Google Gemini directly (server-side key only).
+// Provider: Groq (OpenAI-compatible API). Server-side GROQ_API_KEY only.
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const SUBJECTS = [
@@ -11,101 +13,74 @@ const SUBJECTS = [
   "Business Studies", "Computer Studies", "Social Studies", "Other",
 ];
 
-// ---- shared AI helper (inline: edge functions can't share modules here) ----
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GROQ_MODEL = "openai/gpt-oss-120b";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-function geminiKey(): string | undefined {
-  return (
-    Deno.env.get("GEMINI_API_KEY") ||
-    Deno.env.get("GOOGLE_API_KEY") ||
-    Deno.env.get("GOOGLE_GEMINI_API_KEY") ||
-    undefined
-  );
+interface AIMessage { role: string; content: string }
+interface AIOptions { json?: boolean; temperature?: number; maxTokens?: number }
+
+class AIError extends Error {
+  status: number;
+  constructor(message: string, status = 500) { super(message); this.status = status; }
 }
 
-async function callAI(
-  messages: { role: string; content: string }[],
-  jsonMode = false,
-): Promise<string> {
-  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
-  const contents = messages
-    .filter((m) => m.role !== "system")
-    .map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }))
-    .filter((m) => m.parts[0].text?.trim());
-
-  const key = geminiKey();
-  if (key) {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-            ...(jsonMode ? { responseMimeType: "application/json" } : {}),
-          },
-        }),
-      },
+function groqKey(): string {
+  const key = Deno.env.get("GROQ_API_KEY");
+  if (!key) {
+    throw new AIError(
+      "AI is not configured on the server. Add the GROQ_API_KEY secret in Project Settings → Secrets.",
+      500,
     );
-    const text = await resp.text();
-    if (!resp.ok) {
-      console.error("Gemini error", resp.status, text.slice(0, 400));
-      const err: any = new Error(`AI service error (${resp.status})`);
-      err.status = resp.status;
-      throw err;
-    }
-    const data = JSON.parse(text);
-    return data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? "").join("") ?? "";
+  }
+  return key;
+}
+
+async function callAI(messages: AIMessage[], opts: AIOptions = {}): Promise<string> {
+  const clean = messages.filter((m) => m.content && String(m.content).trim());
+  if (!clean.length) throw new AIError("No messages provided.", 400);
+
+  const resp = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${groqKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: clean,
+      temperature: opts.temperature ?? 0.7,
+      max_completion_tokens: opts.maxTokens ?? 4096,
+      ...(opts.json ? { response_format: { type: "json_object" } } : {}),
+    }),
+  });
+
+  const text = await resp.text();
+  if (!resp.ok) {
+    console.error("Groq error", resp.status, text.slice(0, 400));
+    if (resp.status === 401 || resp.status === 403) throw new AIError("The AI service key is invalid or not authorized.", 500);
+    if (resp.status === 429) throw new AIError("The AI service is busy right now. Please try again shortly.", 429);
+    throw new AIError(`AI service error (${resp.status}).`, 502);
   }
 
-  const legacy = Deno.env.get("LOVABLE_API_KEY");
-  if (legacy) {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${legacy}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages,
-        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-      }),
-    });
-    if (!resp.ok) {
-      const body = await resp.text();
-      console.error("AI gateway error", resp.status, body.slice(0, 400));
-      const err: any = new Error(`AI service error (${resp.status})`);
-      err.status = resp.status;
-      throw err;
-    }
-    const data = await resp.json();
-    return data?.choices?.[0]?.message?.content ?? "";
-  }
-
-  const err: any = new Error(
-    "AI is not configured on the server. Add the GEMINI_API_KEY secret in Project Settings → Secrets.",
-  );
-  err.status = 500;
-  throw err;
+  let data: any;
+  try { data = JSON.parse(text); } catch { throw new AIError("Invalid response from the AI service.", 502); }
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) throw new AIError("The AI service returned no answer.", 502);
+  return content;
 }
 
 function safeJson<T>(raw: string): T | null {
-  const cleaned = String(raw).replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try { return JSON.parse(cleaned) as T; } catch {
-    const m = cleaned.match(/[[{][\s\S]*[\]}]/);
-    if (!m) return null;
-    try { return JSON.parse(m[0]) as T; } catch { return null; }
-  }
+  let cleaned = String(raw).trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  try { return JSON.parse(cleaned) as T; } catch { /* fall through */ }
+  const start = cleaned.search(/[[{]/);
+  if (start === -1) return null;
+  const closer = cleaned[start] === "{" ? "}" : "]";
+  const end = cleaned.lastIndexOf(closer);
+  if (end <= start) return null;
+  try { return JSON.parse(cleaned.slice(start, end + 1)) as T; } catch { return null; }
 }
-// ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
   const fallback = (message?: string) => ({
     subject: "Other",
     title: (message || "New chat").slice(0, 40),
@@ -123,7 +98,7 @@ Deno.serve(async (req) => {
         },
         { role: "user", content: (message || "").slice(0, 500) },
       ],
-      true,
+      { json: true, temperature: 0.2, maxTokens: 256 },
     );
 
     const parsed = safeJson<{ subject?: string; title?: string }>(raw);
