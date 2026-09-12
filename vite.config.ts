@@ -18,6 +18,7 @@ export default defineConfig({
   nitro: {
     preset: "node-server",
     prerender: {
+      enabled: false,
       crawlLinks: false,
       routes: [],
     },
