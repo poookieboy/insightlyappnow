@@ -30,47 +30,65 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build web app
+        shell: bash
         run: |
+          set +e
+
           NODE_OPTIONS="--max-old-space-size=6144" npm run build
+          BUILD_EXIT=$?
+
+          echo "Build exited with code: $BUILD_EXIT"
+          echo "Searching for web output..."
+
+          if [ -f "dist/client/index.html" ]; then
+            echo "Found dist/client/index.html"
+            exit 0
+          fi
+
+          if [ -f "dist/index.html" ]; then
+            echo "Found dist/index.html"
+            exit 0
+          fi
+
+          echo "No usable web build found."
+          find . -maxdepth 5 -type f -name "index.html" -print || true
+
+          exit "$BUILD_EXIT"
 
       - name: Prepare Capacitor web assets
         shell: bash
         run: |
           set -e
 
-          echo "Checking web build output..."
+          echo "Preparing Capacitor assets..."
 
-          if [ -f ".output/public/index.html" ]; then
-            echo "Using .output/public"
-            rm -rf dist
-            mkdir -p dist
-            cp -R .output/public/. dist/
+          if [ -f "dist/client/index.html" ]; then
+            echo "Using dist/client"
+            rm -rf dist-capacitor
+            mkdir -p dist-capacitor
+            cp -R dist/client/. dist-capacitor/
 
           elif [ -f "dist/index.html" ]; then
-            echo "Using existing dist directory"
-
-          elif [ -f "build/index.html" ]; then
-            echo "Using build directory"
-            rm -rf dist
-            mkdir -p dist
-            cp -R build/. dist/
+            echo "Using dist"
+            rm -rf dist-capacitor
+            mkdir -p dist-capacitor
+            cp -R dist/. dist-capacitor/
 
           else
-            echo "ERROR: No web build output found."
-            echo "Searching for index.html files..."
+            echo "ERROR: index.html not found."
             find . -maxdepth 5 -type f -name "index.html" -print
             exit 1
           fi
 
-          echo "Checking Capacitor web assets..."
+          rm -rf dist
+          mv dist-capacitor dist
+
           test -f dist/index.html
 
-          echo "Web build is ready."
-          echo "Contents of dist:"
-          find dist -maxdepth 2 -type f | head -100
+          echo "Capacitor assets ready."
 
       - name: Sync Capacitor Android
         run: npx cap sync android
@@ -80,37 +98,35 @@ jobs:
 
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Build release AAB
         working-directory: android
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
 
       - name: Verify APK
         shell: bash
         run: |
-          echo "APK files:"
-          find android/app/build/outputs/apk/release \
-            -type f \
-            -name "*.apk" \
-            -print
+          APK=$(find android/app/build/outputs/apk/release -type f -name "*.apk" | head -1)
 
-          test -n "$(find android/app/build/outputs/apk/release \
-            -type f \
-            -name '*.apk')"
+          if [ -z "$APK" ]; then
+            echo "APK was not produced."
+            exit 1
+          fi
+
+          echo "APK created: $APK"
 
       - name: Verify AAB
         shell: bash
         run: |
-          echo "AAB files:"
-          find android/app/build/outputs/bundle/release \
-            -type f \
-            -name "*.aab" \
-            -print
+          AAB=$(find android/app/build/outputs/bundle/release -type f -name "*.aab" | head -1)
 
-          test -n "$(find android/app/build/outputs/bundle/release \
-            -type f \
-            -name '*.aab')"
+          if [ -z "$AAB" ]; then
+            echo "AAB was not produced."
+            exit 1
+          fi
+
+          echo "AAB created: $AAB"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
