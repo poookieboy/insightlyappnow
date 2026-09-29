@@ -35,9 +35,53 @@ jobs:
       - name: Build web app
         run: npm run build
 
+      - name: Prepare Capacitor web assets
+        run: |
+          rm -rf dist/client
+          mkdir -p dist/client
+
+          echo "Searching for index.html..."
+
+          if [ -f "dist/index.html" ]; then
+            echo "Found: dist/index.html"
+            cp -R dist/* dist/client/
+
+          elif [ -f ".output/public/index.html" ]; then
+            echo "Found: .output/public/index.html"
+            cp -R .output/public/* dist/client/
+
+          else
+            echo "ERROR: Could not find index.html"
+            echo "Searching entire project..."
+            find . -type f -name "index.html" \
+              -not -path "./node_modules/*" \
+              -not -path "./android/*" \
+              -print
+            exit 1
+          fi
+
+          echo "========================================"
+          echo "CAPACITOR WEB ASSETS"
+          echo "========================================"
+
+          find dist/client -maxdepth 3 -type f | sort
+
+          echo "========================================"
+          echo "INDEX CHECK"
+          echo "========================================"
+
+          test -f dist/client/index.html
+
       - name: Point Capacitor at the built web output
         run: |
-          node -e "const fs=require('fs'); const p='capacitor.config.json'; const c=JSON.parse(fs.readFileSync(p,'utf8')); c.webDir='dist/client'; fs.writeFileSync(p, JSON.stringify(c,null,2)+'\n')"
+          node -e "
+            const fs = require('fs');
+            const p = 'capacitor.config.json';
+            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+            c.webDir = 'dist/client';
+            delete c.bundledWebRuntime;
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+          "
 
       - name: Sync Capacitor Android
         run: npx cap sync android
