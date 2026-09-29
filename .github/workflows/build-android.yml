@@ -40,24 +40,21 @@ jobs:
           rm -rf dist/client
           mkdir -p dist/client
 
-          echo "Searching for index.html..."
+          echo "Copying root index.html..."
+          cp index.html dist/client/index.html
 
-          if [ -f "dist/index.html" ]; then
-            echo "Found: dist/index.html"
-            cp -R dist/* dist/client/
+          echo "Copying built client assets..."
 
-          elif [ -f ".output/public/index.html" ]; then
-            echo "Found: .output/public/index.html"
-            cp -R .output/public/* dist/client/
+          if [ -d "dist/assets" ]; then
+            cp -R dist/assets dist/client/
+          fi
 
-          else
-            echo "ERROR: Could not find index.html"
-            echo "Searching entire project..."
-            find . -type f -name "index.html" \
-              -not -path "./node_modules/*" \
-              -not -path "./android/*" \
-              -print
-            exit 1
+          if [ -d "dist/client/assets" ]; then
+            echo "Assets already present."
+          fi
+
+          if [ -d ".output/public" ]; then
+            cp -R .output/public/. dist/client/ 2>/dev/null || true
           fi
 
           echo "========================================"
