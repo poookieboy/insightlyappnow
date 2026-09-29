@@ -45,7 +45,6 @@ android {
 
     buildTypes {
         release {
-            // Use the release signing config if a keystore is configured; otherwise fall back to debug signing so CI/test builds can produce artifacts.
             if (signingConfigs.release != null && signingConfigs.release.storeFile != null) {
                 signingConfig signingConfigs.release
             } else {
@@ -72,5 +71,5 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    implementation 'com.getcapacitor:capacitor-android:5.7.8'
+    implementation project(':capacitor-android')
 }
