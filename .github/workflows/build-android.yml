@@ -32,8 +32,29 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build web app
-        run: npm run build
+      - name: Build web app and inspect output
+        run: |
+          npm run build || true
+
+          echo "========================================"
+          echo "BUILD OUTPUT: dist"
+          echo "========================================"
+          find dist -maxdepth 4 -type f | sort || true
+
+          echo "========================================"
+          echo "BUILD OUTPUT: .output"
+          echo "========================================"
+          find .output -maxdepth 4 -type f | sort || true
+
+          echo "========================================"
+          echo "SERVER DIRECTORIES"
+          echo "========================================"
+          find . -type f \( -path "*/server/*" -o -name "server.js" -o -name "index.mjs" \) | sort | head -300 || true
+
+          echo "========================================"
+          echo "STOPPING AFTER DIAGNOSTIC"
+          echo "========================================"
+          exit 1
 
       - name: Point Capacitor at the built web output
         run: |
