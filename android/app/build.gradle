@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId "com.insightly.app"
 
-        minSdk 21
+        minSdk 22
         targetSdk 36
 
         versionCode 1
