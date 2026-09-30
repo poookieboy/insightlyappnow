@@ -33,13 +33,16 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Point Capacitor at built web output
+      - name: Prepare Capacitor web output
         run: |
+          mkdir -p android-web
+          cp index.html android-web/index.html
+
           node -e "
             const fs = require('fs');
             const p = 'capacitor.config.json';
             const c = JSON.parse(fs.readFileSync(p, 'utf8'));
-            c.webDir = '.';
+            c.webDir = 'android-web';
             delete c.bundledWebRuntime;
             fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
           "
