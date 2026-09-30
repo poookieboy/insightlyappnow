@@ -1,1 +1,76 @@
+name: Diagnose Insightly Android Crash
 
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Point Capacitor at built web output
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = 'capacitor.config.json';
+            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+            c.webDir = '.';
+            delete c.bundledWebRuntime;
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+          "
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Make Gradle executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Run app on Android emulator
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            adb logcat -c
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell monkey -p com.insightly.app 1
+            sleep 10
+            adb logcat -d -v threadtime > "$GITHUB_WORKSPACE/insightly-logcat.txt"
+            grep -n -A 80 -B 20 -E "FATAL EXCEPTION|AndroidRuntime|Caused by:" "$GITHUB_WORKSPACE/insightly-logcat.txt" || true
+
+      - name: Upload runtime crash log
+        uses: actions/upload-artifact@v4
+        with:
+          name: insightly-runtime-crash-log
+          path: insightly-logcat.txt
+          if-no-files-found: error
