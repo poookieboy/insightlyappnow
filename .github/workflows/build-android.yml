@@ -37,36 +37,10 @@ jobs:
 
       - name: Prepare Capacitor web assets
         run: |
-          rm -rf dist/client
           mkdir -p dist/client
-
-          echo "Copying root index.html..."
           cp index.html dist/client/index.html
-
-          echo "Copying built client assets..."
-
-          if [ -d "dist/assets" ]; then
-            cp -R dist/assets dist/client/
-          fi
-
-          if [ -d "dist/client/assets" ]; then
-            echo "Assets already present."
-          fi
-
-          if [ -d ".output/public" ]; then
-            cp -R .output/public/. dist/client/ 2>/dev/null || true
-          fi
-
-          echo "========================================"
-          echo "CAPACITOR WEB ASSETS"
-          echo "========================================"
-
-          find dist/client -maxdepth 3 -type f | sort
-
-          echo "========================================"
-          echo "INDEX CHECK"
-          echo "========================================"
-
+          test -d dist/client/assets
+          find dist/client -maxdepth 2 -type f | sort
           test -f dist/client/index.html
 
       - name: Point Capacitor at the built web output
