@@ -35,13 +35,11 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Prepare Capacitor web assets
+      - name: Verify Capacitor web assets
         run: |
-          mkdir -p dist/client
-          cp index.html dist/client/index.html
+          test -f dist/client/index.html
           test -d dist/client/assets
           find dist/client -maxdepth 2 -type f | sort
-          test -f dist/client/index.html
 
       - name: Point Capacitor at the built web output
         run: |
