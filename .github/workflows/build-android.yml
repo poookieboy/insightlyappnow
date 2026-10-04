@@ -32,84 +32,19 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build web app
+      - name: Build web app for Capacitor
         run: npm run build
 
-      - name: Create Capacitor web entry
+      - name: Verify Capacitor web output
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-
-          const clientDir = 'dist/client';
-          const assetsDir = path.join(clientDir, 'assets');
-
-          if (!fs.existsSync(assetsDir)) {
-            throw new Error('dist/client/assets does not exist');
-          }
-
-          const files = fs.readdirSync(assetsDir);
-
-          const jsFiles = files.filter(
-            file => /^index-.*\.js$/.test(file)
-          );
-
-          const cssFiles = files.filter(
-            file => /^styles-.*\.css$/.test(file)
-          );
-
-          if (jsFiles.length === 0) {
-            throw new Error('Could not find the main Insightly JavaScript bundle');
-          }
-
-          const jsFile = jsFiles[0];
-          const cssFile = cssFiles.length > 0 ? cssFiles[0] : null;
-
-          const cssTag = cssFile
-            ? `<link rel="stylesheet" href="/assets/${cssFile}">`
-            : '';
-
-          const html = `<!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="theme-color" content="#ffffff">
-            <title>Insightly</title>
-            ${cssTag}
-          </head>
-          <body>
-            <div id="root"></div>
-            <script type="module" src="/assets/${jsFile}"></script>
-          </body>
-          </html>`;
-
-          fs.writeFileSync(
-            path.join(clientDir, 'index.html'),
-            html
-          );
-
-          console.log(`Created ${clientDir}/index.html`);
-          console.log(`JavaScript: ${jsFile}`);
-          console.log(`CSS: ${cssFile || 'none'}`);
-          NODE
-
           test -f dist/client/index.html
           test -d dist/client/assets
 
-          echo "Capacitor web files:"
-          find dist/client -maxdepth 2 -type f | sort
+          echo "Insightly web entry:"
+          sed -n '1,80p' dist/client/index.html
 
-      - name: Point Capacitor at the built web output
-        run: |
-          node -e "
-            const fs = require('fs');
-            const p = 'capacitor.config.json';
-            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
-            c.webDir = 'dist/client';
-            delete c.bundledWebRuntime;
-            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
-          "
+          echo "Web assets:"
+          find dist/client/assets -maxdepth 1 -type f | sort | head -100
 
       - name: Sync Capacitor Android
         run: npx cap sync android
