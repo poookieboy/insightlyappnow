@@ -1,6 +1,17 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
+import {
+  Outlet,
+  Link,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
+import { App } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
+
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { supabase } from "@/lib/supabase";
 
 import appCss from "../styles.css?url";
 
@@ -9,10 +20,15 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+
+        <h2 className="mt-4 text-xl font-semibold text-foreground">
+          Page not found
+        </h2>
+
         <p className="mt-2 text-sm text-muted-foreground">
           The page you're looking for doesn't exist or has been moved.
         </p>
+
         <div className="mt-6">
           <Link
             to="/"
@@ -30,25 +46,77 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" },
-      { title: "Insightly — Study smarter with Iris" },
-      { name: "description", content: "Insightly helps students manage tasks, revise with real questions, organize notes, and stay motivated — guided by Iris, your AI companion." },
-      { name: "author", content: "Insightly" },
-      { property: "og:title", content: "Insightly — Study smarter with Iris" },
-      { property: "og:description", content: "Tasks, revision, notes, AI tutoring — all in one student-friendly app." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no",
+      },
+      {
+        title: "Insightly — Study smarter with Iris",
+      },
+      {
+        name: "description",
+        content:
+          "Insightly helps students manage tasks, revise with real questions, organize notes, and stay motivated — guided by Iris, your AI companion.",
+      },
+      {
+        name: "author",
+        content: "Insightly",
+      },
+      {
+        property: "og:title",
+        content: "Insightly — Study smarter with Iris",
+      },
+      {
+        property: "og:description",
+        content:
+          "Tasks, revision, notes, AI tutoring — all in one student-friendly app.",
+      },
+      {
+        property: "og:type",
+        content: "website",
+      },
+      {
+        name: "twitter:card",
+        content: "summary",
+      },
+      {
+        name: "twitter:site",
+        content: "@Lovable",
+      },
     ],
+
     links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        href: "/favicon.png",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/favicon.png",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "stylesheet",
+        href:
+          "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -60,6 +128,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
+
       <body>
         {children}
         <Scripts />
@@ -69,6 +138,88 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+
+    let mounted = true;
+    let listener: { remove: () => Promise<void> } | null = null;
+
+    const handleAuthCallback = async (url: string) => {
+      try {
+        console.log("Insightly: received app URL:", url);
+
+        const callbackUrl = new URL(url);
+
+        if (
+          callbackUrl.protocol !== "insightly:" ||
+          callbackUrl.hostname !== "auth"
+        ) {
+          return;
+        }
+
+        const code = callbackUrl.searchParams.get("code");
+
+        if (!code) {
+          console.error(
+            "Insightly: OAuth callback did not contain a code."
+          );
+          return;
+        }
+
+        console.log("Insightly: exchanging OAuth code for session...");
+
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          console.error(
+            "Insightly: failed to exchange OAuth code:",
+            error
+          );
+          return;
+        }
+
+        console.log("Insightly: OAuth session created successfully.");
+
+        if (mounted) {
+          window.location.replace("/");
+        }
+      } catch (error) {
+        console.error(
+          "Insightly: error handling OAuth callback:",
+          error
+        );
+      }
+    };
+
+    const setupDeepLinkListener = async () => {
+      listener = await App.addListener(
+        "appUrlOpen",
+        async ({ url }) => {
+          await handleAuthCallback(url);
+        }
+      );
+
+      const launchUrl = await App.getLaunchUrl();
+
+      if (launchUrl?.url) {
+        await handleAuthCallback(launchUrl.url);
+      }
+    };
+
+    setupDeepLinkListener();
+
+    return () => {
+      mounted = false;
+
+      if (listener) {
+        listener.remove();
+        listener = null;
+      }
+    };
+  }, []);
+
   return (
     <>
       <OfflineIndicator />
@@ -76,4 +227,4 @@ function RootComponent() {
       <Toaster position="top-center" richColors />
     </>
   );
-}
+    }
