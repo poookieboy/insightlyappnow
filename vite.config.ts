@@ -1,31 +1,40 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig({
-  tanstackStart: {
-    spa: {
-      enabled: true,
-    },
+const isCapacitorBuild = process.env.CAPACITOR_BUILD === "1";
 
-    prerender: {
-      enabled: false,
-    },
-  },
+export default defineConfig(
+  isCapacitorBuild
+    ? {
+        nitro: false,
 
-  nitro: {
-    preset: "node-server",
+        tanstackStart: {
+          spa: {
+            enabled: true,
+            prerender: {
+              outputPath: "/index.html",
+              crawlLinks: false,
+              retryCount: 0,
+            },
+          },
+        },
+      }
+    : {
+        tanstackStart: {
+          spa: {
+            enabled: true,
+          },
+        },
 
-    prerender: {
-      enabled: false,
-      crawlLinks: false,
-      routes: [],
-    },
+        nitro: {
+          preset: "node-server",
 
-    output: {
-      dir: "dist",
-      serverDir: "dist/server",
-      publicDir: "dist/client",
-    },
+          output: {
+            dir: "dist",
+            serverDir: "dist/server",
+            publicDir: "dist/client",
+          },
 
-    noExternalDirs: true,
-  },
-});
+          noExternalDirs: true,
+        },
+      },
+);
