@@ -30,14 +30,14 @@ function createSupabaseClient() {
     SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY,
     {
-      auth: {
-        storage: brokeredPreviewStorage(),
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    }
-  );
-}
+      
+auth: {
+  storage: brokeredPreviewStorage(),
+  persistSession: true,
+  autoRefreshToken: true,
+  flowType: "pkce",
+},
+      
 
 let _supabase:
   | ReturnType<typeof createSupabaseClient>
