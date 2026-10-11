@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import {
   Outlet,
@@ -12,6 +13,7 @@ import { Capacitor } from "@capacitor/core";
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 import appCss from "../styles.css?url";
 
@@ -19,7 +21,9 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
+        <h1 className="text-7xl font-bold text-foreground">
+          404
+        </h1>
 
         <h2 className="mt-4 text-xl font-semibold text-foreground">
           Page not found
@@ -122,7 +126,11 @@ export const Route = createRootRoute({
   notFoundComponent: NotFoundComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
+function RootShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <head>
@@ -152,6 +160,7 @@ function RootComponent() {
 
         const callbackUrl = new URL(url);
 
+        // Ignore URLs that are not Insightly OAuth callbacks.
         if (
           callbackUrl.protocol !== "insightly:" ||
           callbackUrl.hostname !== "auth"
@@ -159,28 +168,75 @@ function RootComponent() {
           return;
         }
 
+        // Show OAuth errors returned in the callback URL.
+        const oauthError =
+          callbackUrl.searchParams.get("error_description") ||
+          callbackUrl.searchParams.get("error");
+
+        if (oauthError) {
+          console.error(
+            "Insightly OAuth callback error:",
+            oauthError
+          );
+
+          toast.error(
+            `Google sign-in failed: ${oauthError}`
+          );
+
+          return;
+        }
+
+        // Supabase PKCE should return an authorization code.
         const code = callbackUrl.searchParams.get("code");
 
         if (!code) {
           console.error(
-            "Insightly: OAuth callback did not contain a code."
+            "Insightly callback URL:",
+            url
           );
+
+          toast.error(
+            "Google returned to Insightly without an authorization code."
+          );
+
           return;
         }
 
-        console.log("Insightly: exchanging OAuth code for session...");
+        console.log(
+          "Insightly: exchanging OAuth code for session..."
+        );
 
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } =
+          await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
           console.error(
             "Insightly: failed to exchange OAuth code:",
             error
           );
+
+          toast.error(
+            `Sign-in session failed: ${error.message}`
+          );
+
           return;
         }
 
-        console.log("Insightly: OAuth session created successfully.");
+        if (!data.session) {
+          console.error(
+            "Insightly: code exchange returned no session."
+          );
+
+          toast.error(
+            "Google sign-in returned no session. Please try again."
+          );
+
+          return;
+        }
+
+        console.log(
+          "Insightly: OAuth session created successfully."
+        );
 
         if (mounted) {
           window.location.replace("/");
@@ -190,31 +246,53 @@ function RootComponent() {
           "Insightly: error handling OAuth callback:",
           error
         );
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown callback error";
+
+        toast.error(
+          `Could not finish Google sign-in: ${message}`
+        );
       }
     };
 
     const setupDeepLinkListener = async () => {
-      listener = await App.addListener(
-        "appUrlOpen",
-        async ({ url }) => {
-          await handleAuthCallback(url);
+      try {
+        listener = await App.addListener(
+          "appUrlOpen",
+          async ({ url }) => {
+            await handleAuthCallback(url);
+          }
+        );
+
+        // Handle the case where Android launches the app
+        // directly with the OAuth callback URL.
+        const launchUrl = await App.getLaunchUrl();
+
+        if (launchUrl?.url) {
+          await handleAuthCallback(launchUrl.url);
         }
-      );
+      } catch (error) {
+        console.error(
+          "Insightly: could not register OAuth callback listener:",
+          error
+        );
 
-      const launchUrl = await App.getLaunchUrl();
-
-      if (launchUrl?.url) {
-        await handleAuthCallback(launchUrl.url);
+        toast.error(
+          "Insightly could not receive the Google sign-in callback."
+        );
       }
     };
 
-    setupDeepLinkListener();
+    void setupDeepLinkListener();
 
     return () => {
       mounted = false;
 
       if (listener) {
-        listener.remove();
+        void listener.remove();
         listener = null;
       }
     };
