@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PENDING_REFERRAL_KEY } from "@/hooks/useReferrals";
 import { toast } from "sonner";
+import { Browser } from "@capacitor/browser";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -226,54 +227,45 @@ function AuthPage() {
   };
 
   // Google sign-in
+  
   const handleGoogle = async () => {
-    console.log("Auth: initiating Google sign-in via Supabase");
+    console.log("Auth: initiating Google sign-in");
     setBusy(true);
 
     try {
-      const redirectTo = Capacitor.isNativePlatform()
+      const isNative = Capacitor.isNativePlatform();
+
+      const redirectTo = isNative
         ? "insightly://auth/callback"
         : window.location.origin;
-
-      console.log("Auth: Google redirect URL:", redirectTo);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
-        const { data: sessionData } = await supabase.auth.getSession();
-
-        if (sessionData.session) {
-          navigate({ to: "/" });
-          return;
-        }
-
-        console.error("Auth: Google sign-in error (Supabase):", error.message);
+        console.error("Auth: Google OAuth error:", error.message);
         toast.error(friendlyError(error.message));
         return;
       }
 
-      if (data?.url) {
-        console.log("Auth: redirecting to hosted OAuth URL", data.url);
-        window.location.href = data.url;
+      if (!data?.url) {
+        console.error("Auth: Supabase did not return an OAuth URL");
+        toast.error("Couldn't start Google sign-in. Please try again.");
         return;
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
-
-      if (sessionData.session) {
-        navigate({ to: "/" });
+      if (isNative) {
+        await Browser.open({ url: data.url });
       } else {
-        toast.error(
-          "Google sign-in did not finish. Please try again.",
-        );
+        window.location.assign(data.url);
       }
     } catch (err) {
-      console.error("Auth: unexpected Google sign-in error:", err);
+      console.error("Auth: Google sign-in failed:", err);
 
       const message =
         err instanceof Error ? err.message : "Google sign-in failed";
@@ -283,7 +275,7 @@ function AuthPage() {
       setBusy(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-5 py-10">
       {/* subtle background accents */}
