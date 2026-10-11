@@ -206,6 +206,25 @@ function RootComponent() {
           "Insightly: exchanging OAuth code for session..."
         );
 
+       const { Preferences } = await import("@capacitor/preferences");
+
+const verifierKey =
+  "sb-xprysgjlwouonpylgusb-auth-token-code-verifier";
+
+const verifierCheck = await Preferences.get({
+  key: verifierKey,
+});
+
+console.log(
+  "Insightly PKCE verifier exists:",
+  verifierCheck.value !== null
+);
+
+if (verifierCheck.value === null) {
+  toast.error(
+    "Diagnostic: Android cannot find the saved PKCE verifier."
+  );
+}
         const { data, error } =
           await supabase.auth.exchangeCodeForSession(code);
 
