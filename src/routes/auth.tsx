@@ -1,6 +1,15 @@
+
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Mail, Lock, Loader2, User as UserIcon, Sparkles, ShieldCheck, Gift } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  User as UserIcon,
+  Sparkles,
+  ShieldCheck,
+  Gift,
+} from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { Button } from "@/components/ui/button";
@@ -50,7 +59,7 @@ function AuthPage() {
   }, [loading, user, navigate]);
 
   const friendlyError = (msg: string) => {
-    if (/failed to fetch|network/i.test(msg)) {
+    if (/failed to fetch|network|fetch failed|load failed/i.test(msg)) {
       return "Can't reach the server. Check your connection and try again.";
     }
 
@@ -69,33 +78,45 @@ function AuthPage() {
     return msg;
   };
 
+  // Email sign-in with network error handling
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setBusy(false);
-
-    if (error) {
-      return toast.error(friendlyError(error.message));
-    }
-
-    if (!data.user?.email_confirmed_at) {
-      toast.info(
-        "Please verify your email to finish setting up your account.",
-      );
-
-      return navigate({
-        to: "/verify-email",
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
-    }
 
-    toast.success("Welcome back!");
-    navigate({ to: "/" });
+      if (error) {
+        toast.error(friendlyError(error.message));
+        return;
+      }
+
+      if (!data.user?.email_confirmed_at) {
+        toast.info(
+          "Please verify your email to finish setting up your account.",
+        );
+
+        navigate({
+          to: "/verify-email",
+        });
+        return;
+      }
+
+      toast.success("Welcome back!");
+      navigate({ to: "/" });
+    } catch (err) {
+      console.error("Auth: email sign-in request failed:", err);
+
+      const message =
+        err instanceof Error ? err.message : "Unknown sign-in error";
+
+      toast.error(friendlyError(message));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -107,86 +128,106 @@ function AuthPage() {
 
     setBusy(true);
 
-    const code = referral.trim().toUpperCase();
+    try {
+      const code = referral.trim().toUpperCase();
 
-    if (code) {
-      if (!/^[A-Z0-9]{5,12}$/.test(code)) {
-        setBusy(false);
+      if (code) {
+        if (!/^[A-Z0-9]{5,12}$/.test(code)) {
+          toast.error(
+            "That referral code doesn't look right. Check it and try again.",
+          );
+          return;
+        }
 
-        return toast.error(
-          "That referral code doesn't look right. Check it and try again.",
+        const { data: valid, error: refErr } = await supabase.rpc(
+          "referral_code_valid",
+          {
+            p_code: code,
+          },
         );
+
+        if (refErr || !valid) {
+          toast.error(
+            "We couldn't find that referral code. Remove it or enter a valid one.",
+          );
+          return;
+        }
       }
 
-      const { data: valid, error: refErr } = await supabase.rpc(
-        "referral_code_valid",
-        {
-          p_code: code,
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: name,
+          },
         },
-      );
+      });
 
-      if (refErr || !valid) {
-        setBusy(false);
-
-        return toast.error(
-          "We couldn't find that referral code. Remove it or enter a valid one.",
-        );
+      if (error) {
+        toast.error(friendlyError(error.message));
+        return;
       }
+
+      // Redeemed only after the account is email-verified (server-enforced).
+      if (code) {
+        window.localStorage.setItem(PENDING_REFERRAL_KEY, code);
+      }
+
+      toast.success("Account created — check your email to verify ✉️");
+
+      navigate({
+        to: "/verify-email",
+      });
+    } catch (err) {
+      console.error("Auth: account creation failed:", err);
+
+      const message =
+        err instanceof Error ? err.message : "Unknown sign-up error";
+
+      toast.error(friendlyError(message));
+    } finally {
+      setBusy(false);
     }
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          full_name: name,
-        },
-      },
-    });
-
-    setBusy(false);
-
-    if (error) {
-      return toast.error(friendlyError(error.message));
-    }
-
-    // Redeemed only after the account is email-verified (server-enforced).
-    if (code) {
-      window.localStorage.setItem(PENDING_REFERRAL_KEY, code);
-    }
-
-    toast.success("Account created — check your email to verify ✉️");
-
-    navigate({
-      to: "/verify-email",
-    });
   };
 
   const handleForgot = async () => {
-    if (!email) {
+    if (!email.trim()) {
       return toast.error("Enter your email above first");
     }
 
     setBusy(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      );
 
-    setBusy(false);
+      if (error) {
+        toast.error(friendlyError(error.message));
+        return;
+      }
 
-    if (error) {
-      return toast.error(friendlyError(error.message));
+      toast.success("Password reset link sent — check your email");
+    } catch (err) {
+      console.error("Auth: password reset request failed:", err);
+
+      const message =
+        err instanceof Error ? err.message : "Unknown password reset error";
+
+      toast.error(friendlyError(message));
+    } finally {
+      setBusy(false);
     }
-
-    toast.success("Password reset link sent — check your email");
   };
 
   // Google sign-in
   const handleGoogle = async () => {
     console.log("Auth: initiating Google sign-in via Supabase");
-
     setBusy(true);
 
     try {
@@ -204,81 +245,42 @@ function AuthPage() {
       });
 
       if (error) {
-        // The popup may have closed or an error occurred.
-        // Verify the session before showing an error.
-        const { data: sessionData } =
-          await supabase.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
 
-        if (sessionData?.session) {
+        if (sessionData.session) {
           navigate({ to: "/" });
           return;
         }
 
-        setBusy(false);
-
-        const raw = error.message || "";
-
-        if (/cancel|closed|popup/i.test(raw)) {
-          return toast.error(
-            "Sign-in window closed before finishing. Allow pop-ups for this site and try again.",
-          );
-        }
-
-        console.error(
-          "Auth: Google sign-in error (Supabase):",
-          raw,
-        );
-
-        return toast.error(
-          friendlyError(raw || "Google sign-in failed"),
-        );
-      }
-
-      // If Supabase returned a redirect URL,
-      // send the browser there.
-      if ((data as any)?.url) {
-        console.log(
-          "Auth: redirecting to hosted OAuth URL",
-          (data as any).url,
-        );
-
-        window.location.href = (data as any).url;
+        console.error("Auth: Google sign-in error (Supabase):", error.message);
+        toast.error(friendlyError(error.message));
         return;
       }
 
-      // Otherwise, assume the session is set
-      // and navigate into the app.
-      console.log(
-        "Auth: Google sign-in completed via Supabase — navigating in-app",
-      );
+      if (data?.url) {
+        console.log("Auth: redirecting to hosted OAuth URL", data.url);
+        window.location.href = data.url;
+        return;
+      }
 
-      navigate({ to: "/" });
-    } catch (err) {
-      console.error(
-        "Auth: unexpected Google sign-in error",
-        err,
-      );
+      const { data: sessionData } = await supabase.auth.getSession();
 
-      const { data: sessionData } =
-        await supabase.auth.getSession();
-
-      if (sessionData?.session) {
+      if (sessionData.session) {
         navigate({ to: "/" });
-        return;
+      } else {
+        toast.error(
+          "Google sign-in did not finish. Please try again.",
+        );
       }
+    } catch (err) {
+      console.error("Auth: unexpected Google sign-in error:", err);
 
+      const message =
+        err instanceof Error ? err.message : "Google sign-in failed";
+
+      toast.error(friendlyError(message));
+    } finally {
       setBusy(false);
-
-      const raw =
-        err instanceof Error
-          ? err.message
-          : "Google sign-in failed";
-
-      toast.error(
-        /cancel|closed|popup/i.test(raw)
-          ? "Sign-in window closed before finishing. Allow pop-ups for this site and try again."
-          : friendlyError(raw),
-      );
     }
   };
 
@@ -320,31 +322,24 @@ function AuthPage() {
             onClick={handleGoogle}
             disabled={busy}
           >
-            <svg
-              className="h-5 w-5 mr-2"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z"
               />
-
               <path
                 fill="#34A853"
                 d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"
               />
-
               <path
                 fill="#FBBC05"
                 d="M5.84 14.11A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.34-2.11V7.05H2.18A11 11 0 0 0 1 12c0 1.77.42 3.45 1.18 4.95l3.66-2.84z"
               />
-
               <path
                 fill="#EA4335"
                 d="M12 5.38c1.62 0 3.06.56 4.2 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.29 9.14 5.38 12 5.38z"
               />
             </svg>
-
             Continue with Google
           </Button>
 
@@ -352,7 +347,6 @@ function AuthPage() {
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
-
             <div className="relative flex justify-center text-xs uppercase tracking-wider">
               <span className="bg-card px-3 text-muted-foreground">
                 or use email
@@ -362,36 +356,22 @@ function AuthPage() {
 
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2 h-11">
-              <TabsTrigger value="signin">
-                Sign In
-              </TabsTrigger>
-
-              <TabsTrigger value="signup">
-                Sign Up
-              </TabsTrigger>
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
-              <form
-                onSubmit={handleSignIn}
-                className="space-y-4 mt-5"
-              >
+              <form onSubmit={handleSignIn} className="space-y-4 mt-5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="si-email">
-                    Email
-                  </Label>
-
+                  <Label htmlFor="si-email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
                     <Input
                       id="si-email"
                       type="email"
                       required
                       value={email}
-                      onChange={(e) =>
-                        setEmail(e.target.value)
-                      }
+                      onChange={(e) => setEmail(e.target.value)}
                       className="pl-9 h-11"
                       placeholder="you@example.com"
                     />
@@ -399,21 +379,15 @@ function AuthPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="si-pass">
-                    Password
-                  </Label>
-
+                  <Label htmlFor="si-pass">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
                     <Input
                       id="si-pass"
                       type="password"
                       required
                       value={password}
-                      onChange={(e) =>
-                        setPassword(e.target.value)
-                      }
+                      onChange={(e) => setPassword(e.target.value)}
                       className="pl-9 h-11"
                       placeholder="••••••••"
                     />
@@ -435,7 +409,8 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={handleForgot}
-                  className="w-full text-center text-xs text-primary hover:underline"
+                  disabled={busy}
+                  className="w-full text-center text-xs text-primary hover:underline disabled:opacity-50"
                 >
                   Forgot password?
                 </button>
@@ -443,25 +418,16 @@ function AuthPage() {
             </TabsContent>
 
             <TabsContent value="signup">
-              <form
-                onSubmit={handleSignUp}
-                className="space-y-4 mt-5"
-              >
+              <form onSubmit={handleSignUp} className="space-y-4 mt-5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-name">
-                    Name
-                  </Label>
-
+                  <Label htmlFor="su-name">Name</Label>
                   <div className="relative">
                     <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
                     <Input
                       id="su-name"
                       required
                       value={name}
-                      onChange={(e) =>
-                        setName(e.target.value)
-                      }
+                      onChange={(e) => setName(e.target.value)}
                       className="pl-9 h-11"
                       placeholder="Your name"
                     />
@@ -469,21 +435,15 @@ function AuthPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-email">
-                    Email
-                  </Label>
-
+                  <Label htmlFor="su-email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
                     <Input
                       id="su-email"
                       type="email"
                       required
                       value={email}
-                      onChange={(e) =>
-                        setEmail(e.target.value)
-                      }
+                      onChange={(e) => setEmail(e.target.value)}
                       className="pl-9 h-11"
                       placeholder="you@example.com"
                     />
@@ -491,22 +451,16 @@ function AuthPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-pass">
-                    Password
-                  </Label>
-
+                  <Label htmlFor="su-pass">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
                     <Input
                       id="su-pass"
                       type="password"
                       required
                       minLength={6}
                       value={password}
-                      onChange={(e) =>
-                        setPassword(e.target.value)
-                      }
+                      onChange={(e) => setPassword(e.target.value)}
                       className="pl-9 h-11"
                       placeholder="At least 6 characters"
                     />
@@ -523,10 +477,8 @@ function AuthPage() {
                       (optional)
                     </span>
                   </Label>
-
                   <div className="relative">
                     <Gift className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
                     <Input
                       id="su-ref"
                       value={referral}
@@ -543,10 +495,9 @@ function AuthPage() {
                       autoComplete="off"
                     />
                   </div>
-
                   <p className="text-[11px] text-muted-foreground">
-                    Applied once you verify your email — your
-                    friend earns Premium time.
+                    Applied once you verify your email — your friend earns
+                    Premium time.
                   </p>
                 </div>
 
@@ -571,7 +522,6 @@ function AuthPage() {
             <Sparkles className="h-3.5 w-3.5" />
             7-day free trial
           </span>
-
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5" />
             Secure sign-in
@@ -580,17 +530,11 @@ function AuthPage() {
 
         <p className="mt-3 text-center text-[11px] text-muted-foreground">
           By continuing you agree to our{" "}
-          <a
-            href="/terms"
-            className="underline hover:text-foreground"
-          >
+          <a href="/terms" className="underline hover:text-foreground">
             Terms
           </a>{" "}
           and{" "}
-          <a
-            href="/privacy"
-            className="underline hover:text-foreground"
-          >
+          <a href="/privacy" className="underline hover:text-foreground">
             Privacy Policy
           </a>
           .
