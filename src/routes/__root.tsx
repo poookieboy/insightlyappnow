@@ -11,7 +11,7 @@ import { Capacitor } from "@capacitor/core";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
 
