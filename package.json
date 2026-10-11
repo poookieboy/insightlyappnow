@@ -73,6 +73,7 @@
     "@capacitor/android": "5.7.8",
     "@capacitor/core": "5.7.8",
     "@capacitor/browser": "^5.2.1",
+    "@capacitor/preferences": "^5.0.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
