@@ -1,4 +1,3 @@
-
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -11,6 +10,7 @@ import {
   Gift,
 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
 import insightlyIcon from "@/assets/insightly-icon.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
