@@ -59,6 +59,103 @@ function AuthPage() {
     });
   }, [loading, user, navigate]);
 
+  
+  
+  // Handle Google OAuth returning to the native Android app.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let disposed = false;
+    let listener: { remove: () => Promise<void> } | undefined;
+
+    const registration = App.addListener(
+      "appUrlOpen",
+      async ({ url }) => {
+        if (!url.startsWith("insightly://auth/callback")) return;
+
+        setBusy(true);
+
+        try {
+          try {
+            await Browser.close();
+          } catch {
+            // The browser may already be closed.
+          }
+
+          const callbackUrl = new URL(url);
+          const oauthError =
+            callbackUrl.searchParams.get("error_description") ||
+            callbackUrl.searchParams.get("error");
+
+          if (oauthError) {
+            toast.error(oauthError);
+            return;
+          }
+
+          const code = callbackUrl.searchParams.get("code");
+
+          if (!code) {
+            toast.error(
+              "Google sign-in returned no authorization code. Please try again."
+            );
+            return;
+          }
+
+          const { data, error } =
+            await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            console.error(
+              "Google OAuth code exchange failed:",
+              error.message
+            );
+            toast.error(
+              `Google sign-in failed: ${error.message}`
+            );
+            return;
+          }
+
+          if (!data.session) {
+            toast.error(
+              "No sign-in session was created. Please try again."
+            );
+            return;
+          }
+
+          toast.success("Signed in successfully!");
+
+          navigate({
+            to: data.user?.email_confirmed_at
+              ? "/"
+              : "/verify-email",
+          });
+        } catch (err) {
+          console.error("OAuth callback failed:", err);
+
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : "Google sign-in could not finish."
+          );
+        } finally {
+          setBusy(false);
+        }
+      }
+    );
+
+    registration.then((registeredListener) => {
+      if (disposed) {
+        void registeredListener.remove();
+      } else {
+        listener = registeredListener;
+      }
+    });
+
+    return () => {
+      disposed = true;
+      if (listener) void listener.remove();
+    };
+  }, [navigate]);
   const friendlyError = (msg: string) => {
     if (/failed to fetch|network|fetch failed|load failed/i.test(msg)) {
       return "Can't reach the server. Check your connection and try again.";
