@@ -15,10 +15,12 @@ import { useStore, uid } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { notesHead } from "@/lib/featured-notes";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 export const Route = createFileRoute("/notes/$noteId")({
+  head: () => notesHead("My Note", "Read and edit your personal Insightly study note."),
   component: () => (
     <RequireProfile>
       <NoteViewer />

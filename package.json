@@ -102,8 +102,10 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "5.7.8",
+    "@electric-sql/pglite": "^0.5.10",
     "@eslint/js": "^9.32.0",
-    "@lovable.dev/vite-tanstack-config": "2.13.1",
+    "@lovable.dev/vite-tanstack-config": "2.26.5",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -118,6 +120,6 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1",
-    "@capacitor/cli": "5.7.8"
+    "vitest": "^5.0.5"
   }
 }

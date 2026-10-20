@@ -3,11 +3,12 @@
 //     with categories, background styles, covers, icons, lock/encrypt.
 //   • For You: AI-generated curriculum notes by subject & topic.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { RequireProfile } from "@/components/RequireProfile";
-import { ComingSoon } from "@/components/ComingSoon";
+import { FeaturedNotesLibrary } from "@/components/notes/FeaturedNotesLibrary";
+import { notesHead } from "@/lib/featured-notes";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ import {
 
 
 export const Route = createFileRoute("/notes")({
+  head: () => notesHead("Notes", "Browse reviewed learning notes by grade, subject and topic, submit student contributions, and keep your own notes in Insightly."),
   component: () => (
     <RequireProfile>
       <NotesHub />
@@ -71,28 +73,24 @@ interface UserNote {
 }
 
 function NotesHub() {
+  const childNoteId = Route.useMatch().params as { noteId?: string };
+  if (childNoteId.noteId) return <Outlet />;
   return (
-    <AppShell wide>
+    <AppShell wide className="!bg-none bg-background">
       <header className="mb-4">
         <h1 className="font-display text-2xl font-bold sm:text-3xl">Notes</h1>
-        <p className="text-sm text-muted-foreground">Your personal notes and curriculum-ready study material.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Find reviewed study notes, share what you’ve learned, and keep your own ideas together.</p>
       </header>
-      <Tabs defaultValue="mine">
+      <Tabs defaultValue="foryou">
         <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="foryou">Featured Notes</TabsTrigger>
           <TabsTrigger value="mine">My Notes</TabsTrigger>
-          <TabsTrigger value="foryou">For You ✨</TabsTrigger>
         </TabsList>
         <TabsContent value="mine" className="mt-4">
           <MyNotes />
         </TabsContent>
         <TabsContent value="foryou" className="mt-4">
-          <ComingSoon
-            title="Notes For You"
-            emoji="📘"
-            hideBack
-            message="Curriculum notes written for your exact grade and subjects are on the way. This feature is under development and will arrive in a future update."
-          />
-
+          <FeaturedNotesLibrary />
         </TabsContent>
       </Tabs>
     </AppShell>
