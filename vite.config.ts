@@ -34,7 +34,6 @@ export default defineConfig(
             publicDir: "dist/client",
           },
 
-          noExternalDirs: true,
         },
       },
 );
