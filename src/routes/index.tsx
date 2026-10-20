@@ -17,6 +17,14 @@ import { useStore, calcAge, type Curriculum, type Grade } from "@/lib/store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "Welcome to Insightly" },
+    { name: "description", content: "Set up your Insightly learning profile and organize your student study tools." },
+    { property: "og:title", content: "Welcome to Insightly" },
+    { property: "og:description", content: "Set up your Insightly learning profile and organize your student study tools." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Onboarding,
 });
 
