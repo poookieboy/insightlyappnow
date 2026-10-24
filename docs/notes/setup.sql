@@ -1,4 +1,32 @@
--- Additive Notes library setup. Apply through the Lovable Cloud migration tool.
+-- Additive Notes library setup for the existing operator-managed database.
+-- Apply only after inspecting that project's schema; no hosted backend provisioning.
+-- Reuse existing roles where present. A missing role system starts with NO admins.
+DO $$ BEGIN
+  IF to_regtype('public.app_role') IS NULL THEN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'user');
+  END IF;
+END $$;
+CREATE TABLE IF NOT EXISTS public.user_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  role public.app_role NOT NULL,
+  UNIQUE(user_id, role)
+);
+GRANT SELECT ON public.user_roles TO authenticated;
+GRANT ALL ON public.user_roles TO service_role;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF to_regprocedure('public.has_role(uuid,public.app_role)') IS NULL THEN
+    EXECUTE $fn$CREATE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
+      RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
+      'SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=_user_id AND role=_role)'$fn$;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='user_roles' AND policyname='Notes users read own roles') THEN
+    CREATE POLICY "Notes users read own roles" ON public.user_roles FOR SELECT TO authenticated USING (auth.uid()=user_id);
+  END IF;
+END $$;
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid,public.app_role) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid,public.app_role) TO authenticated;
 -- Personal user_notes and AI cache tables are intentionally unchanged.
 CREATE TABLE public.note_submissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -33,6 +61,8 @@ CREATE INDEX note_submissions_queue ON public.note_submissions(status, created_a
 CREATE TABLE public.note_review_details (
   submission_id uuid PRIMARY KEY REFERENCES public.note_submissions(id) ON DELETE CASCADE,
   internal_comments text NOT NULL DEFAULT '' CHECK (length(internal_comments) <= 8000),
+  description text NOT NULL DEFAULT '' CHECK (length(description) <= 500),
+  reviewer_name text NOT NULL DEFAULT '' CHECK (length(reviewer_name) <= 80),
   reviewed_by uuid,
   reviewed_at timestamptz NOT NULL DEFAULT now()
 );
@@ -132,8 +162,8 @@ BEGIN
   IF target IN ('needs_changes','rejected') AND length(btrim(coalesce(p_payload->>'student_feedback',''))) = 0 THEN RAISE EXCEPTION 'Add feedback for the student' USING ERRCODE='22023'; END IF;
   IF target='approved' AND (length(btrim(coalesce(p_payload->>'description',''))) NOT BETWEEN 1 AND 500 OR length(btrim(coalesce(p_payload->>'reviewer_name',''))) NOT BETWEEN 1 AND 80) THEN RAISE EXCEPTION 'Add description and reviewer attribution before publication' USING ERRCODE='22023'; END IF;
   UPDATE public.note_submissions SET title=btrim(p_payload->>'title'),grade=p_payload->>'grade',subject=p_payload->>'subject',topic=btrim(p_payload->>'topic'),content=btrim(p_payload->>'content'),source=coalesce(p_payload->>'source',''),display_name=coalesce(p_payload->>'display_name',''),status=target,student_feedback=coalesce(p_payload->>'student_feedback',''),updated_at=clock_timestamp() WHERE id=p_id RETURNING * INTO n;
-  INSERT INTO public.note_review_details(submission_id,internal_comments,reviewed_by,reviewed_at)
-  VALUES(p_id,coalesce(p_payload->>'internal_comments',''),auth.uid(),now()) ON CONFLICT(submission_id) DO UPDATE SET internal_comments=EXCLUDED.internal_comments,reviewed_by=EXCLUDED.reviewed_by,reviewed_at=EXCLUDED.reviewed_at;
+  INSERT INTO public.note_review_details(submission_id,internal_comments,description,reviewer_name,reviewed_by,reviewed_at)
+  VALUES(p_id,coalesce(p_payload->>'internal_comments',''),coalesce(p_payload->>'description',''),coalesce(p_payload->>'reviewer_name',''),auth.uid(),now()) ON CONFLICT(submission_id) DO UPDATE SET internal_comments=EXCLUDED.internal_comments,description=EXCLUDED.description,reviewer_name=EXCLUDED.reviewer_name,reviewed_by=EXCLUDED.reviewed_by,reviewed_at=EXCLUDED.reviewed_at;
   IF target='approved' THEN
     INSERT INTO public.published_notes(submission_id,title,grade,subject,topic,content,source,display_name,kind,description,reviewer_name,is_published,published_at)
     VALUES(n.id,n.title,n.grade,n.subject,n.topic,n.content,n.source,n.display_name,n.kind,btrim(p_payload->>'description'),btrim(p_payload->>'reviewer_name'),true,now())

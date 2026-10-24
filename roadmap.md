@@ -1,5 +1,12 @@
 # Insightly roadmap
 
+## Current request: finish Notes without backend provisioning
+- [ ] Diagnose and fix Notes white-screen, routing, and signed-out rendering.
+- [ ] Finish library/viewer, submissions, reviewer queue, and Groq-assisted draft states.
+- [ ] Verify database contracts/policies with local integration tests; prepare existing-project SQL without applying to a managed backend.
+- [ ] Verify desktop/mobile preview rendering and run focused tests plus automatic compile checks.
+- [ ] Report configured-service limitations, manual setup, and pending profile-security approval.
+
 ## Current request: minimal build-blocker fixes
 - [x] Diagnose the current route type errors and framework missing-export failure.
 - [x] Apply minimal type/dependency fixes without changing payment, auth, or premium behavior.
