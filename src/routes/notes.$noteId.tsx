@@ -36,6 +36,8 @@ function NoteViewer() {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(note?.title ?? "");
+  const [aiLoading, setAiLoading] = useState<null | "summarize" | "simplify" | "quiz" | "exam">(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     if (note && editorRef.current) {
@@ -111,7 +113,6 @@ function NoteViewer() {
     toast.success("Saved");
   };
 
-  const [aiLoading, setAiLoading] = useState<null | "summarize" | "simplify" | "quiz" | "exam">(null);
   const runAI = async (action: "summarize" | "simplify" | "quiz" | "exam") => {
     const text = editorRef.current?.innerText?.trim() || "";
     if (!text) { toast.error("Note is empty"); return; }
@@ -155,7 +156,6 @@ function NoteViewer() {
 
   const printAsPdf = () => window.print();
 
-  const [pdfLoading, setPdfLoading] = useState(false);
   const downloadPdf = async () => {
     const node = document.getElementById("note-page");
     if (!node) return;

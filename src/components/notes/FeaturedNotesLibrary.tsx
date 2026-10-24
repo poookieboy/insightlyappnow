@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useAuth";
+import { useNotesAuth } from "@/hooks/useNotesAuth";
 import { NOTE_GRADES, STATUS_LABELS, canResubmit, filterPublishedNotes, notesError, noteSubjects, type PublishedNote, type NoteSubmission } from "@/lib/featured-notes";
 import { listFeaturedNotes, listOwnSubmissions, notesIdentity } from "@/lib/featured-notes-api";
 import { NoteSubmissionForm } from "./NoteSubmissionForm";
+import { NotesSignIn } from "./NotesSignIn";
 
 export function FeaturedNotesLibrary() {
-  const { user } = useAuth();
+  const { user } = useNotesAuth();
+  const [signInOpen, setSignInOpen] = useState(false);
   const [notes, setNotes] = useState<PublishedNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,7 +33,12 @@ export function FeaturedNotesLibrary() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { setReviewer(false); if (user) void notesIdentity().then((identity) => setReviewer(identity.reviewer)).catch(() => {}); }, [user?.id]);
+  useEffect(() => {
+    let active = true;
+    setReviewer(false); setOwn([]); setShowOwn(false);
+    if (user) void notesIdentity().then((identity) => { if (active) setReviewer(identity.reviewer); }).catch(() => {});
+    return () => { active = false; };
+  }, [user?.id]);
   async function loadOwn() {
     setOwnLoading(true); setOwnError("");
     try { setOwn(await listOwnSubmissions()); } catch (e) { setOwnError(notesError(e)); }
@@ -47,7 +54,7 @@ export function FeaturedNotesLibrary() {
       <div className="flex flex-wrap gap-2">
         {reviewer && <Button asChild variant="outline"><Link to="/notes-review"><ClipboardCheck />Review queue</Link></Button>}
         {user ? <><Button variant="outline" onClick={() => { setShowOwn(!showOwn); if (!showOwn) void loadOwn(); }}>My submissions</Button><Button onClick={() => { setEditing(undefined); setFormOpen(true); }}><Plus />Submit your notes</Button></>
-          : <Button asChild><Link to="/auth"><Plus />Sign in to submit notes</Link></Button>}
+          : <Button onClick={() => setSignInOpen(true)}><Plus />Sign in to submit notes</Button>}
       </div>
     </div>
     <section aria-label="Search and filter notes" className="space-y-4 border-y border-border py-5">
@@ -60,12 +67,15 @@ export function FeaturedNotesLibrary() {
       {activeFilters && <div className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground" aria-live="polite">{filtered.length} matching {filtered.length === 1 ? "note" : "notes"}</p><Button variant="ghost" size="sm" onClick={() => setFilters({ search: "", grade: "", subject: "", topic: "" })}><SlidersHorizontal />Clear filters</Button></div>}
     </section>
     {showOwn && <section aria-label="My submissions" className="border-b pb-6"><h2 className="text-lg font-semibold">My submissions</h2><p className="mb-4 mt-1 text-sm text-muted-foreground">These are separate from published notes.</p>{ownLoading ? <LoadingNotes /> : ownError ? <NotesFailure message={ownError} retry={loadOwn} /> : own.length === 0 ? <p className="py-3 text-sm text-muted-foreground">You haven’t submitted any notes yet.</p> : <div className="space-y-3">{own.map((n) => <Card key={n.id} className="rounded-lg p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="min-w-0 break-words font-medium">{n.title}</h3><Badge variant="secondary">{STATUS_LABELS[n.status]}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{n.grade} · {n.subject} · {n.topic}</p>{n.student_feedback && <p className="mt-3 whitespace-pre-wrap break-words border-l-2 border-accent pl-3 text-sm">{n.student_feedback}</p>}{canResubmit(n.status) && <Button variant="outline" className="mt-3" onClick={() => { setEditing(n); setFormOpen(true); }}>Update and resubmit</Button>}</Card>)}</div>}</section>}
-    {loading ? <LoadingNotes /> : error ? <NotesFailure message={error} retry={load} /> : <div className="grid gap-8 lg:grid-cols-2">{(["ai", "student"] as const).map((kind) => {
+    {loading && <LoadingNotes />}
+    {error && <NotesFailure message={error} retry={load} />}
+    <div className="grid gap-8 lg:grid-cols-2">{(["ai", "student"] as const).map((kind) => {
       const entries = filtered.filter((n) => n.kind === kind);
       const Icon = kind === "ai" ? Sparkles : Users;
       return <section key={kind} aria-labelledby={`notes-${kind}-heading`}><div className="mb-1 flex items-center gap-2"><Icon className={`h-5 w-5 ${kind === "ai" ? "text-accent" : "text-tile-green"}`} /><h2 id={`notes-${kind}-heading`} className="font-display text-lg font-semibold">{kind === "ai" ? "AI-Featured Notes" : "Student-Featured Notes"}</h2><span className="ml-auto text-xs text-muted-foreground">{entries.length}</span></div><p className="mb-4 text-sm text-muted-foreground">{kind === "ai" ? "AI-assisted material, checked by the Insightly team." : "Student contributions, reviewed and corrected by our team."}</p>{entries.length ? <div className="grid gap-3">{entries.map((n) => <Card key={n.id} className="rounded-lg p-5 transition-colors hover:border-accent/50"><div className="flex flex-wrap items-center gap-2"><Badge variant="secondary">{n.subject}</Badge><span className="text-xs text-muted-foreground">{n.grade}</span></div><h3 className="mt-3 break-words text-lg font-semibold"><Link to="/featured-notes/$noteId" params={{ noteId: n.id }} className="outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring">{n.title}</Link></h3><p className="mt-1 text-xs text-muted-foreground">{n.topic}</p><p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{n.description}</p><div className="mt-4 border-t pt-3 text-xs text-muted-foreground"><p>{kind === "ai" ? "AI-assisted" : `By ${n.display_name || "Student contributor"}`} · Reviewed by {n.reviewer_name}</p><Button asChild variant="link" className="mt-1 h-auto px-0"><Link to="/featured-notes/$noteId" params={{ noteId: n.id }}>Read note <ArrowUpRight /></Link></Button></div></Card>)}</div> : <div className="flex min-h-52 flex-col items-center justify-center rounded-lg border border-dashed bg-card/60 px-5 py-7 text-center"><BookOpen className="h-8 w-8 text-muted-foreground/60" /><h3 className="mt-3 text-sm font-medium">{activeFilters ? "No notes match these filters" : "No published notes yet"}</h3><p className="mt-1 max-w-xs text-sm text-muted-foreground">{activeFilters ? "Try another subject or clear your filters." : "Reviewed notes will appear here once the Insightly team publishes them."}</p></div>}</section>;
-    })}</div>}
+    })}</div>
     {formOpen && <NoteSubmissionForm key={editing?.id ?? "new"} open={formOpen} onOpenChange={setFormOpen} initial={editing} onSaved={() => { setShowOwn(true); void loadOwn(); }} />}
+    <NotesSignIn open={signInOpen} onOpenChange={setSignInOpen} />
   </div>;
 }
 
