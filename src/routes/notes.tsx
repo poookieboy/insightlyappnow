@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 import { createPortal } from "react-dom";
 import { useNotesAuth } from "@/hooks/useNotesAuth";
 import { AppShell } from "@/components/AppShell";
-import { RequireProfile } from "@/components/RequireProfile";
+import { NotesSignIn } from "@/components/notes/NotesSignIn";
 import { FeaturedNotesLibrary, NotesFailure } from "@/components/notes/FeaturedNotesLibrary";
 import { notesHead, notesError } from "@/lib/featured-notes";
 import { Card } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { supabase } from "@/integrations/supabase/client";
+import { externalSupabase as supabase } from "@/integrations/external-supabase/client";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import {
@@ -73,6 +73,7 @@ interface UserNote {
 function NotesHub() {
   const { pathname } = useLocation();
   const { user } = useNotesAuth();
+  const [signIn, setSignIn] = useState(false);
   if (pathname !== "/notes" && pathname !== "/notes/") return <Outlet />;
   return (
     <AppShell wide showTrialBanner={false} className="!bg-none bg-background">
@@ -86,12 +87,13 @@ function NotesHub() {
           <TabsTrigger value="mine">My Notes</TabsTrigger>
         </TabsList>
         <TabsContent value="mine" className="mt-4">
-          <RequireProfile><MyNotes /></RequireProfile>
+          {user ? <MyNotes key={user.id} /> : <div className="border-y py-10 text-center"><BookOpen className="mx-auto h-8 w-8 text-muted-foreground" /><h2 className="mt-3 font-semibold">Your personal notes</h2><p className="mt-2 text-sm text-muted-foreground">Sign in to your Notes account to read and write your own notes.</p><Button className="mt-4" onClick={() => setSignIn(true)}>Sign in to Notes</Button></div>}
         </TabsContent>
         <TabsContent value="foryou" className="mt-4">
           <FeaturedNotesLibrary />
         </TabsContent>
       </Tabs>
+      <NotesSignIn open={signIn} onOpenChange={setSignIn} />
     </AppShell>
   );
 }
