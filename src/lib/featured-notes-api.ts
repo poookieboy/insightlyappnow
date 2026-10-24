@@ -1,27 +1,17 @@
-import { supabase } from "@/integrations/supabase/client";
+import { externalSupabase as supabase } from "@/integrations/external-supabase/client";
 import { noteSubmissionSchema, type NoteDraft, type NoteSubmission, type PublishedNote, type NoteReviewDetail, type NoteStatus } from "./featured-notes";
 
-// Local contract until Cloud can regenerate its schema; reuse the managed client/session.
-// No second client, credentials, privileged key, or client-side access decisions.
-interface NotesClient {
-  from(table: string): {
-    select(columns: string): {
-      eq(column: string, value: string | boolean): any;
-      order(column: string, options: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
-    };
-  };
-  rpc(name: string, params: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
-}
-const notesClient = supabase as unknown as NotesClient;
+// Reuse the existing external client. Its auth session is distinct from the app's legacy connection.
+const notesClient = supabase;
 const NOTE_COLUMNS = "id,title,grade,subject,topic,content,source,display_name,kind,description,reviewer_name,published_at";
 
 export async function listFeaturedNotes(): Promise<PublishedNote[]> {
-  const { data, error } = await notesClient.from("published_notes").select(NOTE_COLUMNS).eq("is_published", true).order("published_at", { ascending: false });
+  const { data, error } = await notesClient.from("published_notes").select(NOTE_COLUMNS).eq("is_published", true).order("published_at", { ascending: false }).abortSignal(AbortSignal.timeout(12000));
   if (error) throw error;
   return (data ?? []) as PublishedNote[];
 }
 export async function getFeaturedNote(id: string): Promise<PublishedNote | null> {
-  const { data, error } = await notesClient.from("published_notes").select(NOTE_COLUMNS).eq("is_published", true).eq("id", id).maybeSingle();
+  const { data, error } = await notesClient.from("published_notes").select(NOTE_COLUMNS).eq("is_published", true).eq("id", id).abortSignal(AbortSignal.timeout(12000)).maybeSingle();
   if (error) throw error;
   return data as PublishedNote | null;
 }
@@ -51,7 +41,7 @@ export async function listNotesQueue(): Promise<NoteSubmission[]> {
   return (data ?? []) as NoteSubmission[];
 }
 export async function getNoteReview(id: string): Promise<NoteReviewDetail | null> {
-  const { data, error } = await notesClient.from("note_review_details").select("submission_id,internal_comments,reviewed_by").eq("submission_id", id).maybeSingle();
+  const { data, error } = await notesClient.from("note_review_details").select("submission_id,internal_comments,reviewed_by,description,reviewer_name").eq("submission_id", id).maybeSingle();
   if (error) throw error;
   return data as NoteReviewDetail | null;
 }
@@ -64,4 +54,24 @@ export async function reviewFeaturedNote(note: NoteSubmission, draft: NoteDraft,
   const payload = noteSubmissionSchema.parse(draft);
   const { error } = await notesClient.rpc("review_featured_note", { p_id: note.id, p_expected_updated_at: note.updated_at, p_payload: { ...payload, ...options } });
   if (error) throw error;
+}
+
+/** Existing Groq-only notes helper. Generation never saves, reviews, or publishes. */
+export async function improveFeaturedDraft(draft: NoteDraft, action: "summarize" | "simplify"): Promise<string> {
+  const identity = await notesIdentity();
+  if (!identity.reviewer) throw new Error("Reviewer access required");
+  if (!draft.content.trim() || !draft.grade || !draft.subject) throw new Error("Add source notes, grade and subject before using Iris.");
+  const { data, error } = await supabase.functions.invoke("ai-notes", {
+    body: { action, text: draft.content, grade: draft.grade, subject: draft.subject, curriculum: "CBC" },
+  });
+  if (error) {
+    const context = (error as { context?: Response }).context;
+    if (context instanceof Response) {
+      const payload = await context.clone().json().catch(() => null) as { error?: string } | null;
+      if (payload?.error?.includes("GROQ_API_KEY")) throw new Error("Iris is unavailable. Configure the server-side GROQ_API_KEY secret for ai-notes.");
+    }
+    throw new Error("Iris couldn’t connect to the Notes AI function. Your original notes are unchanged.");
+  }
+  if (data?.error || typeof data?.content !== "string" || !data.content.trim()) throw new Error("Iris returned no usable notes. Your original notes are unchanged.");
+  return data.content;
 }

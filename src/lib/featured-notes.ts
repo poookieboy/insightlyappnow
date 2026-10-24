@@ -49,6 +49,8 @@ export interface NoteReviewDetail {
   submission_id: string;
   internal_comments: string;
   reviewed_by: string | null;
+  description: string;
+  reviewer_name: string;
 }
 
 export function filterPublishedNotes(notes: PublishedNote[], filters: { search: string; grade: string; subject: string; topic: string }) {
@@ -63,7 +65,7 @@ export function canResubmit(status: NoteStatus) { return status === "needs_chang
 
 export function notesError(error: unknown): string {
   const e = error as { code?: string; message?: string };
-  if (["42P01", "PGRST202", "PGRST205"].includes(e?.code ?? "")) return "Notes storage is not set up yet. Please try again after the Notes update is connected.";
+  if (["42P01", "PGRST202", "PGRST205"].includes(e?.code ?? "")) return "The Notes tables or review functions are not installed on your configured service yet. Published notes will appear after the Notes setup is applied.";
   if (e?.code === "42501") return "You do not have permission for this action. Please check that you are signed in with the right account.";
   if (e?.message?.includes("sign in")) return "Please sign in to submit notes or check your submissions.";
   if (e?.message?.includes("changed")) return "This submission changed since you opened it. Refresh the queue before saving.";
