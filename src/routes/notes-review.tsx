@@ -64,7 +64,7 @@ function ReviewEditor({ note, onClose, onSaved }: { note?: NoteSubmission; onClo
   const [aiBusy, setAiBusy] = useState(false);
   const [aiResult, setAiResult] = useState("");
   const [aiError, setAiError] = useState("");
-  async function improve(action: "summarize" | "simplify") {
+  async function improve(action: "summarize" | "simplify" | "generate") {
     setAiBusy(true); setAiError(""); setAiResult("");
     try { setAiResult(await improveFeaturedDraft(draft, action)); }
     catch (e) { setAiError(e instanceof Error ? e.message : "Iris is unavailable. Your original notes are unchanged."); }
@@ -90,7 +90,7 @@ function ReviewEditor({ note, onClose, onSaved }: { note?: NoteSubmission; onClo
     <Button variant="outline" size="sm" className="w-fit" onClick={() => setPreview(!preview)}><Eye />{preview ? "Edit content" : "Preview content"}</Button>
     {preview ? <NoteContent content={draft.content || "No content yet."} /> : <NoteFields draft={draft} onChange={setDraft} errors={errors} disabled={busy} />}
     <section aria-label="Iris draft assistance" className="space-y-3 border-t pt-4">
-      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy || aiBusy || !draft.content.trim()} onClick={() => void improve("summarize")}>{aiBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}Summarize with Iris</Button><Button variant="outline" disabled={busy || aiBusy || !draft.content.trim()} onClick={() => void improve("simplify")}>Simplify with Iris</Button></div>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy || aiBusy || !draft.grade || !draft.subject || !draft.topic.trim()} onClick={() => void improve("generate")}>{aiBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}Generate draft</Button><Button variant="outline" disabled={busy || aiBusy || !draft.content.trim()} onClick={() => void improve("summarize")}>Summarize with Iris</Button><Button variant="outline" disabled={busy || aiBusy || !draft.content.trim()} onClick={() => void improve("simplify")}>Simplify with Iris</Button></div>
       {aiError && <p role="alert" className="text-sm text-destructive">{aiError}</p>}
       {aiResult && <><NoteContent content={aiResult} /><div className="flex gap-2"><Button variant="outline" onClick={() => { setDraft({ ...draft, content: aiResult }); setAiResult(""); }}>Use in draft</Button><Button variant="ghost" onClick={() => setAiResult("")}>Discard</Button></div></>}
     </section>

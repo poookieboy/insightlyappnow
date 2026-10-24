@@ -57,12 +57,12 @@ export async function reviewFeaturedNote(note: NoteSubmission, draft: NoteDraft,
 }
 
 /** Existing Groq-only notes helper. Generation never saves, reviews, or publishes. */
-export async function improveFeaturedDraft(draft: NoteDraft, action: "summarize" | "simplify"): Promise<string> {
+export async function improveFeaturedDraft(draft: NoteDraft, action: "summarize" | "simplify" | "generate"): Promise<string> {
   const identity = await notesIdentity();
   if (!identity.reviewer) throw new Error("Reviewer access required");
-  if (!draft.content.trim() || !draft.grade || !draft.subject) throw new Error("Add source notes, grade and subject before using Iris.");
+  if (!draft.grade || !draft.subject || (action === "generate" ? !draft.topic.trim() : !draft.content.trim())) throw new Error("Add grade, subject and a topic or source notes before using Iris.");
   const { data, error } = await supabase.functions.invoke("ai-notes", {
-    body: { action, text: draft.content, grade: draft.grade, subject: draft.subject, curriculum: "CBC" },
+    body: { action, text: draft.content, grade: draft.grade, subject: draft.subject, topic: draft.topic, curriculum: "CBC" },
   });
   if (error) {
     const context = (error as { context?: Response }).context;

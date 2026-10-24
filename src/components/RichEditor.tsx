@@ -106,6 +106,7 @@ export function RichEditor({
   const [text, setText] = useState("");
 
   const editor = useEditor({
+    immediatelyRender: false,
     editable,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
