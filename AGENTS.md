@@ -1,5 +1,6 @@
 # Project architecture
 
+- Keep the direct TanStack Router and router-plugin versions aligned with the installed TanStack Start dependency requirements; incompatible router-core copies break server-route type augmentation and SSR exports.
 - Featured Notes use a reviewed publication snapshot separate from private personal notes and AI caches, because existing content must not be silently treated as approved curriculum material.
 - Notes writes go through authenticated database functions that verify the existing protected admin role; direct student status, publication, and private-comment writes are not granted.
 - Internal reviewer comments live in a separate admin-only table, because hiding a field in the interface is not an access boundary.
