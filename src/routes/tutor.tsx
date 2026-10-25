@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
@@ -7,7 +8,8 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import mermaid from "mermaid";
+import { aiRequestHeaders } from "@/lib/ai-request-headers";
+import { readChatStream } from "@/lib/chat-stream";
 // Hero avatar removed — Iris chat is now a clean grey/black surface.
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
@@ -28,8 +30,6 @@ import { humanizeMath } from "@/lib/math-format";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { toast } from "sonner";
 
-mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" });
-
 type Mode = "ask" | "explain" | "quiz" | "diagram" | "project";
 const MODES: { id: Mode; label: string; hint: string }[] = [
   { id: "ask", label: "Ask", hint: "Ask anything — like ChatGPT." },
@@ -40,6 +40,7 @@ const MODES: { id: Mode; label: string; hint: string }[] = [
 ];
 
 export const Route = createFileRoute("/tutor")({
+  head: () => pageHead('Iris learning assistant', 'Study with Iris, Insightly’s conversational learning assistant.'),
   component: () => (
     <RequireProfile>
       <Tutor />
@@ -64,7 +65,6 @@ const QUICK_CHIPS = [
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
 const CLASSIFY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-classify`;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 function Tutor() {
   const { state, update } = useStore();
@@ -78,6 +78,8 @@ function Tutor() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("ask");
   const [lastFailed, setLastFailed] = useState<string | null>(null);
+  const failedImages = useRef<string[]>([]);
+  const pendingImages = useRef(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; id?: string }>({ open: false });
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -90,13 +92,16 @@ function Tutor() {
 
   const pickImages = (files: FileList | null) => {
     if (!files?.length) return;
-    const room = 4 - attachments.length;
+    const room = 4 - attachments.length - pendingImages.current;
     if (room <= 0) { toast.error("Up to 4 images per message."); return; }
     Array.from(files).slice(0, room).forEach((file) => {
       if (!file.type.startsWith("image/")) return;
       if (file.size > 4 * 1024 * 1024) { toast.error(`${file.name} is larger than 4MB.`); return; }
       const reader = new FileReader();
-      reader.onload = () => setAttachments((a) => [...a, String(reader.result)]);
+      pendingImages.current += 1;
+      reader.onload = () => setAttachments((a) => [...a, String(reader.result)].slice(0, 4));
+      reader.onerror = () => toast.error("We couldn’t read this image. Please try another file.");
+      reader.onloadend = () => { pendingImages.current = Math.max(0, pendingImages.current - 1); };
       reader.readAsDataURL(file);
     });
   };
@@ -174,7 +179,11 @@ function Tutor() {
       content: text || "Please look at this image and help me.",
       ...(images.length ? { images } : {}),
     };
-    const next = [...conv.messages, userMsg];
+    const previous = conv.messages;
+    const last = previous[previous.length - 1];
+    const isRetry = textArg !== undefined && last?.role === "user" && last.content === userMsg.content;
+    const next = isRetry ? [...previous.slice(0, -1), userMsg] : [...previous, userMsg];
+    failedImages.current = images;
     writeMessages(conv.id, next, text || "Image question");
     setLoading(true);
 
@@ -183,12 +192,12 @@ function Tutor() {
     if (isFirstMessage) {
       (async () => {
         try {
-          const headers: Record<string, string> = { "Content-Type": "application/json" };
-          if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
+          const headers = await aiRequestHeaders();
           const r = await fetch(CLASSIFY_URL, {
             method: "POST",
             headers,
             body: JSON.stringify({ message: text }),
+            signal: AbortSignal.timeout(15000),
           });
           if (!r.ok) return;
           const { subject, title } = await r.json();
@@ -217,8 +226,7 @@ function Tutor() {
         ? projects.find((p) => p.id === conv.projectId)
         : null;
 
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
+      const headers = await aiRequestHeaders();
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers,
@@ -229,56 +237,35 @@ function Tutor() {
           projectInstructions: project?.instructions ?? null,
           projectName: project?.name ?? null,
         }),
+        signal: AbortSignal.timeout(90000),
       });
 
       if (!resp.ok || !resp.body) {
-        if (resp.status === 429) toast.error("Too many requests — please wait a moment.");
-        else if (resp.status === 402) toast.error("AI credits exhausted.");
-        else toast.error("Tutor is unavailable right now.");
+        const failure = await resp.json().catch(() => null) as { error?: string } | null;
+        toast.error(failure?.error || (resp.status === 429 ? "Too many requests — please wait a moment." : "Iris is unavailable right now. Please try again."));
         setLastFailed(text);
-        writeMessages(conv.id, next.slice(0, -1));
+        writeMessages(conv.id, next);
         setLoading(false);
         return;
       }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let done = false;
-
-      while (!done) {
-        const { done: streamDone, value } = await reader.read();
-        if (streamDone) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let nl: number;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line || line.startsWith(":")) continue;
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") { done = true; break; }
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) upsert(delta);
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
+      if (resp.headers.get("content-type")?.includes("application/json")) {
+        const result = await resp.json() as { content?: string; error?: string };
+        if (!result.content?.trim()) throw new Error(result.error || "Iris returned no response.");
+        upsert(result.content);
+        return;
       }
+      if (!resp.headers.get("content-type")?.includes("text/event-stream")) throw new Error("Iris returned an unsupported response. Please try again.");
+      await readChatStream(resp.body, upsert);
       if (!assistantSoFar) {
         toast.error("Tutor returned no response. Try again.");
-        setLastFailed(text);
+        setLastFailed(text || "Image question");
       }
     } catch (e) {
       console.error(e);
-      toast.error("Connection error. Check your network and try again.");
-      setLastFailed(text);
-      writeMessages(conv.id, next.slice(0, -1));
+      toast.error(e instanceof Error ? e.message : "Connection error. Check your network and try again.");
+      setLastFailed(text || "Image question");
+      writeMessages(conv.id, next);
     } finally {
       setLoading(false);
     }
@@ -366,7 +353,7 @@ function Tutor() {
       {lastFailed && (
         <Card className="mb-3 flex items-center gap-2 border-destructive/30 bg-destructive/5 p-3">
           <p className="flex-1 text-xs">Last message failed: <span className="font-medium">{lastFailed}</span></p>
-          <Button size="sm" variant="outline" onClick={() => send(lastFailed)}>
+          <Button size="sm" variant="outline" onClick={() => send(lastFailed === "Image question" ? "" : lastFailed, failedImages.current)}>
             <RefreshCw className="mr-1 h-3 w-3" /> Retry
           </Button>
         </Card>
@@ -1064,6 +1051,8 @@ function Mermaid({ chart }: { chart: string }) {
     let cancelled = false;
     (async () => {
       try {
+        const { default: mermaid } = await import("mermaid");
+        mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "strict" });
         const { svg } = await mermaid.render(`m-${id}`, chart);
         if (!cancelled && ref.current) { ref.current.innerHTML = svg; setError(null); }
       } catch (e) {

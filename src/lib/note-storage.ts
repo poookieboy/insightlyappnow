@@ -51,7 +51,8 @@ export async function resolveMedia(pathOrUrl: string): Promise<string> {
         const url = new URL(pathOrUrl);
         const marker = `/storage/v1/object/sign/${BUCKET}/`;
         const index = url.pathname.indexOf(marker);
-        if (index >= 0 && url.origin === new URL(supabase.supabaseUrl).origin) return await signedUrl(decodeURIComponent(url.pathname.slice(index + marker.length)));
+        const storageOrigin = new URL(supabase.storage.from(BUCKET).getPublicUrl("origin-check").data.publicUrl).origin;
+        if (index >= 0 && url.origin === storageOrigin) return await signedUrl(decodeURIComponent(url.pathname.slice(index + marker.length)));
       } catch { return pathOrUrl; }
     }
     return pathOrUrl;

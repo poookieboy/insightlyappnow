@@ -7,6 +7,10 @@ export const Route = createFileRoute("/terms")({
     meta: [
       { title: "Terms of Service — Insightly" },
       { name: "description", content: "Terms of Service for Insightly by Ezen Uel Studios." },
+      { property: "og:title", content: "Terms of Service — Insightly" },
+      { property: "og:description", content: "Terms of Service for Insightly by Ezen Uel Studios." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
 });

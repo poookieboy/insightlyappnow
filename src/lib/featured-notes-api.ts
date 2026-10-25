@@ -1,7 +1,7 @@
 import { externalSupabase as supabase } from "@/integrations/external-supabase/client";
 import { noteSubmissionSchema, type NoteDraft, type NoteSubmission, type PublishedNote, type NoteReviewDetail, type NoteStatus } from "./featured-notes";
 
-// Reuse the existing external client. Its auth session is distinct from the app's legacy connection.
+// Reuse the persistent client for the user-selected external service.
 const notesClient = supabase;
 const NOTE_COLUMNS = "id,title,grade,subject,topic,content,source,display_name,kind,description,reviewer_name,published_at";
 

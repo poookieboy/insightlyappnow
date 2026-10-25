@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Calculator, BookOpen, ChevronLeft, FunctionSquare, Search } from "lucide-react";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 import { FORMULAS } from "@/lib/formulas";
 
 export const Route = createFileRoute("/calculator")({
+  head: () => pageHead('Calculator and formulas', 'Use Insightly scientific calculations, conversions, and study formulas.'),
   component: () => (
     <RequireProfile>
       <CalculatorPage />

@@ -1,5 +1,12 @@
 # Insightly roadmap
 
+## Current request: repair existing app startup
+- [ ] Diagnose published startup and preview compile/runtime failures.
+- [ ] Fix confirmed errors and mobile overflow without redesigning features.
+- [ ] Verify protected external environment configuration without modifying it.
+- [ ] Test main routes, navigation, Notes rules, and available integrations; inspect automatic production checks.
+- [ ] Report external setup and profile-security approval blockers; do not publish an unverified build.
+
 ## Current request: finish Notes without backend provisioning
 - [ ] Diagnose and fix Notes white-screen, routing, and signed-out rendering.
 - [ ] Finish library/viewer, submissions, reviewer queue, and Groq-assisted draft states.

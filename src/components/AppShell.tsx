@@ -15,7 +15,7 @@ export function TabBar() {
   const { pathname } = useLocation();
   return (
     <nav className="safe-bottom no-select fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-2xl items-center justify-around px-2 pt-2">
+      <div className="mx-auto grid max-w-2xl grid-cols-5 items-center px-2 pt-2">
         {tabs.map(({ to, label, icon: Icon }) => {
           const active = pathname.startsWith(to);
           return (
@@ -23,14 +23,14 @@ export function TabBar() {
               key={to}
               to={to}
               className={cn(
-                "press flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-medium transition-all sm:px-6",
+                "press flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition-all sm:px-6",
                 active
                   ? "bg-gradient-primary text-primary-foreground shadow-glow"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="h-5 w-5" />
-              <span>{label}</span>
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="max-w-full truncate">{label}</span>
             </Link>
           );
         })}

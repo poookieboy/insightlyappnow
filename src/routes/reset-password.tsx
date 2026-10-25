@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, Loader2, GraduationCap } from "lucide-react";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => pageHead('Reset password', 'Set a new password for your Insightly account.'),
   component: ResetPassword,
 });
 

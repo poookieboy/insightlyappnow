@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { ChevronLeft, Printer, Play } from "lucide-react";
@@ -8,6 +9,7 @@ import { useStore } from "@/lib/store";
 import { getPaper } from "@/lib/papers";
 
 export const Route = createFileRoute("/tests/$paperId/preview")({
+  head: () => pageHead('Preview a paper', 'Read and print an Insightly practice paper before starting.'),
   component: () => (
     <RequireProfile>
       <PaperPreview />
