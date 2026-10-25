@@ -9,6 +9,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { aiRequestHeaders } from "@/lib/ai-request-headers";
+import { readChatStream } from "@/lib/chat-stream";
 // Hero avatar removed — Iris chat is now a clean grey/black surface.
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
@@ -77,6 +78,8 @@ function Tutor() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("ask");
   const [lastFailed, setLastFailed] = useState<string | null>(null);
+  const failedImages = useRef<string[]>([]);
+  const pendingImages = useRef(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; id?: string }>({ open: false });
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -89,13 +92,16 @@ function Tutor() {
 
   const pickImages = (files: FileList | null) => {
     if (!files?.length) return;
-    const room = 4 - attachments.length;
+    const room = 4 - attachments.length - pendingImages.current;
     if (room <= 0) { toast.error("Up to 4 images per message."); return; }
     Array.from(files).slice(0, room).forEach((file) => {
       if (!file.type.startsWith("image/")) return;
       if (file.size > 4 * 1024 * 1024) { toast.error(`${file.name} is larger than 4MB.`); return; }
       const reader = new FileReader();
-      reader.onload = () => setAttachments((a) => [...a, String(reader.result)]);
+      pendingImages.current += 1;
+      reader.onload = () => setAttachments((a) => [...a, String(reader.result)].slice(0, 4));
+      reader.onerror = () => toast.error("We couldn’t read this image. Please try another file.");
+      reader.onloadend = () => { pendingImages.current = Math.max(0, pendingImages.current - 1); };
       reader.readAsDataURL(file);
     });
   };
@@ -173,7 +179,11 @@ function Tutor() {
       content: text || "Please look at this image and help me.",
       ...(images.length ? { images } : {}),
     };
-    const next = [...conv.messages, userMsg];
+    const previous = conv.messages;
+    const last = previous[previous.length - 1];
+    const isRetry = textArg !== undefined && last?.role === "user" && last.content === userMsg.content;
+    const next = isRetry ? [...previous.slice(0, -1), userMsg] : [...previous, userMsg];
+    failedImages.current = images;
     writeMessages(conv.id, next, text || "Image question");
     setLoading(true);
 
@@ -245,43 +255,16 @@ function Tutor() {
         upsert(result.content);
         return;
       }
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let done = false;
-
-      while (!done) {
-        const { done: streamDone, value } = await reader.read();
-        if (streamDone) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let nl: number;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line || line.startsWith(":")) continue;
-          if (!line.startsWith("data:")) continue;
-          const json = line.slice(5).trim();
-          if (json === "[DONE]") { done = true; break; }
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) upsert(delta);
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
+      if (!resp.headers.get("content-type")?.includes("text/event-stream")) throw new Error("Iris returned an unsupported response. Please try again.");
+      await readChatStream(resp.body, upsert);
       if (!assistantSoFar) {
         toast.error("Tutor returned no response. Try again.");
-        setLastFailed(text);
+        setLastFailed(text || "Image question");
       }
     } catch (e) {
       console.error(e);
-      toast.error("Connection error. Check your network and try again.");
-      setLastFailed(text);
+      toast.error(e instanceof Error ? e.message : "Connection error. Check your network and try again.");
+      setLastFailed(text || "Image question");
       writeMessages(conv.id, next);
     } finally {
       setLoading(false);
@@ -370,7 +353,7 @@ function Tutor() {
       {lastFailed && (
         <Card className="mb-3 flex items-center gap-2 border-destructive/30 bg-destructive/5 p-3">
           <p className="flex-1 text-xs">Last message failed: <span className="font-medium">{lastFailed}</span></p>
-          <Button size="sm" variant="outline" onClick={() => send(lastFailed)}>
+          <Button size="sm" variant="outline" onClick={() => send(lastFailed === "Image question" ? "" : lastFailed, failedImages.current)}>
             <RefreshCw className="mr-1 h-3 w-3" /> Retry
           </Button>
         </Card>

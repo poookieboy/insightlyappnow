@@ -60,6 +60,7 @@ function Onboarding() {
   const age = dob ? calcAge(dob.toISOString()) : null;
 
   const handleStart = () => {
+    if (!user || loading) return;
     if (!name.trim() || !dob || !curriculum || !grade) {
       toast.error("Please fill in all fields");
       return;
