@@ -17,6 +17,7 @@ import { evaluateBadges, notifyBadges } from "@/lib/badges";
 import { motivation } from "@/lib/motivation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { aiRequestHeaders } from "@/lib/ai-request-headers";
 
 export const Route = createFileRoute("/revision")({
   head: () => pageHead('Revision practice', 'Practice Insightly subject and topic questions with Iris feedback.'),
@@ -28,7 +29,6 @@ export const Route = createFileRoute("/revision")({
 });
 
 const AI_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revision`;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 type View =
   | { kind: "subjects" }
@@ -45,8 +45,9 @@ async function aiCall<T>(payload: unknown): Promise<T> {
   }
   const res = await fetch(AI_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+    headers: await aiRequestHeaders(),
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(60000),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);

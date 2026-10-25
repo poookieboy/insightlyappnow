@@ -1,5 +1,5 @@
 import { pageHead } from "@/lib/page-head";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronRight, FileText, Clock, GraduationCap, Sparkles, Loader2, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -21,12 +21,13 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/tests")({
   head: () => pageHead('Test papers', 'Browse Insightly test papers and saved practice exams.'),
-  component: () => (
-    <RequireProfile>
-      <TestsList />
-    </RequireProfile>
-  ),
+  component: TestsRoute,
 });
+
+function TestsRoute() {
+  const { pathname } = useLocation();
+  return pathname.replace(/\/$/, "") === "/tests" ? <RequireProfile><TestsList /></RequireProfile> : <Outlet />;
+}
 
 const DIFFICULTY_COLOR: Record<Difficulty, string> = {
   easy: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",

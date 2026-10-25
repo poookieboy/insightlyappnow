@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import mermaid from "mermaid";
+import { aiRequestHeaders } from "@/lib/ai-request-headers";
 // Hero avatar removed — Iris chat is now a clean grey/black surface.
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { AppShell } from "@/components/AppShell";
@@ -28,8 +28,6 @@ import { cn } from "@/lib/utils";
 import { humanizeMath } from "@/lib/math-format";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { toast } from "sonner";
-
-mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" });
 
 type Mode = "ask" | "explain" | "quiz" | "diagram" | "project";
 const MODES: { id: Mode; label: string; hint: string }[] = [
@@ -66,7 +64,6 @@ const QUICK_CHIPS = [
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
 const CLASSIFY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-classify`;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 function Tutor() {
   const { state, update } = useStore();
@@ -185,12 +182,12 @@ function Tutor() {
     if (isFirstMessage) {
       (async () => {
         try {
-          const headers: Record<string, string> = { "Content-Type": "application/json" };
-          if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
+          const headers = await aiRequestHeaders();
           const r = await fetch(CLASSIFY_URL, {
             method: "POST",
             headers,
             body: JSON.stringify({ message: text }),
+            signal: AbortSignal.timeout(15000),
           });
           if (!r.ok) return;
           const { subject, title } = await r.json();
@@ -219,8 +216,7 @@ function Tutor() {
         ? projects.find((p) => p.id === conv.projectId)
         : null;
 
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
+      const headers = await aiRequestHeaders();
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers,
@@ -231,18 +227,24 @@ function Tutor() {
           projectInstructions: project?.instructions ?? null,
           projectName: project?.name ?? null,
         }),
+        signal: AbortSignal.timeout(90000),
       });
 
       if (!resp.ok || !resp.body) {
-        if (resp.status === 429) toast.error("Too many requests — please wait a moment.");
-        else if (resp.status === 402) toast.error("AI credits exhausted.");
-        else toast.error("Tutor is unavailable right now.");
+        const failure = await resp.json().catch(() => null) as { error?: string } | null;
+        toast.error(failure?.error || (resp.status === 429 ? "Too many requests — please wait a moment." : "Iris is unavailable right now. Please try again."));
         setLastFailed(text);
-        writeMessages(conv.id, next.slice(0, -1));
+        writeMessages(conv.id, next);
         setLoading(false);
         return;
       }
 
+      if (resp.headers.get("content-type")?.includes("application/json")) {
+        const result = await resp.json() as { content?: string; error?: string };
+        if (!result.content?.trim()) throw new Error(result.error || "Iris returned no response.");
+        upsert(result.content);
+        return;
+      }
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -259,8 +261,8 @@ function Tutor() {
           buffer = buffer.slice(nl + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line || line.startsWith(":")) continue;
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
+          if (!line.startsWith("data:")) continue;
+          const json = line.slice(5).trim();
           if (json === "[DONE]") { done = true; break; }
           try {
             const parsed = JSON.parse(json);
@@ -280,7 +282,7 @@ function Tutor() {
       console.error(e);
       toast.error("Connection error. Check your network and try again.");
       setLastFailed(text);
-      writeMessages(conv.id, next.slice(0, -1));
+      writeMessages(conv.id, next);
     } finally {
       setLoading(false);
     }
@@ -1066,6 +1068,8 @@ function Mermaid({ chart }: { chart: string }) {
     let cancelled = false;
     (async () => {
       try {
+        const { default: mermaid } = await import("mermaid");
+        mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "strict" });
         const { svg } = await mermaid.render(`m-${id}`, chart);
         if (!cancelled && ref.current) { ref.current.innerHTML = svg; setError(null); }
       } catch (e) {

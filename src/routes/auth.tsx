@@ -1,5 +1,5 @@
 import { pageHead } from "@/lib/page-head";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Mail,
@@ -25,8 +25,13 @@ import { Browser } from "@capacitor/browser";
 
 export const Route = createFileRoute("/auth")({
   head: () => pageHead('Sign in', 'Sign in or create your Insightly account with email or Google.'),
-  component: AuthPage,
+  component: AuthRoute,
 });
+
+function AuthRoute() {
+  const { pathname } = useLocation();
+  return pathname.replace(/\/$/, "") === "/auth" ? <AuthPage /> : <Outlet />;
+}
 
 function AuthPage() {
   const navigate = useNavigate();
