@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, RotateCcw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -13,12 +13,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tests/$paperId")({
-  component: () => (
-    <RequireProfile>
-      <PaperRunner />
-    </RequireProfile>
-  ),
+  component: PaperRoute,
 });
+
+function PaperRoute() {
+  const { pathname } = useLocation();
+  return pathname.endsWith("/preview") ? <Outlet /> : <RequireProfile><PaperRunner /></RequireProfile>;
+}
 
 interface AnswerState {
   selected?: number; // mcq

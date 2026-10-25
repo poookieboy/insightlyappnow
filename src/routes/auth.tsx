@@ -28,7 +28,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, error: sessionError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -404,6 +404,7 @@ function AuthPage() {
         </div>
 
         <div className="rounded-3xl border bg-card p-7 shadow-xl">
+          {sessionError && <p role="alert" className="mb-4 text-sm text-destructive">{sessionError}</p>}
           <Button
             type="button"
             variant="outline"

@@ -1,7 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/auth/callback")({
 function AuthCallbackPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("Verifying your email...");
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,6 +28,7 @@ function AuthCallbackPage() {
         if (error) {
           if (!cancelled) {
             setMessage("We couldn't complete the verification.");
+            setFailed(true);
           }
           return;
         }
@@ -39,6 +42,7 @@ function AuthCallbackPage() {
           setMessage(
             "Verification completed, but we couldn't restore your session.",
           );
+          setFailed(true);
         }
         return;
       }
@@ -46,6 +50,7 @@ function AuthCallbackPage() {
       if (!data.user.email_confirmed_at) {
         if (!cancelled) {
           setMessage("Your email has not been confirmed yet.");
+          setFailed(true);
         }
         return;
       }
@@ -62,7 +67,12 @@ function AuthCallbackPage() {
       }, 1200);
     };
 
-    handleVerification();
+    void handleVerification().catch(() => {
+      if (!cancelled) {
+        setMessage("We couldn’t restore your sign-in. Please try again.");
+        setFailed(true);
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -81,11 +91,11 @@ function AuthCallbackPage() {
         </h1>
 
         <div className="mt-4 flex justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          {failed ? <Button asChild variant="outline"><Link to="/auth">Back to sign in</Link></Button> : <Loader2 className="h-5 w-5 animate-spin text-primary" />}
         </div>
 
         <p className="mt-4 text-sm text-muted-foreground">
-          You'll be returned to Insightly automatically.
+          {failed ? "Return to sign in to continue." : "You'll be returned to Insightly automatically."}
         </p>
       </Card>
     </main>

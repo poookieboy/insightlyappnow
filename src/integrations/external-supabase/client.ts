@@ -1,6 +1,6 @@
 // External Supabase client — read-only quiz_questions source.
 // Separate from the main Lovable Cloud client so app auth/data stays intact.
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 const EXTERNAL_URL = "https://xprysgjlwouonpylgusb.supabase.co";
@@ -71,4 +71,6 @@ export const quizSupabase = createClient(EXTERNAL_URL, EXTERNAL_PUBLISHABLE_KEY,
 
 // Notes and app auth now target the same selected external project. Reuse the
 // app's persistent session rather than requiring a second, temporary login.
-export const externalSupabase = supabase;
+// The external Notes schema is operator-maintained and is not in generated
+// managed-project types. This facade shares the real client, not a new session.
+export const externalSupabase = supabase as unknown as SupabaseClient;
