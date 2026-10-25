@@ -1,5 +1,7 @@
 # Project architecture
 
+- Web builds use the framework hosting defaults; only Capacitor builds enable SPA-only output, because custom Node output can publish an empty legacy HTML document instead of the actual application.
+
 - Keep the direct TanStack Router and router-plugin versions aligned with the installed TanStack Start dependency requirements; incompatible router-core copies break server-route type augmentation and SSR exports.
 - Featured Notes use a reviewed publication snapshot separate from private personal notes and AI caches, because existing content must not be silently treated as approved curriculum material.
 - Notes writes go through authenticated database functions that verify the existing protected admin role; direct student status, publication, and private-comment writes are not granted.
