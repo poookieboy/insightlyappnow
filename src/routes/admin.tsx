@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Shield, ChevronLeft, Check, X, Loader2, Heart, Crown } from "lucide-react";
@@ -11,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
+  head: () => pageHead('Admin review', 'Review Insightly subscriptions and account administration.'),
   component: AdminPage,
 });
 

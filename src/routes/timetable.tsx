@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
@@ -28,6 +29,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/timetable")({
+  head: () => pageHead('Study timetable', 'Plan Insightly classes and learning sessions.'),
   component: () => (
     <RequireProfile>
       <Timetable />

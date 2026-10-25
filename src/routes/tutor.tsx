@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
@@ -40,6 +41,7 @@ const MODES: { id: Mode; label: string; hint: string }[] = [
 ];
 
 export const Route = createFileRoute("/tutor")({
+  head: () => pageHead('Iris learning assistant', 'Study with Iris, Insightly’s conversational learning assistant.'),
   component: () => (
     <RequireProfile>
       <Tutor />

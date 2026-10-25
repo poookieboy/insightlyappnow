@@ -12,6 +12,8 @@ export const Route = createFileRoute("/about")({
       { name: "description", content: "Insightly is an AI study companion built by Ezen Uel Studios for curriculum-aligned learners." },
       { property: "og:title", content: "About Insightly — by Ezen Uel Studios" },
       { property: "og:description", content: "Insightly is an AI study companion built by Ezen Uel Studios for curriculum-aligned learners." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AboutPage,

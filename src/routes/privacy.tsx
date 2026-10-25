@@ -7,6 +7,10 @@ export const Route = createFileRoute("/privacy")({
     meta: [
       { title: "Privacy Policy — Insightly" },
       { name: "description", content: "How Insightly by Ezen Uel Studios collects, uses, and protects your data." },
+      { property: "og:title", content: "Privacy Policy — Insightly" },
+      { property: "og:description", content: "How Insightly by Ezen Uel Studios collects, uses, and protects your data." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
 });

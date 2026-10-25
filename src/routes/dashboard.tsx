@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { BookOpen, ListTodo, CalendarDays, StickyNote, FileText, Trophy, Calculator, Clock } from "lucide-react";
@@ -8,6 +9,7 @@ import { useStore } from "@/lib/store";
 import { evaluateBadges, notifyBadges } from "@/lib/badges";
 
 export const Route = createFileRoute("/dashboard")({
+  head: () => pageHead('Study dashboard', 'Open Insightly Notes, revision, tasks, timetable, and study tools.'),
   component: () => (
     <RequireProfile>
       <Dashboard />

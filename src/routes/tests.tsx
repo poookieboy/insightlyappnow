@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronRight, FileText, Clock, GraduationCap, Sparkles, Loader2, Trash2, Eye } from "lucide-react";
@@ -19,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tests")({
+  head: () => pageHead('Test papers', 'Browse Insightly test papers and saved practice exams.'),
   component: () => (
     <RequireProfile>
       <TestsList />

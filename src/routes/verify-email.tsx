@@ -22,6 +22,8 @@ export const Route = createFileRoute("/verify-email")({
         property: "og:description",
         content: "Confirm your email address to activate your Insightly account.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: VerifyEmailPage,

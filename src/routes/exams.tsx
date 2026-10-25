@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -18,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/exams")({
+  head: () => pageHead('Exam analysis', 'Track Insightly exam results, goals, and learning progress.'),
   component: () => (
     <RequireProfile>
       <ExamsPage />

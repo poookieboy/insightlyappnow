@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -18,6 +19,7 @@ import { motivation } from "@/lib/motivation";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tasks")({
+  head: () => pageHead('Study tasks', 'Organize deadlines and track Insightly study tasks.'),
   component: () => (
     <RequireProfile>
       <Tasks />

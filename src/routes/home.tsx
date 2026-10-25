@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { Sparkles, ArrowRight, CheckCircle2, BookOpen, Award } from "lucide-react";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { IntroTutorial } from "@/components/IntroTutorial";
 
 export const Route = createFileRoute("/home")({
+  head: () => pageHead('Home', 'Your Insightly daily study overview and learning activities.'),
   component: () => (
     <RequireProfile>
       <HomeScreen />

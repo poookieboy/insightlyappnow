@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
 import { Award, BarChart3, Crown, Sparkles, ChevronRight, Flame, CalendarDays } from "lucide-react";
@@ -25,6 +26,7 @@ import {
 import { computeStreak } from "@/lib/streak";
 
 export const Route = createFileRoute("/profile")({
+  head: () => pageHead('Your profile', 'View your Insightly learning profile, achievements, and progress.'),
   component: () => (
     <RequireProfile>
       <ProfilePage />

@@ -1,3 +1,4 @@
+import { pageHead } from "@/lib/page-head";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/revision")({
+  head: () => pageHead('Revision practice', 'Practice Insightly subject and topic questions with Iris feedback.'),
   component: () => (
     <RequireProfile>
       <Revision />
