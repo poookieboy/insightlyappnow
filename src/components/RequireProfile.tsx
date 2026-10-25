@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { LegalAcceptanceGate } from "./LegalAcceptanceGate";
 import { AccountSync } from "./AccountSync";
+import { Loader2 } from "lucide-react";
 
 // Routes a user can still access when their trial is expired
 const ALLOWED_WHEN_LOCKED = ["/go-pro", "/settings", "/about", "/donate", "/terms", "/privacy", "/auth"];
@@ -33,7 +34,7 @@ export function RequireProfile({ children, allowWhenLocked = false }: { children
     }
   }, [authLoading, user, state.hydrated, state.profile, subLoading, info, allowWhenLocked, pathname, navigate]);
 
-  if (authLoading || !user || !state.hydrated || !state.profile) return null;
+  if (authLoading || !user || !state.hydrated || !state.profile) return <main className="flex min-h-screen items-center justify-center gap-3 bg-background text-muted-foreground" role="status"><Loader2 className="h-5 w-5 animate-spin" />Opening Insightly…</main>;
 
   return (
     <>

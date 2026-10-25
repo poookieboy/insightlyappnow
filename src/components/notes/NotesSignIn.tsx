@@ -25,7 +25,7 @@ export function NotesSignIn({ open, onOpenChange }: { open: boolean; onOpenChang
   }
   return <Dialog open={open} onOpenChange={(value) => { if (!busy) onOpenChange(value); }}>
     <DialogContent className="max-w-md rounded-lg">
-      <DialogHeader><DialogTitle>Sign in to Notes</DialogTitle><DialogDescription>Use an account registered with your Notes service. Your existing Insightly account stays unchanged.</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle>Sign in to Notes</DialogTitle><DialogDescription>Use your Insightly account to access your personal notes and submissions.</DialogDescription></DialogHeader>
       <form onSubmit={signIn} className="space-y-4">
         <div><Label htmlFor="notes-email">Email</Label><Input id="notes-email" type="email" autoComplete="username" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} className="mt-1.5" /></div>
         <div><Label htmlFor="notes-password">Password</Label><Input id="notes-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} className="mt-1.5" /></div>

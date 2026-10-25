@@ -1,6 +1,7 @@
 // External Supabase client — read-only quiz_questions source.
 // Separate from the main Lovable Cloud client so app auth/data stays intact.
 import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
 const EXTERNAL_URL = "https://xprysgjlwouonpylgusb.supabase.co";
 const EXTERNAL_PUBLISHABLE_KEY = "sb_publishable_Cdh8umqD_Z49bAJ2VcW2nQ_OXDJhMZ6";
@@ -64,6 +65,10 @@ export function normalizeQuestion(r: QuizQuestionRow): QuizQuestion {
   };
 }
 
-export const externalSupabase = createClient(EXTERNAL_URL, EXTERNAL_PUBLISHABLE_KEY, {
+export const quizSupabase = createClient(EXTERNAL_URL, EXTERNAL_PUBLISHABLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
 });
+
+// Notes and app auth now target the same selected external project. Reuse the
+// app's persistent session rather than requiring a second, temporary login.
+export const externalSupabase = supabase;
