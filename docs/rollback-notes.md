@@ -29,4 +29,12 @@ Removing repository SQL does not remove live tables. No live database objects or
 
 ## Verification
 
-Results are recorded after the preview and retained tests run. Authenticated personal-note persistence, external payment verification, and external function deployments require a usable external test session; signed-out preview checks are not evidence for those flows.
+- `bunx vitest run src/lib/ai-notes-rollback.test.ts src/lib/service-config.test.ts src/lib/chat-stream.test.ts`: **12 tests passed**. Notes AI tests execute the actual function source with mocked auth/Groq responses, retain summarize/simplify/quiz/exam and caller verification, and reject removed generation. They do not prove live Groq deployment.
+- The automatic preview check reported `build OK` after the rollback and after the test addition (29 October 2026, 15:37:03 UTC). No manual `vite build` or standalone typecheck command was run; this environment runs the checks automatically. No separate production artifact was generated or deployed in this turn.
+- Playwright checked 15 routes at 1280×1800, 390×844 and 320×740: **45 nonblank pages, zero unhandled runtime errors and zero horizontal overflow**. Phone sign-in and About screenshots were inspected.
+- `/notes` and its personal child redirect to the existing `/auth` page when signed out, matching the restored profile gate. The removed featured reader/reviewer routes return the application's visible 404 page.
+- `.env` and `.env.example` SHA-256 fingerprints are identical before and after. The rollback diff contains no Vite/service configuration, generated integrations, auth provider/settings, payment handlers, or unrelated routes.
+
+Authenticated personal-note persistence, external payment verification, and external function deployments require a usable external test session; signed-out preview checks are not evidence for those flows. The signed-in Notes screen/editor was not visually verified, and the historical snapshot was not executed separately. Nothing was published, so the currently published site is not claimed to be restored.
+
+The pre-existing profile-visibility security finding remains active: changing legitimate visibility requires the user's decision and database authorization, which were not supplied for this rollback. Caller verification in the retained Notes AI function was preserved rather than reverting to unauthenticated access.
