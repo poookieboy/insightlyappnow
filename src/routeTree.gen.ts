@@ -20,7 +20,6 @@ import { Route as RevisionRouteImport } from './routes/revision'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as NotesReviewRouteImport } from './routes/notes-review'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as GoProRouteImport } from './routes/go-pro'
@@ -35,7 +34,6 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
-import { Route as FeaturedNotesNoteIdRouteImport } from './routes/featured-notes.$noteId'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
@@ -95,11 +93,6 @@ const ProfileRoute = ProfileRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotesReviewRoute = NotesReviewRouteImport.update({
-  id: '/notes-review',
-  path: '/notes-review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotesRoute = NotesRouteImport.update({
@@ -172,11 +165,6 @@ const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   path: '/$noteId',
   getParentRoute: () => NotesRoute,
 } as any)
-const FeaturedNotesNoteIdRoute = FeaturedNotesNoteIdRouteImport.update({
-  id: '/featured-notes/$noteId',
-  path: '/featured-notes/$noteId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
@@ -217,7 +205,6 @@ export interface FileRoutesByFullPath {
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
-  '/notes-review': typeof NotesReviewRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -230,7 +217,6 @@ export interface FileRoutesByFullPath {
   '/tutor': typeof TutorRoute
   '/verify-email': typeof VerifyEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/featured-notes/$noteId': typeof FeaturedNotesNoteIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -251,7 +237,6 @@ export interface FileRoutesByTo {
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
-  '/notes-review': typeof NotesReviewRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -264,7 +249,6 @@ export interface FileRoutesByTo {
   '/tutor': typeof TutorRoute
   '/verify-email': typeof VerifyEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/featured-notes/$noteId': typeof FeaturedNotesNoteIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -286,7 +270,6 @@ export interface FileRoutesById {
   '/go-pro': typeof GoProRoute
   '/home': typeof HomeRoute
   '/notes': typeof NotesRouteWithChildren
-  '/notes-review': typeof NotesReviewRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -299,7 +282,6 @@ export interface FileRoutesById {
   '/tutor': typeof TutorRoute
   '/verify-email': typeof VerifyEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/featured-notes/$noteId': typeof FeaturedNotesNoteIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/tests/$paperId': typeof TestsPaperIdRouteWithChildren
   '/api/payments/initiate': typeof ApiPaymentsInitiateRoute
@@ -322,7 +304,6 @@ export interface FileRouteTypes {
     | '/go-pro'
     | '/home'
     | '/notes'
-    | '/notes-review'
     | '/privacy'
     | '/profile'
     | '/reset-password'
@@ -335,7 +316,6 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/verify-email'
     | '/auth/callback'
-    | '/featured-notes/$noteId'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -356,7 +336,6 @@ export interface FileRouteTypes {
     | '/go-pro'
     | '/home'
     | '/notes'
-    | '/notes-review'
     | '/privacy'
     | '/profile'
     | '/reset-password'
@@ -369,7 +348,6 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/verify-email'
     | '/auth/callback'
-    | '/featured-notes/$noteId'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -390,7 +368,6 @@ export interface FileRouteTypes {
     | '/go-pro'
     | '/home'
     | '/notes'
-    | '/notes-review'
     | '/privacy'
     | '/profile'
     | '/reset-password'
@@ -403,7 +380,6 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/verify-email'
     | '/auth/callback'
-    | '/featured-notes/$noteId'
     | '/notes/$noteId'
     | '/tests/$paperId'
     | '/api/payments/initiate'
@@ -425,7 +401,6 @@ export interface RootRouteChildren {
   GoProRoute: typeof GoProRoute
   HomeRoute: typeof HomeRoute
   NotesRoute: typeof NotesRouteWithChildren
-  NotesReviewRoute: typeof NotesReviewRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -437,7 +412,6 @@ export interface RootRouteChildren {
   TimetableRoute: typeof TimetableRoute
   TutorRoute: typeof TutorRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
-  FeaturedNotesNoteIdRoute: typeof FeaturedNotesNoteIdRoute
   ApiPaymentsInitiateRoute: typeof ApiPaymentsInitiateRoute
   ApiPaymentsStatusRoute: typeof ApiPaymentsStatusRoute
   ApiPublicWebhooksLipalinkRoute: typeof ApiPublicWebhooksLipalinkRoute
@@ -520,13 +494,6 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notes-review': {
-      id: '/notes-review'
-      path: '/notes-review'
-      fullPath: '/notes-review'
-      preLoaderRoute: typeof NotesReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notes': {
@@ -627,13 +594,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesNoteIdRouteImport
       parentRoute: typeof NotesRoute
     }
-    '/featured-notes/$noteId': {
-      id: '/featured-notes/$noteId'
-      path: '/featured-notes/$noteId'
-      fullPath: '/featured-notes/$noteId'
-      preLoaderRoute: typeof FeaturedNotesNoteIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/callback'
@@ -727,7 +687,6 @@ const rootRouteChildren: RootRouteChildren = {
   GoProRoute: GoProRoute,
   HomeRoute: HomeRoute,
   NotesRoute: NotesRouteWithChildren,
-  NotesReviewRoute: NotesReviewRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
@@ -739,7 +698,6 @@ const rootRouteChildren: RootRouteChildren = {
   TimetableRoute: TimetableRoute,
   TutorRoute: TutorRoute,
   VerifyEmailRoute: VerifyEmailRoute,
-  FeaturedNotesNoteIdRoute: FeaturedNotesNoteIdRoute,
   ApiPaymentsInitiateRoute: ApiPaymentsInitiateRoute,
   ApiPaymentsStatusRoute: ApiPaymentsStatusRoute,
   ApiPublicWebhooksLipalinkRoute: ApiPublicWebhooksLipalinkRoute,
