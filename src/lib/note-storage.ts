@@ -2,7 +2,7 @@
 // to the private `note-attachments` bucket. Objects are organized as
 // `{user_id}/{note_id or 'covers'}/{uuid}.{ext}` so RLS restricts access.
 
-import { externalSupabase as supabase } from "@/integrations/external-supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 const BUCKET = "note-attachments";
 
@@ -46,15 +46,6 @@ export async function signedUrl(path: string, expiresIn = 60 * 60 * 24 * 7): Pro
 export async function resolveMedia(pathOrUrl: string): Promise<string> {
   if (!pathOrUrl) return "";
   if (pathOrUrl.startsWith("http") || pathOrUrl.startsWith("data:") || pathOrUrl.startsWith("blob:")) {
-    if (pathOrUrl.startsWith("http")) {
-      try {
-        const url = new URL(pathOrUrl);
-        const marker = `/storage/v1/object/sign/${BUCKET}/`;
-        const index = url.pathname.indexOf(marker);
-        const storageOrigin = new URL(supabase.storage.from(BUCKET).getPublicUrl("origin-check").data.publicUrl).origin;
-        if (index >= 0 && url.origin === storageOrigin) return await signedUrl(decodeURIComponent(url.pathname.slice(index + marker.length)));
-      } catch { return pathOrUrl; }
-    }
     return pathOrUrl;
   }
   try {

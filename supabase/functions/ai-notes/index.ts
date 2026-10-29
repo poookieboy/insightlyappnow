@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type Action = "summarize" | "simplify" | "quiz" | "exam" | "generate";
+type Action = "summarize" | "simplify" | "quiz" | "exam";
 
 interface Body {
   action: Action;
@@ -15,11 +15,9 @@ interface Body {
   subject?: string;
   grade?: string;
   curriculum?: string;
-  topic?: string;
 }
 
 const ACTION_PROMPTS: Record<Action, string> = {
-  generate: "Create a structured study-note draft on the requested topic with a short overview, headings, key terms, key points, concrete worked examples, common misconceptions and revision questions with answers. Do not claim KICD certification or invent sources. The draft will be reviewed by a human before publication.",
   summarize:
     "Summarize the student's notes into clear bullet points under short headings. Keep every important fact. End with a 1-line TL;DR.",
   simplify:
@@ -112,20 +110,12 @@ Deno.serve(async (req) => {
     let payload: unknown;
     try { payload = await req.json(); } catch { return json({ error: "Invalid JSON request." }, 400); }
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return json({ error: "Invalid Notes request." }, 400);
-    const { action, text, subject, grade, curriculum, topic } = payload as Body;
+    const { action, text, subject, grade, curriculum } = payload as Body;
     if (typeof action !== "string" || !Object.hasOwn(ACTION_PROMPTS, action)) return json({ error: "Choose a supported Notes action." }, 400);
-    for (const field of [subject, grade, curriculum, topic]) {
+    for (const field of [subject, grade, curriculum]) {
       if (field !== undefined && (typeof field !== "string" || field.length > 160)) return json({ error: "Invalid grade, subject or topic." }, 400);
     }
-    if (action !== "generate" && (typeof text !== "string" || !text.trim() || text.length > 40000)) return json({ error: "Provide notes text between 1 and 40,000 characters." }, 400);
-    if (action === "generate") {
-      if (!grade || !/^Grade [1-9]$/.test(grade) || !subject?.trim() || !topic?.trim()) return json({ error: "Choose a grade, subject and topic." }, 400);
-      const roleResponse = await fetch(`${url}/rest/v1/rpc/has_role`, {
-        method: "POST", headers: { apikey: publishable, Authorization: authorization, "Content-Type": "application/json" },
-        body: JSON.stringify({ _user_id: user.id, _role: "admin" }), signal: AbortSignal.timeout(10000),
-      });
-      if (!roleResponse.ok || await roleResponse.json() !== true) return json({ error: "Reviewer access required to generate featured drafts." }, 403);
-    }
+    if (typeof text !== "string" || !text.trim() || text.length > 40000) return json({ error: "Provide notes text between 1 and 40,000 characters." }, 400);
 
     const sys = `You are Iris — a warm, encouraging study coach for Insightly students.
 Student context: ${curriculum ?? "CBC"} curriculum, ${grade ?? "unspecified grade"}${subject ? `, subject: ${subject}` : ""}.
@@ -135,7 +125,7 @@ Use markdown headings, bold and bullets. Keep language age-appropriate.`;
     const content = await callAI(
       [
         { role: "system", content: sys },
-        { role: "user", content: action === "generate" ? `Subject: ${subject}\nGrade: ${grade}\nTopic: ${topic}` : text.slice(0, 8000) },
+        { role: "user", content: text.slice(0, 8000) },
       ],
       { temperature: 0.6, maxTokens: 4096 },
     );
