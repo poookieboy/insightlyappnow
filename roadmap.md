@@ -1,5 +1,11 @@
 # Insightly roadmap
 
+## Current request: restore pre-Notes experience
+- [ ] Identify the snapshot immediately before the 20 October featured Notes rollout.
+- [ ] Restore Notes-related files and remove added library/reviewer files without changing environment, payments/auth configuration, or external services.
+- [ ] Verify automatic compile/build results, retained tests, mobile preview, and navigation.
+- [ ] Report the exact restore boundary, preserved fixes, and external/security blockers.
+
 ## Current request: repair existing app startup
 - [ ] Diagnose published startup and preview compile/runtime failures.
 - [ ] Fix confirmed errors and mobile overflow without redesigning features.
