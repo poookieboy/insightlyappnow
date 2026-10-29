@@ -4,13 +4,11 @@
 //   • For You: AI-generated curriculum notes by subject & topic.
 
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { pageHead } from "@/lib/page-head";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { createPortal } from "react-dom";
-import { useNotesAuth } from "@/hooks/useNotesAuth";
 import { AppShell } from "@/components/AppShell";
-import { NotesSignIn } from "@/components/notes/NotesSignIn";
-import { FeaturedNotesLibrary, NotesFailure } from "@/components/notes/FeaturedNotesLibrary";
-import { notesHead, notesError } from "@/lib/featured-notes";
+import { RequireProfile } from "@/components/RequireProfile";
+import { ComingSoon } from "@/components/ComingSoon";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { externalSupabase as supabase } from "@/integrations/external-supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import {
@@ -39,8 +37,12 @@ import {
 
 
 export const Route = createFileRoute("/notes")({
-  head: () => notesHead("Notes", "Browse reviewed learning notes by grade, subject and topic, submit student contributions, and keep your own notes in Insightly."),
-  component: NotesHub,
+  head: () => pageHead("Notes", "Keep your personal Insightly notes organized, write, and revise."),
+  component: () => (
+    <RequireProfile>
+      <NotesHub />
+    </RequireProfile>
+  ),
 });
 
 interface Category {
@@ -72,28 +74,31 @@ interface UserNote {
 
 function NotesHub() {
   const { pathname } = useLocation();
-  const { user } = useNotesAuth();
-  const [signIn, setSignIn] = useState(false);
   if (pathname !== "/notes" && pathname !== "/notes/") return <Outlet />;
   return (
-    <AppShell wide showTrialBanner={false} className="!bg-none bg-background">
+    <AppShell wide>
       <header className="mb-4">
         <h1 className="font-display text-2xl font-bold sm:text-3xl">Notes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Find reviewed study notes, share what you’ve learned, and keep your own ideas together.</p>
+        <p className="text-sm text-muted-foreground">Your personal notes and curriculum-ready study material.</p>
       </header>
-      <Tabs defaultValue="foryou">
+      <Tabs defaultValue="mine">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="foryou">Featured Notes</TabsTrigger>
           <TabsTrigger value="mine">My Notes</TabsTrigger>
+          <TabsTrigger value="foryou">For You ✨</TabsTrigger>
         </TabsList>
         <TabsContent value="mine" className="mt-4">
-          {user ? <MyNotes key={user.id} /> : <div className="border-y py-10 text-center"><BookOpen className="mx-auto h-8 w-8 text-muted-foreground" /><h2 className="mt-3 font-semibold">Your personal notes</h2><p className="mt-2 text-sm text-muted-foreground">Sign in to your Notes account to read and write your own notes.</p><Button className="mt-4" onClick={() => setSignIn(true)}>Sign in to Notes</Button></div>}
+          <MyNotes />
         </TabsContent>
         <TabsContent value="foryou" className="mt-4">
-          <FeaturedNotesLibrary />
+          <ComingSoon
+            title="Notes For You"
+            emoji="📘"
+            hideBack
+            message="Curriculum notes written for your exact grade and subjects are on the way. This feature is under development and will arrive in a future update."
+          />
+
         </TabsContent>
       </Tabs>
-      <NotesSignIn open={signIn} onOpenChange={setSignIn} />
     </AppShell>
   );
 }
@@ -113,7 +118,6 @@ function MyNotes() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [notes, setNotes] = useState<UserNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
   const [activeCat, setActiveCat] = useState<string>(CATEGORY_ALL);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<UserNote | null>(null);
@@ -123,19 +127,16 @@ function MyNotes() {
   const [unlockedCats, setUnlockedCats] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
-    setLoading(true); setLoadError("");
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please sign in");
-      const [{ data: notesData, error: e1 }, { data: catsData, error: e2 }] = await Promise.all([
-        supabase.from("user_notes").select("*").eq("user_id", user.id).order("pinned", { ascending: false }).order("updated_at", { ascending: false }).abortSignal(AbortSignal.timeout(12000)),
-        supabase.from("note_categories").select("*").eq("user_id", user.id).order("sort_order").order("created_at").abortSignal(AbortSignal.timeout(12000)),
-      ]);
-      if (e1 || e2) throw e1 ?? e2;
-      setNotes((notesData ?? []) as unknown as UserNote[]);
-      setCategories((catsData ?? []) as unknown as Category[]);
-    } catch (e) { setLoadError(notesError(e)); }
-    finally { setLoading(false); }
+    setLoading(true);
+    const [{ data: notesData, error: e1 }, { data: catsData, error: e2 }] = await Promise.all([
+      supabase.from("user_notes").select("*").order("pinned", { ascending: false }).order("updated_at", { ascending: false }),
+      supabase.from("note_categories").select("*").order("sort_order").order("created_at"),
+    ]);
+    if (e1) toast.error(e1.message);
+    if (e2) toast.error(e2.message);
+    setNotes((notesData ?? []) as unknown as UserNote[]);
+    setCategories((catsData ?? []) as unknown as Category[]);
+    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -235,8 +236,7 @@ function MyNotes() {
         categories={categories}
         onClose={() => { setEditing(null); load(); }}
         onDelete={async () => {
-          const { error } = await supabase.from("user_notes").delete().eq("id", editing.id);
-          if (error) { toast.error(notesError(error)); return; }
+          await supabase.from("user_notes").delete().eq("id", editing.id);
           setEditing(null); load();
         }}
       />
@@ -314,7 +314,7 @@ function MyNotes() {
       {/* Notes grid */}
       {loading ? (
         <div className="flex justify-center p-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : loadError ? <NotesFailure message={loadError} retry={load} /> : filteredNotes.length === 0 ? (
+      ) : filteredNotes.length === 0 ? (
         <EmptyState onNew={() => createNote(activeCat === CATEGORY_ALL || activeCat === CATEGORY_UNSORTED ? null : activeCat)} />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -571,11 +571,6 @@ function NoteEditor({
   const attachInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
   const firstRenderRef = useRef(true);
-  const savePromiseRef = useRef<Promise<boolean> | null>(null);
-  const persistRef = useRef<() => Promise<boolean>>(async () => true);
-  const dirtyRef = useRef(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
 
   // Offline awareness — fall back to the cached copy when there's no network.
   useEffect(() => {
@@ -625,45 +620,34 @@ function NoteEditor({
     }
   }
 
-  const persist = useCallback(async (): Promise<boolean> => {
-    if (!unlocked) return true;
-    if (savePromiseRef.current) await savePromiseRef.current;
-    setSaving("saving");
-    const work = (async () => {
-      try {
-        const encPayload = note.is_encrypted && pinInSession ? await encryptContent(content, pinInSession) : null;
-        const { error } = await supabase.from("user_notes").update({
-          title: title.trim(), tags: note.tags ?? [], background_style: bgId, cover_image: coverPath,
-          icon, category_id: categoryId, updated_at: new Date().toISOString(),
-          content_html: encPayload ? "" : content, encrypted_payload: encPayload,
-        }).eq("id", note.id);
-        if (error) throw error;
-        setSaving("saved"); dirtyRef.current = false;
-        pushVersion(note.id, title.trim() || "Untitled", content);
-        if (!note.is_encrypted) cacheNote(note.id, title.trim() || "Untitled", content);
-        return true;
-      } catch (e) { setSaving("idle"); toast.error(notesError(e)); return false; }
-    })();
-    savePromiseRef.current = work;
-    const ok = await work;
-    if (savePromiseRef.current === work) savePromiseRef.current = null;
-    return ok;
-  }, [unlocked, note.id, note.is_encrypted, note.tags, pinInSession, content, title, bgId, coverPath, icon, categoryId]);
-  persistRef.current = persist;
-  async function closeEditor() {
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-    if (dirtyRef.current && !await persistRef.current()) return;
-    if (savePromiseRef.current && !await savePromiseRef.current) return;
-    onClose();
-  }
-  // Autosave (debounced ~1s); close waits for the latest write.
+  // Autosave (debounced ~1s)
   const schedule = useCallback(() => {
     if (!unlocked) return;
-    dirtyRef.current = true;
     setSaving("saving");
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => { timerRef.current = null; void persistRef.current(); }, 900);
-  }, [unlocked]);
+    timerRef.current = window.setTimeout(async () => {
+      const encPayload = note.is_encrypted && pinInSession
+        ? await encryptContent(content, pinInSession) : null;
+      const { error } = await supabase.from("user_notes").update({
+        title: title.trim(),
+        tags: [],
+        background_style: bgId,
+        cover_image: coverPath,
+        icon,
+        category_id: categoryId,
+        updated_at: new Date().toISOString(),
+        content_html: encPayload ? "" : content,
+        encrypted_payload: encPayload,
+      }).eq("id", note.id);
+      setSaving(error ? "idle" : "saved");
+      if (error) toast.error(error.message);
+      else {
+        pushVersion(note.id, title.trim() || "Untitled", content);
+        if (!note.is_encrypted) cacheNote(note.id, title.trim() || "Untitled", content);
+      }
+    }, 900);
+
+  }, [title, content, bgId, coverPath, icon, categoryId, unlocked, note.id, note.is_encrypted, pinInSession]);
 
   useEffect(() => {
     if (firstRenderRef.current) { firstRenderRef.current = false; return; }
@@ -813,8 +797,7 @@ function NoteEditor({
   }
 
   async function toggleLock() {
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-    if (!await persistRef.current()) return;
+
     if (note.is_locked) {
       if (!confirm("Remove PIN from this note? Content will be readable without a password.")) return;
       const { error } = await supabase.from("user_notes").update({
@@ -844,9 +827,8 @@ function NoteEditor({
   }
 
   // Locked view: prompt for PIN before showing content.
-  if (!mounted) return null;
   if (!unlocked) {
-    return createPortal(
+    return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background p-6">
         <Button variant="ghost" size="sm" onClick={onClose} className="absolute left-4 top-4">
           <ChevronLeft className="h-4 w-4" /> Back
@@ -866,11 +848,11 @@ function NoteEditor({
         />
         {decryptError && <p className="text-xs text-destructive">{decryptError}</p>}
         <Button onClick={tryUnlock} className="bg-gradient-primary text-primary-foreground">Unlock</Button>
-      </div>, document.body
+      </div>
     );
   }
 
-  return createPortal(
+  return (
     <div
       className="fixed inset-0 z-[60] flex flex-col animate-fade-in"
       style={{ color: bg.text === "light" ? "#fff" : "#111827" }}
@@ -881,7 +863,7 @@ function NoteEditor({
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {/* Compact header: back · status · tab · menu */}
         <div className="flex items-center gap-1.5 border-b border-black/10 bg-white/35 px-2 py-1.5 backdrop-blur-md dark:bg-black/20">
-          <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Save and close note" onClick={() => void closeEditor()}>
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onClose}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium opacity-70">
@@ -1016,7 +998,7 @@ function NoteEditor({
         </DialogContent>
       </Dialog>
 
-    </div>, document.body
+    </div>
   );
 }
 
