@@ -36,7 +36,7 @@ jobs:
       - name: Prepare Capacitor web output
         run: |
           mkdir -p android-web
-          cp index.html android-web/index.html
+          cp dist/client/index.html android-web/index.html
 
           node -e "
             const fs = require('fs');
