@@ -9,140 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as TutorRouteImport } from './routes/tutor'
-import { Route as TimetableRouteImport } from './routes/timetable'
-import { Route as TestsRouteImport } from './routes/tests'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as TasksRouteImport } from './routes/tasks'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as RevisionRouteImport } from './routes/revision'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as NotesRouteImport } from './routes/notes'
-import { Route as HomeRouteImport } from './routes/home'
-import { Route as GoProRouteImport } from './routes/go-pro'
-import { Route as ExternalQuizRouteImport } from './routes/external-quiz'
-import { Route as ExamsRouteImport } from './routes/exams'
-import { Route as DonateRouteImport } from './routes/donate'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CalculatorRouteImport } from './routes/calculator'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
-import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CalculatorRouteImport } from './routes/calculator'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DonateRouteImport } from './routes/donate'
+import { Route as ExamsRouteImport } from './routes/exams'
+import { Route as ExternalQuizRouteImport } from './routes/external-quiz'
+import { Route as GoProRouteImport } from './routes/go-pro'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as NotesRouteImport } from './routes/notes'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RevisionRouteImport } from './routes/revision'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TestsRouteImport } from './routes/tests'
+import { Route as TimetableRouteImport } from './routes/timetable'
+import { Route as TutorRouteImport } from './routes/tutor'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
-import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
+import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
+import { Route as TestsPaperIdRouteImport } from './routes/tests.$paperId'
 import { Route as ApiPaymentsInitiateRouteImport } from './routes/api/payments/initiate'
+import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
+import { Route as TestsPaperIdPreviewRouteImport } from './routes/tests.$paperId.preview'
 import { Route as ApiPublicWebhooksLipalinkRouteImport } from './routes/api/public/webhooks/lipalink'
 
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TutorRoute = TutorRouteImport.update({
-  id: '/tutor',
-  path: '/tutor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TimetableRoute = TimetableRouteImport.update({
-  id: '/timetable',
-  path: '/timetable',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestsRoute = TestsRouteImport.update({
-  id: '/tests',
-  path: '/tests',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TasksRoute = TasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RevisionRoute = RevisionRouteImport.update({
-  id: '/revision',
-  path: '/revision',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotesRoute = NotesRouteImport.update({
-  id: '/notes',
-  path: '/notes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeRoute = HomeRouteImport.update({
-  id: '/home',
-  path: '/home',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoProRoute = GoProRouteImport.update({
-  id: '/go-pro',
-  path: '/go-pro',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExternalQuizRoute = ExternalQuizRouteImport.update({
-  id: '/external-quiz',
-  path: '/external-quiz',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExamsRoute = ExamsRouteImport.update({
-  id: '/exams',
-  path: '/exams',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DonateRoute = DonateRouteImport.update({
-  id: '/donate',
-  path: '/donate',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalculatorRoute = CalculatorRouteImport.update({
-  id: '/calculator',
-  path: '/calculator',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -150,40 +50,140 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TestsPaperIdRoute = TestsPaperIdRouteImport.update({
-  id: '/$paperId',
-  path: '/$paperId',
-  getParentRoute: () => TestsRoute,
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
-  id: '/$noteId',
-  path: '/$noteId',
-  getParentRoute: () => NotesRoute,
+const CalculatorRoute = CalculatorRouteImport.update({
+  id: '/calculator',
+  path: '/calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DonateRoute = DonateRouteImport.update({
+  id: '/donate',
+  path: '/donate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExamsRoute = ExamsRouteImport.update({
+  id: '/exams',
+  path: '/exams',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExternalQuizRoute = ExternalQuizRouteImport.update({
+  id: '/external-quiz',
+  path: '/external-quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoProRoute = GoProRouteImport.update({
+  id: '/go-pro',
+  path: '/go-pro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevisionRoute = RevisionRouteImport.update({
+  id: '/revision',
+  path: '/revision',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestsRoute = TestsRouteImport.update({
+  id: '/tests',
+  path: '/tests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimetableRoute = TimetableRouteImport.update({
+  id: '/timetable',
+  path: '/timetable',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TutorRoute = TutorRouteImport.update({
+  id: '/tutor',
+  path: '/tutor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
-const TestsPaperIdPreviewRoute = TestsPaperIdPreviewRouteImport.update({
-  id: '/preview',
-  path: '/preview',
-  getParentRoute: () => TestsPaperIdRoute,
+const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
+  id: '/$noteId',
+  path: '/$noteId',
+  getParentRoute: () => NotesRoute,
+} as any)
+const TestsPaperIdRoute = TestsPaperIdRouteImport.update({
+  id: '/$paperId',
+  path: '/$paperId',
+  getParentRoute: () => TestsRoute,
+} as any)
+const ApiPaymentsInitiateRoute = ApiPaymentsInitiateRouteImport.update({
+  id: '/api/payments/initiate',
+  path: '/api/payments/initiate',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPaymentsStatusRoute = ApiPaymentsStatusRouteImport.update({
   id: '/api/payments/status',
   path: '/api/payments/status',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPaymentsInitiateRoute = ApiPaymentsInitiateRouteImport.update({
-  id: '/api/payments/initiate',
-  path: '/api/payments/initiate',
-  getParentRoute: () => rootRouteImport,
+const TestsPaperIdPreviewRoute = TestsPaperIdPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => TestsPaperIdRoute,
 } as any)
 const ApiPublicWebhooksLipalinkRoute =
   ApiPublicWebhooksLipalinkRouteImport.update({
@@ -419,151 +419,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tutor': {
-      id: '/tutor'
-      path: '/tutor'
-      fullPath: '/tutor'
-      preLoaderRoute: typeof TutorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/timetable': {
-      id: '/timetable'
-      path: '/timetable'
-      fullPath: '/timetable'
-      preLoaderRoute: typeof TimetableRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tests': {
-      id: '/tests'
-      path: '/tests'
-      fullPath: '/tests'
-      preLoaderRoute: typeof TestsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tasks': {
-      id: '/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof TasksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/revision': {
-      id: '/revision'
-      path: '/revision'
-      fullPath: '/revision'
-      preLoaderRoute: typeof RevisionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notes': {
-      id: '/notes'
-      path: '/notes'
-      fullPath: '/notes'
-      preLoaderRoute: typeof NotesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home': {
-      id: '/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/go-pro': {
-      id: '/go-pro'
-      path: '/go-pro'
-      fullPath: '/go-pro'
-      preLoaderRoute: typeof GoProRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/external-quiz': {
-      id: '/external-quiz'
-      path: '/external-quiz'
-      fullPath: '/external-quiz'
-      preLoaderRoute: typeof ExternalQuizRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/exams': {
-      id: '/exams'
-      path: '/exams'
-      fullPath: '/exams'
-      preLoaderRoute: typeof ExamsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/donate': {
-      id: '/donate'
-      path: '/donate'
-      fullPath: '/donate'
-      preLoaderRoute: typeof DonateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calculator': {
-      id: '/calculator'
-      path: '/calculator'
-      fullPath: '/calculator'
-      preLoaderRoute: typeof CalculatorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -573,26 +433,152 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tests/$paperId': {
-      id: '/tests/$paperId'
-      path: '/$paperId'
-      fullPath: '/tests/$paperId'
-      preLoaderRoute: typeof TestsPaperIdRouteImport
-      parentRoute: typeof TestsRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/notes/$noteId': {
-      id: '/notes/$noteId'
-      path: '/$noteId'
-      fullPath: '/notes/$noteId'
-      preLoaderRoute: typeof NotesNoteIdRouteImport
-      parentRoute: typeof NotesRoute
+    '/calculator': {
+      id: '/calculator'
+      path: '/calculator'
+      fullPath: '/calculator'
+      preLoaderRoute: typeof CalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/donate': {
+      id: '/donate'
+      path: '/donate'
+      fullPath: '/donate'
+      preLoaderRoute: typeof DonateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exams': {
+      id: '/exams'
+      path: '/exams'
+      fullPath: '/exams'
+      preLoaderRoute: typeof ExamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/external-quiz': {
+      id: '/external-quiz'
+      path: '/external-quiz'
+      fullPath: '/external-quiz'
+      preLoaderRoute: typeof ExternalQuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/go-pro': {
+      id: '/go-pro'
+      path: '/go-pro'
+      fullPath: '/go-pro'
+      preLoaderRoute: typeof GoProRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revision': {
+      id: '/revision'
+      path: '/revision'
+      fullPath: '/revision'
+      preLoaderRoute: typeof RevisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tests': {
+      id: '/tests'
+      path: '/tests'
+      fullPath: '/tests'
+      preLoaderRoute: typeof TestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timetable': {
+      id: '/timetable'
+      path: '/timetable'
+      fullPath: '/timetable'
+      preLoaderRoute: typeof TimetableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tutor': {
+      id: '/tutor'
+      path: '/tutor'
+      fullPath: '/tutor'
+      preLoaderRoute: typeof TutorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -601,12 +587,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/tests/$paperId/preview': {
-      id: '/tests/$paperId/preview'
-      path: '/preview'
-      fullPath: '/tests/$paperId/preview'
-      preLoaderRoute: typeof TestsPaperIdPreviewRouteImport
-      parentRoute: typeof TestsPaperIdRoute
+    '/notes/$noteId': {
+      id: '/notes/$noteId'
+      path: '/$noteId'
+      fullPath: '/notes/$noteId'
+      preLoaderRoute: typeof NotesNoteIdRouteImport
+      parentRoute: typeof NotesRoute
+    }
+    '/tests/$paperId': {
+      id: '/tests/$paperId'
+      path: '/$paperId'
+      fullPath: '/tests/$paperId'
+      preLoaderRoute: typeof TestsPaperIdRouteImport
+      parentRoute: typeof TestsRoute
+    }
+    '/api/payments/initiate': {
+      id: '/api/payments/initiate'
+      path: '/api/payments/initiate'
+      fullPath: '/api/payments/initiate'
+      preLoaderRoute: typeof ApiPaymentsInitiateRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/payments/status': {
       id: '/api/payments/status'
@@ -615,12 +615,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentsStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/payments/initiate': {
-      id: '/api/payments/initiate'
-      path: '/api/payments/initiate'
-      fullPath: '/api/payments/initiate'
-      preLoaderRoute: typeof ApiPaymentsInitiateRouteImport
-      parentRoute: typeof rootRouteImport
+    '/tests/$paperId/preview': {
+      id: '/tests/$paperId/preview'
+      path: '/preview'
+      fullPath: '/tests/$paperId/preview'
+      preLoaderRoute: typeof TestsPaperIdPreviewRouteImport
+      parentRoute: typeof TestsPaperIdRoute
     }
     '/api/public/webhooks/lipalink': {
       id: '/api/public/webhooks/lipalink'
