@@ -31,12 +31,12 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Build web app
-        run: npm run build
+        run: CAPACITOR_BUILD=1 npm run build
 
       - name: Prepare Capacitor web output
         run: |
           mkdir -p android-web
-          cp index.html android-web/index.html
+          cp dist/client/index.html android-web/index.html
 
           node -e "
             const fs = require('fs');
