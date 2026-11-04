@@ -1,13 +1,24 @@
-# Insightly roadmap
+# Insightly — Development, Repair & Redesign (Nov 2026)
 
-## Current request: restore pre-Notes experience
-- [x] Identify the snapshot immediately before the 20 October featured Notes rollout.
-- [x] Restore Notes-related files and remove added library/reviewer files without changing environment, payments/auth configuration, or external services.
-- [x] Verify automatic checks, 12 retained/rollback tests, and 45 signed-out desktop/mobile route loads without blank pages, runtime errors, or overflow.
-- [x] Record the restore boundary and intentional safety/compatibility exceptions in docs/rollback-notes.md.
+## 1. Repair Iris AI (critical)
+- [x] Root cause found: deployed `ai-tutor` edge function still requires GEMINI_API_KEY → returns "AI service is not configured."
+- [ ] Rewrite `supabase/functions/ai-tutor/index.ts` to Groq-only (GROQ_API_KEY verified live on the external project via ai-revision probe).
+- [ ] Verify frontend request/response handling matches streaming contract.
+- [ ] Deploy step (user/CI holds the Supabase access token — none in sandbox).
 
-## Verification blocked by external access or decisions
-- [ ] Verify signed-in personal Notes and external integrations; blocked by unavailable authenticated session for the configured external service. No credential or auth settings changed.
-- [ ] Resolve pre-existing public profile exposure; blocked by the user's profile-visibility decision and permission to change database access rules. No managed backend is to be enabled/resumed.
+## 2. Notes editor redesign (critical)
+- [ ] Backgrounds: expand to 200+ with 8 categories (Minimal, Nature, Gradients, Aesthetic, Dark, Patterns, Study, Custom upload) + per-note persistence.
+- [ ] Floating formatting toolbar: bottom-centred rounded island, horizontally scrollable, keyboard-aware, above bottom nav.
+- [ ] Compact header (remove oversized green header), spacious canvas.
+- [ ] Bottom-left Notes tools button (attach, insert image, scan/camera, templates, record, draw).
+- [ ] Bottom-right Insights button → Iris AI panel (summarise, explain, key points, revision questions, flashcards, improve) via existing Groq ai-notes function.
+- [ ] Word/char counters preserved.
 
-The prior featured Notes implementation tasks are superseded by the user's explicit rollback request. No pending featured Notes installation or publication is planned. External AI deployment/payment verification from earlier work remains unverified and outside this rollback.
+## 3. Android launcher icon + splash (critical)
+- [ ] Replace missing mipmap resources with official logo (all densities, legacy + adaptive fg/bg + monochrome).
+- [ ] AndroidManifest icon wiring; branded splash (navy bg + centred logo, incl. v31 splash screen API).
+- [ ] APK build requires Android SDK (not in sandbox) — resources prepared + verified structurally.
+
+## 4. Regression testing
+- [ ] Unit tests (vitest) for changed logic.
+- [ ] Playwright smoke: auth, notes, Iris, navigation at mobile sizes.
